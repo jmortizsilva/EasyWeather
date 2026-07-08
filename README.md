@@ -1,4 +1,4 @@
-# Meteo
+# EasyWeather
 
 App de previsión meteorológica (React Native + Expo) accesible con VoiceOver, usando
 [Open-Meteo](https://open-meteo.com/) (sin API key) para la previsión y la
@@ -31,7 +31,7 @@ firma la app iOS en la nube usando tu cuenta de Apple Developer.
    npx expo start
    ```
    y escanea el QR **abriendo con la app que acabas de instalar** (tiene el icono y
-   nombre de "Meteo", no es Expo Go). Cada cambio en el código se recarga solo.
+   nombre de "EasyWeather", no es Expo Go). Cada cambio en el código se recarga solo.
 
 ## Tener la app instalada de forma permanente / TestFlight
 

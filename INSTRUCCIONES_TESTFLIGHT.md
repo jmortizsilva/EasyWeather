@@ -1,7 +1,7 @@
-# Instalar la app Meteo mediante TestFlight
+# Instalar la app EasyWeather mediante TestFlight
 
 TestFlight es la app oficial de Apple para probar aplicaciones antes de que estén en el
-App Store. Con ella podéis instalar Meteo en cualquier iPhone, sin cables ni registros
+App Store. Con ella podéis instalar EasyWeather en cualquier iPhone, sin cables ni registros
 de dispositivo.
 
 ## Pasos para instalar
@@ -10,16 +10,16 @@ de dispositivo.
    es de Apple).
 2. Abrid el **enlace de invitación** que os pasará Jose María, desde el propio iPhone.
    - Si es un enlace público de TestFlight, se abre directamente en TestFlight y
-     aparece la app Meteo con un botón **Instalar** (o **Aceptar** y luego Instalar).
+     aparece la app EasyWeather con un botón **Instalar** (o **Aceptar** y luego Instalar).
    - Si os invita por correo, os llegará un email de TestFlight con un botón
      **Ver en TestFlight** / **Empezar a probar**.
-3. Pulsad **Instalar**. La app Meteo aparecerá en la pantalla de inicio como una app
+3. Pulsad **Instalar**. La app EasyWeather aparecerá en la pantalla de inicio como una app
    normal.
 
 ## Actualizaciones
 
 Cuando haya una versión nueva, TestFlight os avisa con una notificación. Abrís
-TestFlight y pulsáis **Actualizar** junto a Meteo. (A diferencia del modo desarrollo,
+TestFlight y pulsáis **Actualizar** junto a EasyWeather. (A diferencia del modo desarrollo,
 aquí no hace falta tener ningún ordenador encendido ni escanear códigos.)
 
 ## Cosas a tener en cuenta

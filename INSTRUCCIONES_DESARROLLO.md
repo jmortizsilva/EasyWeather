@@ -1,10 +1,10 @@
-# Cómo probar los cambios de la app Meteo sin gastar builds
+# Cómo probar los cambios de la app EasyWeather sin gastar builds
 
 Hasta ahora, cada cambio en la app nos obligaba a crear una build nueva en la web de
 Expo, y el plan gratuito tiene un límite mensual que se agotaba enseguida.
 
 Eso ya no es necesario. La app ahora usa lo que Expo llama un **development build**
-(build de desarrollo): una versión especial de la app "Meteo" que se instala una sola
+(build de desarrollo): una versión especial de la app "EasyWeather" que se instala una sola
 vez en el iPhone y que, a partir de ahí, carga el código directamente desde el
 ordenador de quien esté desarrollando. Los cambios de código normal (pantallas, textos,
 lógica) se ven al momento y **no consumen builds de Expo, sin límite**.
@@ -13,11 +13,11 @@ lógica) se ven al momento y **no consumen builds de Expo, sin límite**.
 
 1. Jose María os pasará un enlace de instalación de la build de desarrollo.
    Abridlo desde Safari en el iPhone y pulsad instalar. Aparecerá un icono nuevo
-   llamado **Meteo** en la pantalla de inicio.
+   llamado **EasyWeather** en la pantalla de inicio.
 2. La primera vez que abráis la app, si iOS dice que no confía en el desarrollador:
    Ajustes → General → VPN y gestión de dispositivos → confiar en el perfil.
 
-**Esta app "Meteo" sustituye a Expo Go.** Expo Go ya no sirve para este proyecto,
+**Esta app "EasyWeather" sustituye a Expo Go.** Expo Go ya no sirve para este proyecto,
 porque la app lleva componentes nativos (las pestañas nativas de iOS) que Expo Go no
 incluye.
 
@@ -30,7 +30,7 @@ incluye.
    ```
    (`--tunnel` hace que funcione aunque el iPhone y el ordenador no estén en la misma
    red wifi; si estáis en la misma wifi, basta con `npx expo start`).
-2. En el iPhone, abrid la app **Meteo** (no Expo Go). Se abre una pantalla de
+2. En el iPhone, abrid la app **EasyWeather** (no Expo Go). Se abre una pantalla de
    desarrollo con la opción de escanear un código QR.
 3. Escanead el QR que muestra la terminal del ordenador. La app carga el código actual.
 4. A partir de ahí, cada vez que se guarda un archivo en el ordenador, la app se
