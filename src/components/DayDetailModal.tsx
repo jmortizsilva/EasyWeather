@@ -34,9 +34,13 @@ export default function DayDetailModal({ visible, day, place, onClose }: Props) 
   const details = day ? buildDayDetails(day) : [];
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose} accessibilityViewIsModal>
-      <View style={styles.backdrop}>
-        <View style={styles.sheet}>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      {/* onAccessibilityEscape: gesto de escape de VoiceOver (frotar con dos dedos,
+          la "Z") para cerrar la ficha, igual que el "atrás" estándar del sistema.
+          Se pone tanto en el fondo como en el contenedor de la ficha (padre del
+          ScrollView, donde vive el foco) para que el gesto lo capture con seguridad. */}
+      <View style={styles.backdrop} onAccessibilityEscape={onClose}>
+        <View style={styles.sheet} accessibilityViewIsModal onAccessibilityEscape={onClose}>
           <View style={styles.grabber} importantForAccessibility="no" />
           <View style={styles.headerRow}>
             <View style={styles.headerText}>

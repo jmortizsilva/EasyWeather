@@ -13,9 +13,11 @@ interface DayRowProps {
 }
 
 // Fila de día "ajustable": VoiceOver verbaliza cada dato con flick vertical de un
-// dedo, sin rotor y sin doble toque (mismo rasgo que un deslizador de iOS). Flick
-// abajo avanza al siguiente dato, flick arriba vuelve al anterior; el doble toque
-// sigue abriendo la ficha completa del día.
+// dedo (mismo rasgo que un deslizador de iOS). Flick abajo avanza al siguiente dato,
+// flick arriba vuelve al anterior. Como en iOS un elemento solo puede tener un rol,
+// no puede ser "ajustable" y "botón" a la vez; para que la ficha completa siga siendo
+// descubrible sin depender de las pistas (que se pueden desactivar), se ofrece por dos
+// canales: el doble toque (acción "activar") y una acción personalizada del rotor.
 function DayRow({ day, isLast, onOpen }: DayRowProps) {
   const [detailIndex, setDetailIndex] = useState(-1);
   const details = buildDayDetails(day);
@@ -31,11 +33,16 @@ function DayRow({ day, isLast, onOpen }: DayRowProps) {
       accessibilityRole="adjustable"
       accessibilityLabel={label}
       accessibilityValue={current ? { text: `${current.title}: ${current.spoken}` } : { text: '' }}
-      accessibilityHint="Desliza arriba o abajo con un dedo para oír todos los datos del día. Doble toque para abrir la ficha completa"
-      accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }, { name: 'activate' }]}
+      accessibilityHint="Toca dos veces para abrir la ficha completa del día"
+      accessibilityActions={[
+        { name: 'increment' },
+        { name: 'decrement' },
+        { name: 'activate' },
+        { name: 'abrirFicha', label: 'Abrir ficha completa del día' },
+      ]}
       onAccessibilityAction={(event) => {
         const action = event.nativeEvent.actionName;
-        if (action === 'activate') {
+        if (action === 'activate' || action === 'abrirFicha') {
           onOpen();
           return;
         }
