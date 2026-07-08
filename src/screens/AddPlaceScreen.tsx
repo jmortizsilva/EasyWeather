@@ -50,7 +50,7 @@ export default function AddPlaceScreen() {
         value={citySearch}
         onChangeText={setCitySearch}
         placeholder="Busca una ciudad o pueblo"
-        placeholderTextColor="#8fa3bd"
+        placeholderTextColor="#c2d0e6"
         style={styles.input}
         accessibilityLabel="Buscar lugar"
         accessibilityHint="Escribe el nombre de una ciudad o pueblo para añadirlo a tus lugares"
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   rowMeta: {
-    color: '#a9bcd6',
+    color: '#c2d0e6',
     fontSize: 15,
     marginTop: 2,
   },

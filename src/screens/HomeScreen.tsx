@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   statusNote: {
-    color: '#8fa3bd',
+    color: '#c2d0e6',
     fontSize: 13,
   },
 });

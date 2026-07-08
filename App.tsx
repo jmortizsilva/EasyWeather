@@ -16,7 +16,7 @@ const navigationTheme = {
     background: '#0d1a2b',
     card: '#132740',
     border: '#244061',
-    primary: '#6eb4ff',
+    primary: '#7cbcff',
   },
 };
 
@@ -25,7 +25,11 @@ export default function App() {
     <PlacesProvider>
       <StatusBar style="light" />
       <NavigationContainer theme={navigationTheme}>
-        <Tab.Navigator tabBarStyle={{ backgroundColor: '#132740' }}>
+        <Tab.Navigator
+          tabBarStyle={{ backgroundColor: '#132740' }}
+          tabBarActiveTintColor="#7cbcff"
+          tabBarInactiveTintColor="#a9bcd6"
+        >
           <Tab.Screen
             name="Home"
             component={HomeScreen}

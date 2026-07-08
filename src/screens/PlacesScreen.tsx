@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   rowMeta: {
-    color: '#a9bcd6',
+    color: '#c2d0e6',
     fontSize: 15,
     marginTop: 2,
   },

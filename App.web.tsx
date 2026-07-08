@@ -20,7 +20,7 @@ const navigationTheme = {
     background: '#0d1a2b',
     card: '#132740',
     border: '#244061',
-    primary: '#6eb4ff',
+    primary: '#7cbcff',
   },
 };
 
@@ -33,8 +33,8 @@ export default function App() {
           screenOptions={{
             headerShown: false,
             tabBarStyle: { backgroundColor: '#132740', borderTopColor: '#244061' },
-            tabBarActiveTintColor: '#6eb4ff',
-            tabBarInactiveTintColor: '#9eb2ce',
+            tabBarActiveTintColor: '#7cbcff',
+            tabBarInactiveTintColor: '#a9bcd6',
           }}
         >
           <Tab.Screen
