@@ -1,5 +1,6 @@
+import { Ionicons } from '@expo/vector-icons';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
-import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import AddPlaceScreen from './src/screens/AddPlaceScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -7,7 +8,10 @@ import PlacesScreen from './src/screens/PlacesScreen';
 import { PlacesProvider } from './src/state/PlacesContext';
 import { TabParamList } from './src/navigation/types';
 
-const Tab = createNativeBottomTabNavigator<TabParamList>();
+// Variante solo para web: react-native-bottom-tabs no tiene soporte web, así que aquí
+// se usa el navegador de pestañas en JS. Sirve únicamente para poder verificar la app
+// en el navegador durante el desarrollo; en iOS/Android se usa App.tsx (pestañas nativas).
+const Tab = createBottomTabNavigator<TabParamList>();
 
 const navigationTheme = {
   ...DarkTheme,
@@ -25,13 +29,20 @@ export default function App() {
     <PlacesProvider>
       <StatusBar style="light" />
       <NavigationContainer theme={navigationTheme}>
-        <Tab.Navigator tabBarStyle={{ backgroundColor: '#132740' }}>
+        <Tab.Navigator
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: { backgroundColor: '#132740', borderTopColor: '#244061' },
+            tabBarActiveTintColor: '#6eb4ff',
+            tabBarInactiveTintColor: '#9eb2ce',
+          }}
+        >
           <Tab.Screen
             name="Home"
             component={HomeScreen}
             options={{
               tabBarLabel: 'Hoy',
-              tabBarIcon: () => ({ sfSymbol: 'sun.max.fill' }),
+              tabBarIcon: ({ color, size }) => <Ionicons name="sunny-outline" color={color} size={size} />,
             }}
           />
           <Tab.Screen
@@ -39,7 +50,7 @@ export default function App() {
             component={PlacesScreen}
             options={{
               tabBarLabel: 'Mis lugares',
-              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
+              tabBarIcon: ({ color, size }) => <Ionicons name="list-outline" color={color} size={size} />,
             }}
           />
           <Tab.Screen
@@ -47,8 +58,7 @@ export default function App() {
             component={AddPlaceScreen}
             options={{
               tabBarLabel: 'Añadir',
-              tabBarIcon: () => ({ sfSymbol: 'magnifyingglass' }),
-              role: 'search',
+              tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" color={color} size={size} />,
             }}
           />
         </Tab.Navigator>

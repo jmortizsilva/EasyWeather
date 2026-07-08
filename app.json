@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "aemet-tiempo",
-    "slug": "aemet-tiempo",
+    "name": "Tiempo",
+    "slug": "tiempo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -13,7 +13,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jmortizsilva.tiempo",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleDevelopmentRegion": "es",
+        "CFBundleLocalizations": ["es"],
+        "CFBundleAllowMixedLocalizations": true
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -25,6 +32,20 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "react-native-bottom-tabs",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bdc45482-63ad-4db7-b1cf-12e9a55b0479"
+      }
     }
   }
 }
