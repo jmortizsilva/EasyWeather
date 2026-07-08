@@ -33,4 +33,4 @@ https://open-meteo.com/en/terms para más información.
 
 ## Contacto
 
-Si tienes cualquier duda sobre esta política, escribe a: jmortizsilva@gmail.com
+Si tienes cualquier duda sobre esta política, escribe a: jmortizsilva (arroba) gmail (punto) com

@@ -78,9 +78,24 @@
 
     <h2>Contacto</h2>
     <p>
-      Si tienes cualquier duda sobre esta política, escribe a:
-      <a href="mailto:jmortizsilva@gmail.com">jmortizsilva@gmail.com</a>
+      Si tienes cualquier duda sobre esta política, puedes escribirnos por correo:
+      <!-- El correo se compone con JavaScript para dificultar su rastreo por robots de
+           spam; en un navegador normal se genera un enlace mailto accesible. -->
+      <span id="contacto-email"><noscript>jmortizsilva (arroba) gmail (punto) com</noscript></span>
     </p>
   </main>
+  <script>
+    (function () {
+      var user = 'jmortizsilva';
+      var domain = 'gmail' + '.' + 'com';
+      var addr = user + '@' + domain;
+      var link = document.createElement('a');
+      link.href = 'mailto:' + addr;
+      link.textContent = addr;
+      var holder = document.getElementById('contacto-email');
+      holder.textContent = '';
+      holder.appendChild(link);
+    })();
+  </script>
 </body>
 </html>
