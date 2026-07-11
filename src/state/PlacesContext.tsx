@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { createContext, ReactNode, useContext, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Alert } from 'react-native';
+import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getForecast } from '../services/openMeteo';
 import { Forecast, Place } from '../types';
 
@@ -26,7 +26,7 @@ interface PlacesContextValue {
   message: string;
   setActiveId: (id: string) => void;
   refreshCurrentLocation: () => Promise<void>;
-  reloadForecast: () => void;
+  reloadForecast: (silent?: boolean) => void;
   addPlace: (place: Place) => Promise<void>;
   removePlace: (id: string) => Promise<void>;
 }
@@ -43,6 +43,12 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [message, setMessage] = useState('Actualiza tu ubicación para empezar.');
   const forceReloadRef = useRef(false);
+  // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
+  // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
+  // que aún no haya nada en pantalla (primera carga), donde sí se muestra el indicador.
+  const silentReloadRef = useRef(false);
+  const forecastRef = useRef<Forecast | undefined>(undefined);
+  forecastRef.current = forecast;
 
   useEffect(() => {
     const loadStored = async () => {
@@ -92,7 +98,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    const loadForecast = async (force: boolean) => {
+    const loadForecast = async (force: boolean, silent: boolean) => {
       if (!force) {
         const [cachedRaw, tsRaw] = await Promise.all([
           AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${activeId}`),
@@ -104,8 +110,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
             const parsed = JSON.parse(cachedRaw) as Forecast;
             if (parsed?.days?.length > 0) {
               setForecast(parsed);
-              const mins = Math.floor(age / 60000);
-              setMessage(`Previsión en caché (hace ${mins} min) para ${place.name}`);
+              if (!silent) {
+                const mins = Math.floor(age / 60000);
+                setMessage(`Previsión en caché (hace ${mins} min) para ${place.name}`);
+              }
               return;
             }
           } catch {
@@ -114,8 +122,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         }
       }
 
-      setLoadingForecast(true);
-      setMessage(`Cargando previsión para ${place.name}...`);
+      if (!silent) {
+        setLoadingForecast(true);
+        setMessage(`Cargando previsión para ${place.name}...`);
+      }
       try {
         const data = await getForecast(place.lat, place.lon);
         setForecast(data);
@@ -123,8 +133,15 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${activeId}`, JSON.stringify(data)),
           AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${activeId}`, String(Date.now())),
         ]);
-        setMessage(`Previsión actualizada para ${place.name}`);
+        if (!silent) {
+          setMessage(`Previsión actualizada para ${place.name}`);
+        }
       } catch (error) {
+        // En una recarga silenciosa en segundo plano mantenemos los datos actuales
+        // sin molestar con un error.
+        if (silent) {
+          return;
+        }
         const rawError = String((error as Error).message ?? error);
         const cached = await AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${activeId}`);
         if (cached) {
@@ -142,13 +159,20 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         setForecast(undefined);
         setMessage(`Error de previsión: ${rawError}`);
       } finally {
-        setLoadingForecast(false);
+        if (!silent) {
+          setLoadingForecast(false);
+        }
       }
     };
 
     const force = forceReloadRef.current;
     forceReloadRef.current = false;
-    void loadForecast(force);
+    const silentRequested = silentReloadRef.current;
+    silentReloadRef.current = false;
+    // Silencioso solo si ya hay datos que mantener en pantalla; en la primera carga
+    // sí mostramos indicador aunque la recarga venga de un evento automático.
+    const silent = silentRequested && forecastRef.current !== undefined;
+    void loadForecast(force, silent);
   }, [activeId, currentLocationPlace, places, forecastReloadTick]);
 
   const refreshCurrentLocation = async () => {
@@ -190,10 +214,21 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const reloadForecast = () => {
+  const reloadForecast = useCallback((silent = false) => {
     forceReloadRef.current = true;
+    silentReloadRef.current = silent;
     setForecastReloadTick((v) => v + 1);
-  };
+  }, []);
+
+  // Refresca al volver la app a primer plano (reanudar desde segundo plano).
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        reloadForecast(true);
+      }
+    });
+    return () => sub.remove();
+  }, [reloadForecast]);
 
   const addPlace = async (place: Place) => {
     const next = [place, ...places.filter((p) => p.id !== place.id)];

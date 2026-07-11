@@ -41,7 +41,11 @@ export default function AddPlaceScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} accessibilityLabel="Pantalla Añadir lugar">
+    <ScrollView
+      contentContainerStyle={styles.content}
+      accessibilityLabel="Pantalla Añadir lugar"
+      keyboardShouldPersistTaps="handled"
+    >
       <Text style={styles.title} accessibilityRole="header">
         Añadir lugar
       </Text>

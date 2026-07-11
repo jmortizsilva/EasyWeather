@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import DayDetailModal from '../components/DayDetailModal';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
@@ -80,6 +81,14 @@ export default function HomeScreen() {
   } = usePlaces();
   const [openDay, setOpenDay] = useState<DayForecast | undefined>(undefined);
 
+  // Refresca la previsión cada vez que se entra en la pestaña Hoy (y, al ser la
+  // pestaña inicial, también al abrir la app). Silencioso si ya hay datos.
+  useFocusEffect(
+    useCallback(() => {
+      reloadForecast(true);
+    }, [reloadForecast])
+  );
+
   const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
   const currentInfo = describeWeatherCode(forecast?.current?.weatherCode);
   const today = forecast?.days[0];
@@ -96,7 +105,7 @@ export default function HomeScreen() {
         <Text style={styles.note}>Actualiza tu ubicación o añade un lugar en la pestaña Añadir.</Text>
       )}
 
-      {!loadingForecast && forecast && forecast.days.length > 0 && (
+      {forecast && forecast.days.length > 0 && (
         <View style={styles.currentCard}>
           <View
             accessible
@@ -141,7 +150,7 @@ export default function HomeScreen() {
         <ActivityIndicator color="#9ed3ff" accessibilityLabel="Cargando" accessibilityRole="progressbar" />
       )}
 
-      {!loadingForecast && forecast && forecast.days.length > 0 && (
+      {forecast && forecast.days.length > 0 && (
         <>
           <Text style={styles.sectionHeader} accessibilityRole="header">
             Próximos días

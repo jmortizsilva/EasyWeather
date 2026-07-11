@@ -47,16 +47,25 @@ export default function PlacesScreen() {
                 onPress={() => selectAndGoHome(place.id)}
                 accessibilityRole="button"
                 accessibilityLabel={`Ver previsión de ${place.name}`}
+                accessibilityHint="En el rotor de acciones tienes la opción de quitar este lugar"
                 accessibilityState={{ selected: activeId === place.id }}
+                accessibilityActions={[{ name: 'quitar', label: 'Quitar de mis lugares' }]}
+                onAccessibilityAction={(event) => {
+                  if (event.nativeEvent.actionName === 'quitar') {
+                    void removePlace(place.id);
+                  }
+                }}
               >
                 <Text style={styles.rowTitle}>{place.name}</Text>
                 <Text style={styles.rowMeta}>{place.admin1 ?? ''}</Text>
               </Pressable>
+              {/* Botón visible para quien NO usa VoiceOver; se oculta del árbol de
+                  accesibilidad porque para VoiceOver la acción va por el rotor. */}
               <Pressable
                 style={styles.removeButton}
                 onPress={() => void removePlace(place.id)}
-                accessibilityRole="button"
-                accessibilityLabel={`Quitar ${place.name}`}
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
               >
                 <Text style={styles.removeText}>Quitar</Text>
               </Pressable>
