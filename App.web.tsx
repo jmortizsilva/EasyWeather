@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
-import AddPlaceScreen from './src/screens/AddPlaceScreen';
+import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { PlacesProvider } from './src/state/PlacesContext';
@@ -54,10 +54,10 @@ export default function App() {
             }}
           />
           <Tab.Screen
-            name="AddPlace"
-            component={AddPlaceScreen}
+            name="Search"
+            component={SearchScreen}
             options={{
-              tabBarLabel: 'Añadir',
+              tabBarLabel: 'Buscar',
               tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" color={color} size={size} />,
             }}
           />

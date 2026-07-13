@@ -1,7 +1,7 @@
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { StatusBar } from 'expo-status-bar';
-import AddPlaceScreen from './src/screens/AddPlaceScreen';
+import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { PlacesProvider } from './src/state/PlacesContext';
@@ -47,10 +47,10 @@ export default function App() {
             }}
           />
           <Tab.Screen
-            name="AddPlace"
-            component={AddPlaceScreen}
+            name="Search"
+            component={SearchScreen}
             options={{
-              tabBarLabel: 'Añadir',
+              tabBarLabel: 'Buscar',
               tabBarIcon: () => ({ sfSymbol: 'magnifyingglass' }),
               role: 'search',
             }}

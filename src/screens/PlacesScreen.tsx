@@ -32,7 +32,7 @@ export default function PlacesScreen() {
       </View>
 
       {places.length === 0 && (
-        <Text style={styles.note}>Aún no has añadido ningún lugar. Ve a la pestaña Añadir para buscar uno.</Text>
+        <Text style={styles.note}>Aún no has añadido ningún lugar. Ve a la pestaña Buscar para encontrar uno.</Text>
       )}
 
       {places.length > 0 && (

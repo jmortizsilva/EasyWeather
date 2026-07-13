@@ -21,12 +21,15 @@ interface PlacesContextValue {
   activeId: string;
   activePlace: Place | undefined;
   forecast: Forecast | undefined;
+  /** Momento (epoch ms) en que se obtuvieron los datos que se están mostrando. */
+  forecastUpdatedAt: number | undefined;
   loadingForecast: boolean;
   loadingLocation: boolean;
   message: string;
   setActiveId: (id: string) => void;
   refreshCurrentLocation: () => Promise<void>;
   reloadForecast: (silent?: boolean) => void;
+  viewPlace: (place: Place) => void;
   addPlace: (place: Place) => Promise<void>;
   removePlace: (id: string) => Promise<void>;
 }
@@ -36,8 +39,11 @@ const PlacesContext = createContext<PlacesContextValue | undefined>(undefined);
 export function PlacesProvider({ children }: { children: ReactNode }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [currentLocationPlace, setCurrentLocationPlace] = useState<Place | undefined>(undefined);
+  // Lugar buscado que se está consultando sin haberlo guardado en "Mis lugares".
+  const [previewPlace, setPreviewPlace] = useState<Place | undefined>(undefined);
   const [activeId, setActiveId] = useState<string>(CURRENT_LOCATION_ID);
   const [forecast, setForecast] = useState<Forecast | undefined>(undefined);
+  const [forecastUpdatedAt, setForecastUpdatedAt] = useState<number | undefined>(undefined);
   const [forecastReloadTick, setForecastReloadTick] = useState(0);
   const [loadingForecast, setLoadingForecast] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -91,10 +97,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   }, [message]);
 
   useEffect(() => {
-    const place = activeId === CURRENT_LOCATION_ID ? currentLocationPlace : places.find((p) => p.id === activeId);
+    const place =
+      activeId === CURRENT_LOCATION_ID
+        ? currentLocationPlace
+        : places.find((p) => p.id === activeId) ?? (previewPlace?.id === activeId ? previewPlace : undefined);
 
     if (!place) {
       setForecast(undefined);
+      setForecastUpdatedAt(undefined);
       return;
     }
 
@@ -110,14 +120,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
             const parsed = JSON.parse(cachedRaw) as Forecast;
             if (parsed?.days?.length > 0) {
               setForecast(parsed);
+              setForecastUpdatedAt(tsRaw ? Number(tsRaw) : undefined);
               if (!silent) {
-                const mins = Math.floor(age / 60000);
-                setMessage(`Previsión en caché (hace ${mins} min) para ${place.name}`);
+                setMessage(`Previsión de ${place.name}`);
               }
               return;
             }
           } catch {
-            // cache corrupta, sigue con la petición remota
+            // datos guardados corruptos, sigue con la petición remota
           }
         }
       }
@@ -128,10 +138,12 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
       try {
         const data = await getForecast(place.lat, place.lon);
+        const now = Date.now();
         setForecast(data);
+        setForecastUpdatedAt(now);
         await Promise.all([
           AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${activeId}`, JSON.stringify(data)),
-          AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${activeId}`, String(Date.now())),
+          AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${activeId}`, String(now)),
         ]);
         if (!silent) {
           setMessage(`Previsión actualizada para ${place.name}`);
@@ -143,13 +155,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           return;
         }
         const rawError = String((error as Error).message ?? error);
-        const cached = await AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${activeId}`);
+        const [cached, cachedTs] = await Promise.all([
+          AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${activeId}`),
+          AsyncStorage.getItem(`${STORAGE_FORECAST_TS_PREFIX}${activeId}`),
+        ]);
         if (cached) {
           try {
             const parsed = JSON.parse(cached) as Forecast;
             if (parsed?.days?.length > 0) {
               setForecast(parsed);
-              setMessage(`Error de red (${rawError}). Mostrando previsión en caché.`);
+              setForecastUpdatedAt(cachedTs ? Number(cachedTs) : undefined);
+              setMessage('Sin conexión. Mostrando los últimos datos disponibles.');
               return;
             }
           } catch {
@@ -157,6 +173,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           }
         }
         setForecast(undefined);
+        setForecastUpdatedAt(undefined);
         setMessage(`Error de previsión: ${rawError}`);
       } finally {
         if (!silent) {
@@ -173,7 +190,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     // sí mostramos indicador aunque la recarga venga de un evento automático.
     const silent = silentRequested && forecastRef.current !== undefined;
     void loadForecast(force, silent);
-  }, [activeId, currentLocationPlace, places, forecastReloadTick]);
+  }, [activeId, currentLocationPlace, previewPlace, places, forecastReloadTick]);
 
   const refreshCurrentLocation = async () => {
     setLoadingLocation(true);
@@ -220,6 +237,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     setForecastReloadTick((v) => v + 1);
   }, []);
 
+  // Consulta la previsión de un lugar buscado sin necesidad de guardarlo antes.
+  const viewPlace = useCallback((place: Place) => {
+    setPreviewPlace(place);
+    setActiveId(place.id);
+    forceReloadRef.current = true;
+    setForecastReloadTick((v) => v + 1);
+  }, []);
+
   // Refresca al volver la app a primer plano (reanudar desde segundo plano).
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
@@ -251,7 +276,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const activePlace = activeId === CURRENT_LOCATION_ID ? currentLocationPlace : places.find((p) => p.id === activeId);
+  const activePlace =
+    activeId === CURRENT_LOCATION_ID
+      ? currentLocationPlace
+      : places.find((p) => p.id === activeId) ?? (previewPlace?.id === activeId ? previewPlace : undefined);
 
   const value: PlacesContextValue = {
     places,
@@ -259,12 +287,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     activeId,
     activePlace,
     forecast,
+    forecastUpdatedAt,
     loadingForecast,
     loadingLocation,
     message,
     setActiveId,
     refreshCurrentLocation,
     reloadForecast,
+    viewPlace,
     addPlace,
     removePlace,
   };

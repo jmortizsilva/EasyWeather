@@ -22,6 +22,15 @@ export interface DayForecast {
   precipitationSum?: number;
   sunrise?: string;
   sunset?: string;
+  // Datos lunares calculados en local con suncalc (Open-Meteo no los ofrece).
+  moonrise?: string;
+  moonset?: string;
+  /** Fase 0-1: 0 luna nueva, 0.25 cuarto creciente, 0.5 llena, 0.75 cuarto menguante. */
+  moonPhase?: number;
+  /** Fracción iluminada 0-1. */
+  moonIllumination?: number;
+  moonAlwaysUp?: boolean;
+  moonAlwaysDown?: boolean;
 }
 
 export interface CurrentConditions {

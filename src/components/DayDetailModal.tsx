@@ -10,9 +10,11 @@ interface Props {
   day: DayForecast | undefined;
   place: Place | undefined;
   onClose: () => void;
+  /** Oculta el resumen diario cuando ya se muestra fuera (p. ej. en la pantalla Hoy). */
+  showSummary?: boolean;
 }
 
-export default function DayDetailModal({ visible, day, place, onClose }: Props) {
+export default function DayDetailModal({ visible, day, place, onClose, showSummary = true }: Props) {
   const [hours, setHours] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,20 +64,24 @@ export default function DayDetailModal({ visible, day, place, onClose }: Props) 
           </View>
 
           <ScrollView>
-            <Text style={styles.sectionHeader} accessibilityRole="header">
-              Resumen del día
-            </Text>
-            {details.map((line) => (
-              <View
-                key={line.title}
-                style={styles.detailRow}
-                accessible
-                accessibilityLabel={`${line.title}: ${line.spoken}`}
-              >
-                <Text style={styles.detailTitle}>{line.title}</Text>
-                <Text style={styles.detailValue}>{line.value}</Text>
-              </View>
-            ))}
+            {showSummary && (
+              <>
+                <Text style={styles.sectionHeader} accessibilityRole="header">
+                  Resumen del día
+                </Text>
+                {details.map((line) => (
+                  <View
+                    key={line.title}
+                    style={styles.detailRow}
+                    accessible
+                    accessibilityLabel={`${line.title}: ${line.spoken}`}
+                  >
+                    <Text style={styles.detailTitle}>{line.title}</Text>
+                    <Text style={styles.detailValue}>{line.value}</Text>
+                  </View>
+                ))}
+              </>
+            )}
 
             <Text style={styles.sectionHeader} accessibilityRole="header">
               Por horas

@@ -1,5 +1,6 @@
 import { DayForecast } from '../types';
 import { describeUvIndex, describeWindDirection } from './meteo';
+import { describeMoonPhase } from './moon';
 
 export function formatTime(timeISO: string | undefined): string | undefined {
   if (!timeISO) {
@@ -79,5 +80,63 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
     lines.push({ title: 'Sol', value, spoken: value });
   }
 
+  if (day.moonPhase !== undefined || day.moonIllumination !== undefined) {
+    const { name, emoji } = describeMoonPhase(day.moonPhase);
+    const illum = day.moonIllumination !== undefined ? Math.round(day.moonIllumination * 100) : undefined;
+    const illumValue = illum !== undefined ? `, ${illum}% iluminada` : '';
+    const illumSpoken = illum !== undefined ? `, ${illum} por ciento iluminada` : '';
+    lines.push({
+      title: 'Luna',
+      value: `${emoji} ${name}${illumValue}`,
+      spoken: `${name}${illumSpoken}`,
+    });
+  }
+
+  const moonrise = formatTime(day.moonrise);
+  const moonset = formatTime(day.moonset);
+  if (moonrise || moonset || day.moonAlwaysUp || day.moonAlwaysDown) {
+    let value: string;
+    if (day.moonAlwaysUp) {
+      value = 'sobre el horizonte todo el día';
+    } else if (day.moonAlwaysDown) {
+      value = 'bajo el horizonte todo el día';
+    } else if (moonrise && moonset) {
+      value = `sale a las ${moonrise}, se pone a las ${moonset}`;
+    } else if (moonrise) {
+      value = `sale a las ${moonrise}`;
+    } else {
+      value = `se pone a las ${moonset}`;
+    }
+    lines.push({ title: 'Salida y puesta de la luna', value, spoken: value });
+  }
+
   return lines;
+}
+
+// Describe cuándo se obtuvieron los datos por última vez, en lenguaje natural y sin
+// tecnicismos: "hace 3 minutos" mientras es reciente y, si no, la hora concreta.
+export function formatUpdatedAt(timestamp: number | undefined): string | undefined {
+  if (!timestamp || !Number.isFinite(timestamp)) {
+    return undefined;
+  }
+
+  const diffMin = Math.floor((Date.now() - timestamp) / 60000);
+  if (diffMin < 1) {
+    return 'hace un momento';
+  }
+  if (diffMin === 1) {
+    return 'hace 1 minuto';
+  }
+  if (diffMin < 60) {
+    return `hace ${diffMin} minutos`;
+  }
+
+  const date = new Date(timestamp);
+  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  const sameDay = new Date().toDateString() === date.toDateString();
+  if (sameDay) {
+    return `a las ${time}`;
+  }
+  const day = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+  return `el ${day} a las ${time}`;
 }

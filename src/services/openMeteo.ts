@@ -1,4 +1,5 @@
 import { DayForecast, Forecast, HourlyForecast, Place } from '../types';
+import { computeMoonInfo } from '../utils/moon';
 import { toNumber } from '../utils/text';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -99,6 +100,7 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
     uvMax: toNumber(payload?.daily?.uv_index_max?.[index]),
     sunrise: payload?.daily?.sunrise?.[index],
     sunset: payload?.daily?.sunset?.[index],
+    ...computeMoonInfo(date, lat, lon),
   }));
 
   if (days.length === 0) {

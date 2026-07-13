@@ -4,7 +4,7 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import DayDetailModal from '../components/DayDetailModal';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { DayForecast } from '../types';
-import { buildDayDetails, formatFullDate, formatTime } from '../utils/dayDetails';
+import { buildDayDetails, formatFullDate, formatUpdatedAt } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 interface DayRowProps {
@@ -13,12 +13,11 @@ interface DayRowProps {
   onOpen: () => void;
 }
 
-// Fila de día "ajustable": VoiceOver verbaliza cada dato con flick vertical de un
-// dedo (mismo rasgo que un deslizador de iOS). Flick abajo avanza al siguiente dato,
-// flick arriba vuelve al anterior. Como en iOS un elemento solo puede tener un rol,
-// no puede ser "ajustable" y "botón" a la vez; para que la ficha completa siga siendo
-// descubrible sin depender de las pistas (que se pueden desactivar), se ofrece por dos
-// canales: el doble toque (acción "activar") y una acción personalizada del rotor.
+// Fila de día "ajustable": VoiceOver verbaliza cada dato con flick vertical de un dedo
+// (flick abajo avanza al siguiente dato, flick arriba vuelve al anterior) y el doble toque
+// abre la ficha completa. Las acciones estándar (increment/decrement/activate) se manejan en
+// onAccessibilityAction pero NO se declaran en accessibilityActions a propósito: declararlas
+// las hacía aparecer como acciones del rotor, algo que el usuario no quiere.
 function DayRow({ day, isLast, onOpen }: DayRowProps) {
   const [detailIndex, setDetailIndex] = useState(-1);
   const details = buildDayDetails(day);
@@ -35,15 +34,9 @@ function DayRow({ day, isLast, onOpen }: DayRowProps) {
       accessibilityLabel={label}
       accessibilityValue={current ? { text: `${current.title}: ${current.spoken}` } : { text: '' }}
       accessibilityHint="Toca dos veces para abrir la ficha completa del día"
-      accessibilityActions={[
-        { name: 'increment' },
-        { name: 'decrement' },
-        { name: 'activate' },
-        { name: 'abrirFicha', label: 'Abrir ficha completa del día' },
-      ]}
       onAccessibilityAction={(event) => {
         const action = event.nativeEvent.actionName;
-        if (action === 'activate' || action === 'abrirFicha') {
+        if (action === 'activate') {
           onOpen();
           return;
         }
@@ -73,13 +66,14 @@ export default function HomeScreen() {
     activeId,
     activePlace,
     forecast,
+    forecastUpdatedAt,
     loadingForecast,
     loadingLocation,
     message,
     refreshCurrentLocation,
     reloadForecast,
   } = usePlaces();
-  const [openDay, setOpenDay] = useState<DayForecast | undefined>(undefined);
+  const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(undefined);
 
   // Refresca la previsión cada vez que se entra en la pestaña Hoy (y, al ser la
   // pestaña inicial, también al abrir la app). Silencioso si ya hay datos.
@@ -92,8 +86,9 @@ export default function HomeScreen() {
   const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
   const currentInfo = describeWeatherCode(forecast?.current?.weatherCode);
   const today = forecast?.days[0];
-  const sunrise = formatTime(today?.sunrise);
-  const sunset = formatTime(today?.sunset);
+  const todayDetails = today ? buildDayDetails(today) : [];
+  const upcomingDays = forecast?.days.slice(1) ?? [];
+  const updatedAt = formatUpdatedAt(forecastUpdatedAt);
 
   return (
     <ScrollView contentContainerStyle={styles.content} accessibilityLabel="Pantalla Hoy">
@@ -102,31 +97,49 @@ export default function HomeScreen() {
           {activePlace.name}
         </Text>
       ) : (
-        <Text style={styles.note}>Actualiza tu ubicación o añade un lugar en la pestaña Añadir.</Text>
+        <Text style={styles.note}>Actualiza tu ubicación o busca un lugar en la pestaña Buscar.</Text>
       )}
 
-      {forecast && forecast.days.length > 0 && (
+      {today && (
         <View style={styles.currentCard}>
           <View
             accessible
-            accessibilityLabel={`Ahora mismo: ${forecast.current?.temperature ?? '-'} grados, ${currentInfo.label}`}
+            accessibilityLabel={`Ahora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}
           >
-            <Text style={styles.currentTemp}>
-              {forecast.current?.temperature ?? '-'}º
-            </Text>
+            <Text style={styles.currentTemp}>{forecast?.current?.temperature ?? '-'}º</Text>
             <Text style={styles.currentSky}>
               {currentInfo.emoji} {currentInfo.label}
             </Text>
           </View>
 
-          {sunrise && sunset && (
-            <Text
-              style={styles.sunLine}
-              accessibilityLabel={`Amanece a las ${sunrise}, anochece a las ${sunset}`}
-            >
-              ☀️ {sunrise} · 🌙 {sunset}
+          {updatedAt && (
+            <Text style={styles.updatedLine} accessibilityLabel={`Datos actualizados ${updatedAt}`}>
+              Actualizado {updatedAt}
             </Text>
           )}
+
+          <View style={styles.detailList}>
+            {todayDetails.map((line) => (
+              <View
+                key={line.title}
+                style={styles.detailRow}
+                accessible
+                accessibilityLabel={`${line.title}: ${line.spoken}`}
+              >
+                <Text style={styles.detailTitle}>{line.title}</Text>
+                <Text style={styles.detailValue}>{line.value}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Pressable
+            style={styles.buttonSecondary}
+            onPress={() => setDetail({ day: today, showSummary: false })}
+            accessibilityRole="button"
+            accessibilityLabel="Ver hoy hora a hora"
+          >
+            <Text style={styles.buttonSecondaryText}>Hoy hora a hora</Text>
+          </Pressable>
         </View>
       )}
 
@@ -150,31 +163,32 @@ export default function HomeScreen() {
         <ActivityIndicator color="#9ed3ff" accessibilityLabel="Cargando" accessibilityRole="progressbar" />
       )}
 
-      {forecast && forecast.days.length > 0 && (
+      {upcomingDays.length > 0 && (
         <>
           <Text style={styles.sectionHeader} accessibilityRole="header">
             Próximos días
           </Text>
           <View style={styles.daysCard}>
-            {forecast.days.map((day, index) => (
+            {upcomingDays.map((day, index) => (
               <DayRow
                 key={day.date}
                 day={day}
-                isLast={index === forecast.days.length - 1}
-                onOpen={() => setOpenDay(day)}
+                isLast={index === upcomingDays.length - 1}
+                onOpen={() => setDetail({ day, showSummary: true })}
               />
             ))}
           </View>
         </>
       )}
-      {!loadingForecast && !forecast && <Text style={styles.note}>No hay datos ahora mismo.</Text>}
+      {!loadingForecast && !forecast && <Text style={styles.note}>Todavía no hay datos disponibles.</Text>}
       <Text style={styles.statusNote}>{message}</Text>
 
       <DayDetailModal
-        visible={openDay !== undefined}
-        day={openDay}
+        visible={detail !== undefined}
+        day={detail?.day}
         place={activePlace}
-        onClose={() => setOpenDay(undefined)}
+        showSummary={detail?.showSummary ?? true}
+        onClose={() => setDetail(undefined)}
       />
     </ScrollView>
   );
@@ -197,7 +211,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     gap: 12,
-    alignItems: 'center',
   },
   currentTemp: {
     color: '#ffffff',
@@ -210,9 +223,34 @@ const styles = StyleSheet.create({
     fontSize: 17,
     textAlign: 'center',
   },
-  sunLine: {
+  updatedLine: {
     color: '#b8c6dc',
     fontSize: 15,
+    textAlign: 'center',
+  },
+  detailList: {
+    marginTop: 4,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    minHeight: 44,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: '#2a4367',
+  },
+  detailTitle: {
+    color: '#b8c6dc',
+    fontSize: 15,
+  },
+  detailValue: {
+    color: '#f4f8ff',
+    fontSize: 17,
+    fontWeight: '600',
+    flexShrink: 1,
+    textAlign: 'right',
   },
   buttonPrimary: {
     borderRadius: 12,
@@ -224,6 +262,19 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  buttonSecondary: {
+    borderRadius: 12,
+    backgroundColor: '#0e2238',
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+  },
+  buttonSecondaryText: {
+    color: '#dbe8ff',
     fontSize: 17,
     fontWeight: '600',
   },
