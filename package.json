@@ -1,5 +1,5 @@
 {
-  "name": "aemet-tiempo",
+  "name": "easyweather",
   "version": "1.0.0",
   "main": "index.ts",
   "scripts": {
