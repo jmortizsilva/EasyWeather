@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cómo crear apps accesibles para iPhone con Claude, desde cero</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 18px;
+      line-height: 1.65;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 24px 20px 72px;
+      color: #14202e;
+      background: #ffffff;
+    }
+    h1 { font-size: 2rem; line-height: 1.25; margin-bottom: 0.3em; }
+    h2 { font-size: 1.4rem; margin-top: 2em; border-top: 1px solid #d7dde6; padding-top: 1em; }
+    h3 { font-size: 1.15rem; margin-top: 1.4em; }
+    a { color: #0b5cad; }
+    code {
+      font-family: Consolas, "Courier New", monospace;
+      background: #eef1f5;
+      padding: 0.1em 0.35em;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+    pre {
+      background: #eef1f5;
+      padding: 12px 14px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    pre code { background: none; padding: 0; }
+    ul, ol { padding-left: 1.4em; }
+    li { margin-bottom: 0.5em; }
+    nav.toc { background: #f4f6f9; border-radius: 10px; padding: 12px 20px; }
+    nav.toc h2 { border: 0; margin-top: 0.4em; padding-top: 0; font-size: 1.15rem; }
+    .intro { font-size: 1.05rem; }
+    @media (prefers-color-scheme: dark) {
+      body { color: #e6edf6; background: #0d1a2b; }
+      h2 { border-top-color: #2a4367; }
+      a { color: #7cbcff; }
+      code, pre { background: #132740; }
+      nav.toc { background: #132740; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Cómo crear apps accesibles para iPhone con Claude, desde cero</h1>
+
+    <p class="intro">
+      Esta guía es para empezar sin saber nada: nada de programación, ni de Expo, ni de
+      comandos. Está pensada para Windows y para usarse con lector de pantalla. La vas a
+      poder seguir paso a paso, y si algo se atasca, tu hermano (que ya lo ha hecho) puede
+      echarte una mano.
+    </p>
+    <p>
+      Léela entera una vez para hacerte una idea general y luego vuelve a la parte que
+      necesites. No hace falta memorizar nada.
+    </p>
+
+    <nav class="toc" aria-label="Índice de contenidos">
+      <h2>Contenido</h2>
+      <ol>
+        <li><a href="#s1">Qué vas a conseguir y cómo funciona</a></li>
+        <li><a href="#s2">Las cuentas que necesitas</a></li>
+        <li><a href="#s3">Instalar los programas base en Windows</a></li>
+        <li><a href="#s4">Instalar Claude (el asistente que programa por ti)</a></li>
+        <li><a href="#s5">Instalar la herramienta de compilación de Expo</a></li>
+        <li><a href="#s6">Cómo trabajar con Claude en el día a día</a></li>
+        <li><a href="#s7">Probar la app en tu iPhone</a></li>
+        <li><a href="#s8">Compartir la app con otras personas (TestFlight)</a></li>
+        <li><a href="#s9">Errores típicos de principiante</a></li>
+        <li><a href="#s10">Pequeño glosario</a></li>
+        <li><a href="#s11">Resumen de comandos</a></li>
+      </ol>
+    </nav>
+
+    <h2 id="s1">1. Qué vas a conseguir y cómo funciona</h2>
+    <p>
+      Vas a crear una aplicación para iPhone <strong>sin escribir código tú mismo</strong>
+      y <strong>sin tener un Mac</strong>. La idea es esta:
+    </p>
+    <ul>
+      <li>Le describes con tus palabras (en español normal) qué quieres que haga la app.</li>
+      <li>
+        <strong>Claude</strong> (el asistente de inteligencia artificial) escribe y
+        modifica el código por ti. Tú no tienes que entender el código: solo probar la app
+        y decir qué cambiar.
+      </li>
+      <li>
+        La app se construye con una tecnología llamada <strong>Expo</strong>, que permite
+        crear apps de iPhone desde un ordenador Windows, compilándolas en la nube (los
+        servidores de Expo lo hacen por ti).
+      </li>
+      <li>
+        Puedes <strong>probarla en tu propio iPhone</strong> y, como usas lector de
+        pantalla, la revisas con <strong>VoiceOver</strong> igual que cualquier otra app.
+      </li>
+    </ul>
+    <p>
+      Este flujo de trabajo es muy cómodo con lector de pantalla, porque casi todo es
+      <strong>texto</strong>: tú escribes lo que quieres, lees las respuestas de Claude, y
+      la parte visual (ver la app) la resuelves probándola con VoiceOver en el móvil o
+      pidiéndole a Claude que te describa y verifique las cosas.
+    </p>
+
+    <h2 id="s2">2. Las cuentas que necesitas (créalas antes de empezar)</h2>
+    <p>Tres cuentas. Dos son gratis; una es de pago.</p>
+    <ol>
+      <li>
+        <strong>Cuenta de Claude.</strong> Es el asistente que escribe el código. Se usa
+        desde la web (página <code>claude.ai</code>) o desde su aplicación de escritorio
+        para Windows. En el apartado 4 se explica cómo instalarlo.
+      </li>
+      <li>
+        <strong>Cuenta de Expo (gratis).</strong> Es el servicio que compila la app en la
+        nube. Ve a <code>expo.dev</code> y regístrate con tu correo. Apunta el usuario y la
+        contraseña.
+      </li>
+      <li>
+        <strong>Cuenta de desarrollador de Apple (de pago, unos 99 dólares al año).</strong>
+        Es <strong>obligatoria</strong> para instalar la app en iPhones y para usar
+        TestFlight (que explico al final). Ve a <code>developer.apple.com</code> y date de
+        alta en el "Apple Developer Program". El alta puede tardar un rato o algún día en
+        activarse. Necesitarás tu Apple ID (el mismo del iPhone) con la verificación en dos
+        pasos activada (te llega un código a tus dispositivos Apple al iniciar sesión).
+      </li>
+    </ol>
+
+    <h2 id="s3">3. Instalar los programas base en Windows</h2>
+    <p>
+      Vas a instalar unas pocas herramientas. Todos los instaladores son asistentes
+      normales de Windows: se recorren con el tabulador y las flechas, y se confirma con
+      Intro. NVDA o JAWS los leen sin problema.
+    </p>
+    <ol>
+      <li>
+        <strong>Node.js.</strong> Es el motor que necesitan las herramientas de Expo. Ve a
+        <code>nodejs.org</code> y descarga la versión marcada como <strong>LTS</strong> (la
+        recomendada). Ejecuta el instalador y acepta las opciones por defecto.
+      </li>
+      <li>
+        <strong>Git.</strong> Sirve para guardar el historial de cambios del proyecto;
+        Claude y Expo lo usan. Ve a <code>git-scm.com</code>, descarga la versión para
+        Windows e instala con las opciones por defecto.
+      </li>
+      <li>
+        <strong>Comprobar que funcionan.</strong> Abre la aplicación <strong>Terminal</strong>
+        de Windows (o <strong>PowerShell</strong>; ambas vienen con Windows y son
+        accesibles). Escribe estas dos líneas, una cada vez, y pulsa Intro. Si cada una
+        responde con un número de versión, todo va bien:
+        <pre><code>node --version
+git --version</code></pre>
+      </li>
+    </ol>
+    <p>
+      Nota sobre la terminal: es una ventana de texto donde escribes comandos. Con lector
+      de pantalla se maneja muy bien; lo que escribes y lo que responde el ordenador se leen
+      como texto normal.
+    </p>
+
+    <h2 id="s4">4. Instalar Claude (el asistente que programa por ti)</h2>
+    <p>
+      Claude, en su versión para programar, se llama <strong>Claude Code</strong>. En
+      Windows tienes dos formas cómodas de usarlo:
+    </p>
+    <ul>
+      <li>
+        <strong>Aplicación de escritorio para Windows</strong> (la más sencilla para
+        empezar). Se descarga desde la web de Claude. Es una ventana donde escribes lo que
+        quieres y lees sus respuestas.
+      </li>
+      <li>
+        <strong>Versión web</strong>, entrando en <code>claude.ai/code</code> desde el
+        navegador.
+      </li>
+    </ul>
+    <p>
+      Recomendación: usa la <strong>aplicación de escritorio</strong>, que es la que usa tu
+      hermano, así os resulta más fácil compararla si te atascas. Al abrirla, le indicas la
+      carpeta de tu proyecto y ya puedes empezar a hablar con Claude.
+    </p>
+    <p>
+      (Si en algún momento ves instrucciones que mencionan escribir <code>claude</code> en
+      la terminal, es otra manera de usar el mismo Claude Code desde la ventana de comandos.
+      No es necesaria para empezar.)
+    </p>
+
+    <h2 id="s5">5. Instalar la herramienta de compilación de Expo</h2>
+    <p>
+      Falta una herramienta más, llamada <strong>EAS</strong>, que es la que ordena a Expo
+      compilar la app en la nube. Se instala desde la terminal. Abre la Terminal y escribe:
+    </p>
+    <pre><code>npm install -g eas-cli</code></pre>
+    <p>Cuando termine, inicia sesión con tu cuenta de Expo (la del paso 2):</p>
+    <pre><code>eas login</code></pre>
+    <p>
+      Te pedirá el usuario y la contraseña de Expo. Esto solo hay que hacerlo una vez.
+    </p>
+
+    <h2 id="s6">6. Cómo trabajar con Claude en el día a día</h2>
+    <p>Aquí está lo importante, y es más fácil de lo que parece.</p>
+    <ol>
+      <li><strong>Abre tu proyecto en Claude</strong> (la carpeta donde vive la app).</li>
+      <li>
+        <strong>Pídele las cosas con tus palabras</strong>, de una en una. Por ejemplo:
+        "Quiero una app del tiempo que muestre la previsión de mi ciudad" o "Añade un botón
+        para guardar lugares".
+      </li>
+      <li>
+        <strong>Deja que Claude escriba el código.</strong> No tienes que entenderlo. Él te
+        irá explicando qué hace y qué ha cambiado.
+      </li>
+      <li>
+        <strong>Prueba y da tu opinión.</strong> Le dices qué está bien y qué no, y él lo
+        ajusta. Es una conversación: puedes corregirle todas las veces que haga falta.
+      </li>
+    </ol>
+    <p>Consejos para principiante:</p>
+    <ul>
+      <li>Pide <strong>un cambio cada vez</strong>; así es más fácil probar si ha quedado bien.</li>
+      <li>Si no entiendes algo, dile "explícamelo en lenguaje sencillo". Está para eso.</li>
+      <li>
+        Cuéntale desde el principio que <strong>eres usuario de lector de pantalla</strong>
+        y que la app <strong>tiene que ser accesible con VoiceOver</strong>. Puedes darle
+        preferencias concretas, por ejemplo: que las fechas se lean completas, que los datos
+        se puedan recorrer con gestos, o que haya buen contraste. Cuanto más claro seas,
+        mejor lo hará.
+      </li>
+      <li>
+        Claude <strong>no puede iniciar sesión por ti</strong> en Apple ni en sitios que
+        pidan contraseña o el código de verificación. Esos pasos concretos los harás tú en
+        tu terminal; él te va guiando y tú le pegas lo que salga.
+      </li>
+    </ul>
+
+    <h2 id="s7">7. Probar la app en tu iPhone</h2>
+    <p>Para ver la app en tu móvil hay dos situaciones:</p>
+    <ul>
+      <li>
+        <strong>Al principio, cuando la app es sencilla</strong>, puedes usar una aplicación
+        gratuita llamada <strong>Expo Go</strong> (se descarga del App Store). Con ella, y
+        ejecutando en el ordenador el comando <code>npx expo start</code>, escaneas un código
+        y la app aparece en tu iPhone al momento, con VoiceOver y todo.
+      </li>
+      <li>
+        <strong>Cuando la app crece</strong> y usa componentes más avanzados, Expo Go deja de
+        servir y hay que crear una <strong>"build de desarrollo"</strong>: una versión
+        especial de tu app que se instala una sola vez en el iPhone (compilándola con
+        <code>eas build</code>), y que a partir de ahí carga los cambios desde el ordenador
+        igual de rápido. Claude te avisará cuando se llegue a ese punto y te dará los
+        comandos.
+      </li>
+    </ul>
+    <p>
+      En ambos casos, la gracia es que <strong>los cambios de código normales se ven al
+      instante</strong> en el móvil, sin tener que compilar cada vez. Solo hace falta
+      compilar de nuevo cuando se cambian cosas "de fondo" (el icono, el nombre, permisos,
+      etc.).
+    </p>
+    <p>
+      Y lo mejor para ti: pruebas la app con <strong>VoiceOver</strong> directamente, así
+      compruebas tú mismo si se lee bien y se navega bien.
+    </p>
+
+    <h2 id="s8">8. Compartir la app con otras personas (TestFlight)</h2>
+    <p>
+      Cuando la app esté lista para que la usen más personas, se distribuye con
+      <strong>TestFlight</strong>, la aplicación oficial de Apple para probar apps antes de
+      que estén en la tienda. Con ella, cualquiera puede instalarla en su iPhone con solo un
+      enlace o una invitación por correo.
+    </p>
+    <p>El camino, muy resumido (Claude te acompaña en cada paso):</p>
+    <ol>
+      <li>Compilar la versión final: <code>eas build --platform ios --profile production</code>.</li>
+      <li>Subirla a Apple: <code>eas submit --platform ios --profile production --latest</code>.</li>
+      <li>
+        En la web <code>appstoreconnect.apple.com</code>, en la sección TestFlight, invitar a
+        las personas que van a probarla.
+      </li>
+    </ol>
+    <p>
+      Para invitar a personas de fuera de tu equipo, Apple pide una <strong>política de
+      privacidad</strong> (una página web sencilla que explica qué datos usa la app) y una
+      pequeña <strong>revisión</strong> que suele aprobarse en menos de un día. Claude te
+      ayuda a redactar y publicar esa página.
+    </p>
+
+    <h2 id="s9">9. Errores típicos de principiante (y cómo evitarlos)</h2>
+    <p>Estos son tropiezos habituales al empezar. Que no te asusten: tienen solución fácil.</p>
+    <ul>
+      <li>
+        <strong>Expo Go deja de abrir la app.</strong> Es normal cuando la app ya usa
+        componentes nativos. La solución es crear la "build de desarrollo" (paso 7). Claude
+        te avisa cuando toca.
+      </li>
+      <li>
+        <strong>Al instalar una versión, desaparece la otra.</strong> En el iPhone, dos apps
+        con el mismo "identificador" se consideran la misma y se sustituyen. Si quieres tener
+        a la vez la versión de pruebas y la definitiva, hay que darles identificadores y
+        nombres distintos. Es un ajuste que Claude hace en un momento.
+      </li>
+      <li>
+        <strong>Apple te pide un código al iniciar sesión.</strong> Es la verificación en dos
+        pasos: el código llega a tus dispositivos Apple. Tenlos a mano.
+      </li>
+      <li>
+        <strong>El nombre de la app en la tienda ya está cogido.</strong> El nombre público
+        debe ser único en toda la App Store; si "Tiempo" está ocupado, se elige otro, por
+        ejemplo "EasyWeather".
+      </li>
+      <li>
+        <strong>Algún símbolo se lee raro con VoiceOver.</strong> Pasa, por ejemplo, con el
+        símbolo de grados. Si notas algo así, díselo a Claude y lo corrige para que se lea
+        bien.
+      </li>
+      <li>
+        <strong>Ten paciencia con la primera configuración de Apple y Expo.</strong> La
+        primera vez lleva su tiempo (cuentas, permisos, certificados). Después, el día a día
+        es rápido.
+      </li>
+    </ul>
+
+    <h2 id="s10">10. Pequeño glosario</h2>
+    <ul>
+      <li><strong>Claude / Claude Code:</strong> el asistente de inteligencia artificial que escribe el código por ti a partir de lo que le pides en lenguaje normal.</li>
+      <li><strong>Expo:</strong> la tecnología con la que se construye la app; permite hacer apps de iPhone desde Windows.</li>
+      <li><strong>EAS:</strong> la parte de Expo que compila la app en la nube y la envía a Apple.</li>
+      <li><strong>Build:</strong> una versión compilada de la app, lista para instalar.</li>
+      <li><strong>Build de desarrollo:</strong> una versión para ir probando cambios rápido en tu iPhone.</li>
+      <li><strong>TestFlight:</strong> la app de Apple para que otras personas prueben tu app antes de la tienda.</li>
+      <li><strong>Terminal (o PowerShell):</strong> la ventana de texto donde se escriben comandos.</li>
+      <li><strong>Comando:</strong> una instrucción de una línea que escribes en la terminal.</li>
+      <li><strong>npm:</strong> el instalador de herramientas que viene con Node.js.</li>
+      <li><strong>Identificador de paquete:</strong> el "nombre técnico" único de la app dentro de iOS (por ejemplo, algo como <code>com.tunombre.miapp</code>).</li>
+      <li><strong>VoiceOver:</strong> el lector de pantalla del iPhone, con el que probarás la accesibilidad.</li>
+    </ul>
+
+    <h2 id="s11">11. Resumen de comandos (para reconocerlos)</h2>
+    <p>
+      Normalmente Claude ejecuta o te dicta estos comandos; no hace falta que te los
+      aprendas, pero está bien reconocerlos:
+    </p>
+    <ul>
+      <li><code>node --version</code> y <code>git --version</code>: comprobar que Node.js y Git están instalados.</li>
+      <li><code>npm install -g eas-cli</code>: instalar la herramienta de compilación de Expo.</li>
+      <li><code>eas login</code>: iniciar sesión en Expo.</li>
+      <li><code>npx expo start</code>: arrancar la app para probarla en el iPhone (recarga en caliente).</li>
+      <li><code>eas build --platform ios --profile development</code>: crear la versión de pruebas.</li>
+      <li><code>eas build --platform ios --profile production</code>: crear la versión final.</li>
+      <li><code>eas submit --platform ios --profile production --latest</code>: enviarla a TestFlight.</li>
+    </ul>
+
+    <h2>En resumen</h2>
+    <p>
+      No necesitas saber programar ni tener un Mac. Necesitas: las tres cuentas (Claude, Expo
+      y Apple), instalar Node.js, Git y la herramienta EAS, y luego <strong>hablar con Claude
+      en español</strong> para que construya la app contigo, probándola con VoiceOver en tu
+      iPhone. Ve paso a paso, pide las cosas de una en una, y apóyate en tu hermano para las
+      primeras veces.
+    </p>
+  </main>
+</body>
+</html>
