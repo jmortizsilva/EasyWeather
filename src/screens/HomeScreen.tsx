@@ -13,11 +13,19 @@ interface DayRowProps {
   onOpen: () => void;
 }
 
-// Fila de día "ajustable": VoiceOver verbaliza cada dato con flick vertical de un dedo
-// (flick abajo avanza al siguiente dato, flick arriba vuelve al anterior) y el doble toque
-// abre la ficha completa. Las acciones estándar (increment/decrement/activate) se manejan en
-// onAccessibilityAction pero NO se declaran en accessibilityActions a propósito: declararlas
-// las hacía aparecer como acciones del rotor, algo que el usuario no quiere.
+// En iOS los rasgos de accesibilidad son un bitmask, así que un elemento SÍ puede ser
+// "ajustable" y "botón" a la vez. React Native no lo documenta, pero su conversor de props
+// acepta un array en accessibilityRole y combina los rasgos con OR (ver en ReactCommon
+// accessibilityPropsConversions.h; el propio rol "imagebutton" es Image | Button). El tipo
+// de TypeScript solo admite una cadena, de ahí el cast.
+const ADJUSTABLE_BUTTON = ['adjustable', 'button'] as unknown as 'adjustable';
+
+// Fila de día "ajustable" + "botón": VoiceOver anuncia que se puede pulsar y, además,
+// verbaliza cada dato con flick vertical de un dedo (flick abajo avanza al siguiente dato,
+// flick arriba vuelve al anterior). El doble toque abre la ficha completa. Las acciones
+// estándar (increment/decrement/activate) se manejan en onAccessibilityAction pero NO se
+// declaran en accessibilityActions a propósito: declararlas las hacía aparecer como
+// acciones del rotor, algo que el usuario no quiere.
 function DayRow({ day, isLast, onOpen }: DayRowProps) {
   const [detailIndex, setDetailIndex] = useState(-1);
   const details = buildDayDetails(day);
@@ -30,7 +38,7 @@ function DayRow({ day, isLast, onOpen }: DayRowProps) {
   return (
     <Pressable
       style={[styles.dayRow, !isLast && styles.dayRowDivider]}
-      accessibilityRole="adjustable"
+      accessibilityRole={ADJUSTABLE_BUTTON}
       accessibilityLabel={label}
       accessibilityValue={current ? { text: `${current.title}: ${current.spoken}` } : { text: '' }}
       accessibilityHint="Toca dos veces para abrir la ficha completa del día"
