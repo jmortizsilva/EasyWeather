@@ -113,30 +113,24 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   return lines;
 }
 
-// Describe cuándo se obtuvieron los datos por última vez, en lenguaje natural y sin
-// tecnicismos: "hace 3 minutos" mientras es reciente y, si no, la hora concreta.
+// Fecha y hora exactas de la última actualización. Se muestra siempre completa (con
+// segundos) para que se pueda confirmar de un vistazo que los datos se han refrescado,
+// en lugar de un impreciso "hace un momento".
 export function formatUpdatedAt(timestamp: number | undefined): string | undefined {
   if (!timestamp || !Number.isFinite(timestamp)) {
     return undefined;
   }
 
-  const diffMin = Math.floor((Date.now() - timestamp) / 60000);
-  if (diffMin < 1) {
-    return 'hace un momento';
-  }
-  if (diffMin === 1) {
-    return 'hace 1 minuto';
-  }
-  if (diffMin < 60) {
-    return `hace ${diffMin} minutos`;
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return undefined;
   }
 
-  const date = new Date(timestamp);
-  const time = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-  const sameDay = new Date().toDateString() === date.toDateString();
-  if (sameDay) {
-    return `a las ${time}`;
-  }
-  const day = date.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-  return `el ${day} a las ${time}`;
+  const day = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+  const time = date.toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  return `${day.charAt(0).toUpperCase() + day.slice(1)} a las ${time}`;
 }

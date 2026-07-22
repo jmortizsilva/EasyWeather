@@ -12,8 +12,24 @@ const STORAGE_CURRENT_LOCATION = 'tiempo.currentLocation';
 const STORAGE_FORECAST_PREFIX = 'tiempo.forecast.v2.';
 const STORAGE_FORECAST_TS_PREFIX = 'tiempo.forecast.ts.v2.';
 const FORECAST_TTL_MS = 30 * 60 * 1000;
+// No se vuelve a consultar el GPS más de una vez cada 2 minutos, para no gastar batería
+// cuando se cambia de pestaña; y solo se considera que el usuario se ha movido de sitio
+// si se ha desplazado más de 1,5 km (dentro de la misma ciudad la previsión es la misma).
+const LOCATION_RECHECK_MS = 2 * 60 * 1000;
+const LOCATION_CHANGED_METERS = 1500;
 
 export const CURRENT_LOCATION_ID = 'current';
+
+function distanceMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const R = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLon = toRad(b.lon - a.lon);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
 
 interface PlacesContextValue {
   places: Place[];
@@ -28,6 +44,8 @@ interface PlacesContextValue {
   message: string;
   setActiveId: (id: string) => void;
   refreshCurrentLocation: () => Promise<void>;
+  /** Comprueba en silencio si el usuario ha cambiado de ubicación (no pide permiso). */
+  detectCurrentLocation: () => Promise<void>;
   reloadForecast: (silent?: boolean) => void;
   viewPlace: (place: Place) => void;
   addPlace: (place: Place) => Promise<void>;
@@ -55,6 +73,62 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const silentReloadRef = useRef(false);
   const forecastRef = useRef<Forecast | undefined>(undefined);
   forecastRef.current = forecast;
+  // Espejos en refs para poder consultarlos desde los listeners sin cerrar sobre valores viejos.
+  const currentLocationRef = useRef<Place | undefined>(undefined);
+  currentLocationRef.current = currentLocationPlace;
+  const activeIdRef = useRef<string>(activeId);
+  activeIdRef.current = activeId;
+  const lastLocationCheckRef = useRef(0);
+
+  // Detecta en segundo plano si el usuario se ha movido de ciudad y, si es así, cambia la
+  // previsión a su ubicación actual. No pide permiso nunca: si aún no está concedido, no
+  // hace nada (para eso está el botón "Actualizar mi ubicación", que sí lo solicita). Solo
+  // actúa cuando se está viendo "mi ubicación", para no pisar un lugar elegido a mano.
+  const detectCurrentLocation = useCallback(async () => {
+    if (activeIdRef.current !== CURRENT_LOCATION_ID) {
+      return;
+    }
+    if (Date.now() - lastLocationCheckRef.current < LOCATION_RECHECK_MS) {
+      return;
+    }
+
+    try {
+      const permissions = await Location.getForegroundPermissionsAsync();
+      if (permissions.status !== 'granted') {
+        return;
+      }
+      lastLocationCheckRef.current = Date.now();
+
+      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
+      const previous = currentLocationRef.current;
+      if (previous && distanceMeters(previous, coords) < LOCATION_CHANGED_METERS) {
+        return;
+      }
+
+      const geocoded = await Location.reverseGeocodeAsync({
+        latitude: coords.lat,
+        longitude: coords.lon,
+      });
+      const name = geocoded[0]?.city ?? geocoded[0]?.subregion ?? 'Mi ubicación';
+      const admin1 = geocoded[0]?.region ?? undefined;
+      const place: Place = { id: CURRENT_LOCATION_ID, name, admin1, lat: coords.lat, lon: coords.lon };
+
+      setCurrentLocationPlace(place);
+      currentLocationRef.current = place;
+      await AsyncStorage.setItem(STORAGE_CURRENT_LOCATION, JSON.stringify(place));
+      // Obligatorio forzar: la previsión guardada bajo la clave "current" es la de la
+      // ciudad anterior, así que sin esto se mostrarían datos del sitio equivocado.
+      forceReloadRef.current = true;
+      setForecastReloadTick((v) => v + 1);
+      // Solo se avisa cuando de verdad cambia de sitio; un refresco normal sigue siendo silencioso.
+      if (previous && previous.name !== name) {
+        setMessage(`Ahora estás en ${name}${admin1 ? `, ${admin1}` : ''}`);
+      }
+    } catch {
+      // Si el GPS falla se mantiene la última ubicación conocida, sin molestar al usuario.
+    }
+  }, []);
 
   useEffect(() => {
     const loadStored = async () => {
@@ -79,6 +153,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           const parsed = JSON.parse(storedLocation) as Place;
           if (parsed?.lat !== undefined && parsed?.lon !== undefined) {
             setCurrentLocationPlace(parsed);
+            // También en la ref, para que la detección posterior compare con el valor
+            // real y no vuelva a geocodificar si el usuario sigue en el mismo sitio.
+            currentLocationRef.current = parsed;
           }
         } catch {
           // ignora cache corrupta
@@ -86,8 +163,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    void loadStored();
-  }, []);
+    // Al abrir la app se comprueba la ubicación por si el usuario ha viajado.
+    void loadStored().then(() => detectCurrentLocation());
+  }, [detectCurrentLocation]);
 
   useEffect(() => {
     if (!message.trim()) {
@@ -221,6 +299,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       setCurrentLocationPlace(place);
       await AsyncStorage.setItem(STORAGE_CURRENT_LOCATION, JSON.stringify(place));
       setActiveId(CURRENT_LOCATION_ID);
+      // Acaba de comprobarse el GPS a mano: la comprobación automática puede esperar.
+      lastLocationCheckRef.current = Date.now();
       forceReloadRef.current = true;
       setForecastReloadTick((v) => v + 1);
       setMessage(`Ubicación actualizada: ${name}${admin1 ? `, ${admin1}` : ''}`);
@@ -245,15 +325,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     setForecastReloadTick((v) => v + 1);
   }, []);
 
-  // Refresca al volver la app a primer plano (reanudar desde segundo plano).
+  // Al volver la app a primer plano se comprueba si el usuario se ha movido de ciudad
+  // y, en cualquier caso, se refresca la previsión.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
+        void detectCurrentLocation();
         reloadForecast(true);
       }
     });
     return () => sub.remove();
-  }, [reloadForecast]);
+  }, [detectCurrentLocation, reloadForecast]);
 
   const addPlace = async (place: Place) => {
     const next = [place, ...places.filter((p) => p.id !== place.id)];
@@ -293,6 +375,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     message,
     setActiveId,
     refreshCurrentLocation,
+    detectCurrentLocation,
     reloadForecast,
     viewPlace,
     addPlace,

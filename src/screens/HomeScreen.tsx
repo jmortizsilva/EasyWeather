@@ -70,17 +70,19 @@ export default function HomeScreen() {
     loadingForecast,
     loadingLocation,
     message,
+    detectCurrentLocation,
     refreshCurrentLocation,
     reloadForecast,
   } = usePlaces();
   const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(undefined);
 
-  // Refresca la previsión cada vez que se entra en la pestaña Hoy (y, al ser la
-  // pestaña inicial, también al abrir la app). Silencioso si ya hay datos.
+  // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
+  // refresca la previsión. Silencioso si ya hay datos.
   useFocusEffect(
     useCallback(() => {
+      void detectCurrentLocation();
       reloadForecast(true);
-    }, [reloadForecast])
+    }, [detectCurrentLocation, reloadForecast])
   );
 
   const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
@@ -113,8 +115,8 @@ export default function HomeScreen() {
           </View>
 
           {updatedAt && (
-            <Text style={styles.updatedLine} accessibilityLabel={`Datos actualizados ${updatedAt}`}>
-              Actualizado {updatedAt}
+            <Text style={styles.updatedLine} accessibilityLabel={`Datos actualizados el ${updatedAt}`}>
+              Actualizado: {updatedAt}
             </Text>
           )}
 
