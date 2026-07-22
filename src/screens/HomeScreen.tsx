@@ -2,65 +2,11 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import DayDetailModal from '../components/DayDetailModal';
+import DayRow from '../components/DayRow';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { DayForecast } from '../types';
-import { buildDayDetails, formatFullDate, formatUpdatedAt } from '../utils/dayDetails';
+import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
-
-interface DayRowProps {
-  day: DayForecast;
-  isLast: boolean;
-  onOpen: () => void;
-}
-
-// Fila de día "ajustable": VoiceOver verbaliza cada dato con flick vertical de un dedo
-// (flick abajo avanza al siguiente dato, flick arriba vuelve al anterior). El doble toque
-// abre la ficha completa. Las acciones
-// estándar (increment/decrement/activate) se manejan en onAccessibilityAction pero NO se
-// declaran en accessibilityActions a propósito: declararlas las hacía aparecer como
-// acciones del rotor, algo que el usuario no quiere.
-function DayRow({ day, isLast, onOpen }: DayRowProps) {
-  const [detailIndex, setDetailIndex] = useState(-1);
-  const details = buildDayDetails(day);
-  const info = describeWeatherCode(day.weatherCode);
-  const label = `${formatFullDate(day.date)}: mínima ${day.tMin ?? 'sin dato'} grados, máxima ${
-    day.tMax ?? 'sin dato'
-  } grados, ${info.label}, probabilidad de lluvia ${day.rainProbability ?? 0} por ciento`;
-  const current = detailIndex >= 0 ? details[detailIndex] : undefined;
-
-  return (
-    <Pressable
-      style={[styles.dayRow, !isLast && styles.dayRowDivider]}
-      accessibilityRole="adjustable"
-      accessibilityLabel={label}
-      accessibilityValue={current ? { text: `${current.title}: ${current.spoken}` } : { text: '' }}
-      accessibilityHint="Toca dos veces para abrir la ficha completa del día"
-      onAccessibilityAction={(event) => {
-        const action = event.nativeEvent.actionName;
-        if (action === 'activate') {
-          onOpen();
-          return;
-        }
-        if (action === 'decrement') {
-          setDetailIndex((index) => Math.min(index + 1, details.length - 1));
-        }
-        if (action === 'increment') {
-          setDetailIndex((index) => Math.max(index - 1, 0));
-        }
-      }}
-      onPress={onOpen}
-    >
-      <Text style={styles.dayDate}>{formatFullDate(day.date)}</Text>
-      <View style={styles.dayRight}>
-        <Text style={styles.daySky}>{info.emoji}</Text>
-        <Text style={styles.dayTemp}>
-          {day.tMin ?? '-'}º / {day.tMax ?? '-'}º
-        </Text>
-        <Text style={styles.dayMeta}>💧 {day.rainProbability ?? '-'}%</Text>
-      </View>
-    </Pressable>
-  );
-}
 
 export default function HomeScreen() {
   const {
@@ -290,38 +236,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#132740',
     borderRadius: 16,
     overflow: 'hidden',
-  },
-  dayRow: {
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    gap: 4,
-  },
-  dayRowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  dayDate: {
-    color: '#f0f5ff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  dayRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  daySky: {
-    fontSize: 18,
-  },
-  dayTemp: {
-    color: '#ffffff',
-    fontSize: 17,
-  },
-  dayMeta: {
-    color: '#b7c7e1',
-    fontSize: 15,
-    marginLeft: 'auto',
   },
   note: {
     color: '#b8c6dc',
