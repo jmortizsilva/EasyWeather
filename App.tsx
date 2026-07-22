@@ -1,9 +1,11 @@
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { StatusBar } from 'expo-status-bar';
+import AlertsScreen from './src/screens/AlertsScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
+import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
 import { TabParamList } from './src/navigation/types';
 
@@ -23,40 +25,50 @@ const navigationTheme = {
 export default function App() {
   return (
     <PlacesProvider>
-      <StatusBar style="light" />
-      <NavigationContainer theme={navigationTheme}>
-        <Tab.Navigator
-          tabBarStyle={{ backgroundColor: '#132740' }}
-          tabBarActiveTintColor="#7cbcff"
-          tabBarInactiveTintColor="#a9bcd6"
-        >
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Hoy',
-              tabBarIcon: () => ({ sfSymbol: 'sun.max.fill' }),
-            }}
-          />
-          <Tab.Screen
-            name="Places"
-            component={PlacesScreen}
-            options={{
-              tabBarLabel: 'Mis lugares',
-              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
-            }}
-          />
-          <Tab.Screen
-            name="Search"
-            component={SearchScreen}
-            options={{
-              tabBarLabel: 'Buscar',
-              tabBarIcon: () => ({ sfSymbol: 'magnifyingglass' }),
-              role: 'search',
-            }}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
+      <NotificationsProvider>
+        <StatusBar style="light" />
+        <NavigationContainer theme={navigationTheme}>
+          <Tab.Navigator
+            tabBarStyle={{ backgroundColor: '#132740' }}
+            tabBarActiveTintColor="#7cbcff"
+            tabBarInactiveTintColor="#a9bcd6"
+          >
+            <Tab.Screen
+              name="Home"
+              component={HomeScreen}
+              options={{
+                tabBarLabel: 'Hoy',
+                tabBarIcon: () => ({ sfSymbol: 'sun.max.fill' }),
+              }}
+            />
+            <Tab.Screen
+              name="Places"
+              component={PlacesScreen}
+              options={{
+                tabBarLabel: 'Mis lugares',
+                tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
+              }}
+            />
+            <Tab.Screen
+              name="Search"
+              component={SearchScreen}
+              options={{
+                tabBarLabel: 'Buscar',
+                tabBarIcon: () => ({ sfSymbol: 'magnifyingglass' }),
+                role: 'search',
+              }}
+            />
+            <Tab.Screen
+              name="Alerts"
+              component={AlertsScreen}
+              options={{
+                tabBarLabel: 'Avisos',
+                tabBarIcon: () => ({ sfSymbol: 'bell.fill' }),
+              }}
+            />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </NotificationsProvider>
     </PlacesProvider>
   );
 }

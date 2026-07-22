@@ -43,6 +43,21 @@ export interface Forecast {
   days: DayForecast[];
 }
 
+export interface NotificationSettings {
+  /** Lugar fijo (id de Mis lugares) del que hablan las notificaciones. */
+  placeId?: string;
+  dailyEnabled: boolean;
+  dailyHour: number;
+  dailyMinute: number;
+  /** Títulos de los datos a incluir en el resumen, tal y como los devuelve buildDayDetails. */
+  dailyFields: string[];
+  thresholdEnabled: boolean;
+  /** Avisa si la máxima llega o supera este valor. */
+  maxThreshold: number;
+  /** Avisa si la mínima llega o baja de este valor. */
+  minThreshold: number;
+}
+
 export interface HourlyForecast {
   time: string;
   temperature?: number;

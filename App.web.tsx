@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import AlertsScreen from './src/screens/AlertsScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
+import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
 import { TabParamList } from './src/navigation/types';
 
@@ -27,6 +29,7 @@ const navigationTheme = {
 export default function App() {
   return (
     <PlacesProvider>
+      <NotificationsProvider>
       <StatusBar style="light" />
       <NavigationContainer theme={navigationTheme}>
         <Tab.Navigator
@@ -61,8 +64,17 @@ export default function App() {
               tabBarIcon: ({ color, size }) => <Ionicons name="search-outline" color={color} size={size} />,
             }}
           />
+          <Tab.Screen
+            name="Alerts"
+            component={AlertsScreen}
+            options={{
+              tabBarLabel: 'Avisos',
+              tabBarIcon: ({ color, size }) => <Ionicons name="notifications-outline" color={color} size={size} />,
+            }}
+          />
         </Tab.Navigator>
       </NavigationContainer>
+      </NotificationsProvider>
     </PlacesProvider>
   );
 }
