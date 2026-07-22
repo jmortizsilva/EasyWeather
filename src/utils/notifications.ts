@@ -1,4 +1,5 @@
 import * as Notifications from 'expo-notifications';
+import { Alert } from 'react-native';
 import { DayForecast, Forecast, NotificationSettings, Place } from '../types';
 import { buildDayDetails, formatFullDate } from './dayDetails';
 import { describeWeatherCode } from './weatherCodes';
@@ -59,6 +60,37 @@ function buildThresholdBody(day: DayForecast, settings: NotificationSettings): s
 export async function hasNotificationPermission(): Promise<boolean> {
   const { status } = await Notifications.getPermissionsAsync();
   return status === 'granted';
+}
+
+/** Si iOS ya denegó el permiso, no vuelve a preguntar: hay que ir a Ajustes. */
+export async function canAskForNotificationPermission(): Promise<boolean> {
+  const { canAskAgain } = await Notifications.getPermissionsAsync();
+  return canAskAgain;
+}
+
+/**
+ * iOS no permite personalizar el texto del diálogo de permiso de notificaciones (a diferencia
+ * del de ubicación), así que antes de lanzarlo se explica con nuestras palabras cómo funcionan
+ * los avisos. Lo importante que debe saber el usuario es que tiene que abrir la app cada pocos
+ * días para que se sigan programando. Devuelve si quiere continuar.
+ */
+export function explainNotificationsBeforeAsking(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Cómo funcionan los avisos',
+      'Los avisos se preparan dentro de tu propio iPhone, así que no se envía ningún dato tuyo a ' +
+        'ningún sitio.\n\n' +
+        'Para que sigan llegando necesitas abrir la app cada pocos días: cada vez que la abres, ' +
+        'deja preparados los avisos de los días siguientes. Si pasas mucho tiempo sin abrirla, ' +
+        'dejarán de llegar hasta que vuelvas a entrar.\n\n' +
+        'A continuación iOS te preguntará si permites las notificaciones.',
+      [
+        { text: 'Ahora no', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Continuar', onPress: () => resolve(true) },
+      ],
+      { cancelable: false }
+    );
+  });
 }
 
 /** Solo se llama cuando el usuario activa un aviso a propósito, nunca de fondo. */

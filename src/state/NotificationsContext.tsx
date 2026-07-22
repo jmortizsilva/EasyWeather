@@ -5,8 +5,10 @@ import { AppState } from 'react-native';
 import { getForecast } from '../services/openMeteo';
 import { NotificationSettings } from '../types';
 import {
+  canAskForNotificationPermission,
   cancelAllNotifications,
   DEFAULT_NOTIFICATION_SETTINGS,
+  explainNotificationsBeforeAsking,
   hasNotificationPermission,
   requestNotificationPermission,
   syncNotifications,
@@ -110,20 +112,36 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const updateSettings = useCallback(
     async (partial: Partial<NotificationSettings>) => {
-      const next = { ...settings, ...partial };
-
       // El permiso solo se pide cuando el usuario activa un aviso a propósito.
       const activating =
         (partial.dailyEnabled === true && !settings.dailyEnabled) ||
         (partial.thresholdEnabled === true && !settings.thresholdEnabled);
+
       if (activating && !(await hasNotificationPermission())) {
+        if (!(await canAskForNotificationPermission())) {
+          setStatus(
+            'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
+              'en EasyWeather, Notificaciones.'
+          );
+          return;
+        }
+
+        // Se explica antes cómo funcionan, porque el diálogo del sistema no se puede personalizar.
+        if (!(await explainNotificationsBeforeAsking())) {
+          setStatus('Los avisos siguen desactivados. Puedes activarlos cuando quieras.');
+          return;
+        }
+
         const granted = await requestNotificationPermission();
         setPermissionGranted(granted);
+        // Sin permiso el aviso no llegaría, así que no se deja activado para no engañar.
         if (!granted) {
           setStatus('Sin permiso de notificaciones no se pueden enviar avisos.');
+          return;
         }
       }
 
+      const next = { ...settings, ...partial };
       setSettings(next);
       await AsyncStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(next));
     },
