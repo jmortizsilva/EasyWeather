@@ -36,6 +36,7 @@
     "plugins": [
       "react-native-bottom-tabs",
       "@react-native-community/datetimepicker",
+      "./plugins/withLocalNotificationsOnly",
       [
         "expo-location",
         {
