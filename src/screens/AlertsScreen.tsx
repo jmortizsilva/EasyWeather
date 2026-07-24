@@ -26,6 +26,39 @@ function placeName(options: PlaceOption[], id: string): string {
   return options.find((o) => o.id === id)?.name ?? 'Lugar no disponible';
 }
 
+// Fila-conmutador accesible: toda la fila es UN solo elemento con rol "conmutador", para que
+// VoiceOver lea "Temperatura, conmutador, activado" en un único flick (en vez de leer el texto y
+// el interruptor por separado). El interruptor visual queda como adorno, sin foco ni toque.
+function SwitchRow({
+  label,
+  value,
+  onValueChange,
+  divider,
+}: {
+  label: string;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  divider?: boolean;
+}) {
+  return (
+    <Pressable
+      style={[styles.switchRow, divider && styles.rowDivider]}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: value }}
+      accessibilityLabel={label}
+      onPress={() => onValueChange(!value)}
+    >
+      <Text style={styles.rowTitle}>{label}</Text>
+      <Switch
+        value={value}
+        onValueChange={onValueChange}
+        style={styles.switchControl}
+        importantForAccessibility="no-hide-descendants"
+      />
+    </Pressable>
+  );
+}
+
 // Editor de un aviso de resumen. Mantiene su propio borrador; nada se guarda hasta pulsar Guardar.
 function SummaryEditor({
   initial,
@@ -117,32 +150,22 @@ function SummaryEditor({
         </Text>
         <View style={styles.card}>
           {DAILY_FIELD_OPTIONS.map((field, index) => (
-            <View key={field} style={[styles.switchRow, index < DAILY_FIELD_OPTIONS.length - 1 && styles.rowDivider]}>
-              {/* El texto se oculta a VoiceOver: la etiqueta va en el propio conmutador para que
-                  se lea "Temperatura, conmutador" y no dos elementos. */}
-              <Text style={styles.rowTitle} importantForAccessibility="no">
-                {field}
-              </Text>
-              <Switch
-                value={draft.fields.includes(field)}
-                onValueChange={() => toggleField(field)}
-                accessibilityLabel={field}
-              />
-            </View>
+            <SwitchRow
+              key={field}
+              label={field}
+              value={draft.fields.includes(field)}
+              onValueChange={() => toggleField(field)}
+              divider={index < DAILY_FIELD_OPTIONS.length - 1}
+            />
           ))}
         </View>
 
         <View style={styles.card}>
-          <View style={styles.switchRow}>
-            <Text style={styles.rowTitle} importantForAccessibility="no">
-              Aviso activado
-            </Text>
-            <Switch
-              value={draft.enabled}
-              onValueChange={(value) => setDraft((d) => ({ ...d, enabled: value }))}
-              accessibilityLabel="Aviso activado"
-            />
-          </View>
+          <SwitchRow
+            label="Aviso activado"
+            value={draft.enabled}
+            onValueChange={(value) => setDraft((d) => ({ ...d, enabled: value }))}
+          />
         </View>
 
         <Pressable
@@ -219,11 +242,9 @@ export default function AlertsScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
-        {status ? (
-          <Text style={styles.status} accessibilityLiveRegion="polite">
-            {status}
-          </Text>
-        ) : null}
+        {/* Siempre montado (aunque esté vacío) para que, al borrarse el mensaje, no se desmonte y
+            no se mueva el foco de VoiceOver. Lo hablado lo emite el contexto con announce. */}
+        <Text style={styles.status}>{status}</Text>
 
         <Text style={styles.sectionHeader} accessibilityRole="header">
           Avisos de resumen
@@ -279,16 +300,7 @@ export default function AlertsScreen() {
         </Text>
 
         <View style={styles.card}>
-          <View style={styles.switchRow}>
-            <Text style={styles.rowTitle} importantForAccessibility="no">
-              Aviso de temperatura
-            </Text>
-            <Switch
-              value={thresholdEnabled}
-              onValueChange={onToggleThreshold}
-              accessibilityLabel="Aviso de temperatura"
-            />
-          </View>
+          <SwitchRow label="Aviso de temperatura" value={thresholdEnabled} onValueChange={onToggleThreshold} />
         </View>
 
         {thresholdEnabled && (
@@ -299,9 +311,11 @@ export default function AlertsScreen() {
 
             <View style={styles.card}>
               <View style={[styles.switchRow, styles.rowDivider]}>
-                <Text style={styles.rowTitle} importantForAccessibility="no">
-                  Avisar si sube de
-                </Text>
+                {/* La etiqueta visible se oculta a VoiceOver (envuelta en una vista que oculta sus
+                    descendientes); el campo ya lleve su propia etiqueta descriptiva. */}
+                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <Text style={styles.rowTitle}>Avisar si sube de</Text>
+                </View>
                 <TextInput
                   value={maxDraft}
                   onChangeText={setMaxDraft}
@@ -312,9 +326,9 @@ export default function AlertsScreen() {
                 />
               </View>
               <View style={styles.switchRow}>
-                <Text style={styles.rowTitle} importantForAccessibility="no">
-                  Avisar si baja de
-                </Text>
+                <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  <Text style={styles.rowTitle}>Avisar si baja de</Text>
+                </View>
                 <TextInput
                   value={minDraft}
                   onChangeText={setMinDraft}
@@ -440,6 +454,10 @@ const styles = StyleSheet.create({
   status: {
     color: '#c2d0e6',
     fontSize: 15,
+  },
+  // El interruptor visual no captura el toque: la fila-conmutador (Pressable) es quien cambia.
+  switchControl: {
+    pointerEvents: 'none',
   },
   note: {
     color: '#b8c6dc',
