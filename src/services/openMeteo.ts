@@ -116,31 +116,6 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
   };
 }
 
-export interface HourlyTemperature {
-  time: string;
-  temperature?: number;
-}
-
-// Temperatura hora a hora de los próximos días, para saber a qué hora se prevé que se cruza
-// un límite (el aviso automático de temperatura). Ligera: solo pide temperature_2m.
-export async function getHourlyTemperatures(
-  lat: number,
-  lon: number,
-  days = 3
-): Promise<HourlyTemperature[]> {
-  const url =
-    `${FORECAST_URL}?latitude=${lat}&longitude=${lon}` +
-    `&hourly=temperature_2m&timezone=auto&forecast_days=${days}`;
-
-  const payload = await fetchJson<any>(url);
-
-  const times: string[] = Array.isArray(payload?.hourly?.time) ? payload.hourly.time : [];
-  return times.map((time, index) => ({
-    time,
-    temperature: toNumber(payload?.hourly?.temperature_2m?.[index]),
-  }));
-}
-
 export async function getHourlyForecast(lat: number, lon: number, dateISO: string): Promise<HourlyForecast[]> {
   const hourly = ['temperature_2m', 'weather_code', 'precipitation_probability', 'wind_speed_10m'].join(',');
 

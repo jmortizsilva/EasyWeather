@@ -7,7 +7,7 @@ compatibility_date = "2025-01-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "easyweather-alerts"
-database_id = "PEGA_AQUI_EL_ID_DE_LA_BASE_DE_DATOS"
+database_id = "0e066075-34ff-4365-a174-18b516c923c8"
 
 # Cada 20 minutos se comprueba la temperatura de cada dispositivo.
 [triggers]

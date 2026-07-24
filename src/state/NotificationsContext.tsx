@@ -13,6 +13,7 @@ import {
   requestNotificationPermission,
   syncNotifications,
 } from '../utils/notifications';
+import { registerThresholdDevice, unregisterThresholdDevice } from '../utils/push';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
 const STORAGE_NOTIFICATIONS = 'tiempo.notifications.v2';
@@ -92,11 +93,8 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       }
 
       try {
-        const scheduled = await syncNotifications(next, resolvePlace, currentLocationRef.current);
-        const message =
-          scheduled > 0
-            ? 'Avisos guardados y programados.'
-            : 'Avisos guardados. Ahora mismo no hay ninguno próximo que programar.';
+        await syncNotifications(next, resolvePlace);
+        const message = 'Avisos guardados.';
         setStatus(message);
         if (announce) {
           AccessibilityInfo.announceForAccessibility(message);
@@ -108,13 +106,33 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [resolvePlace]
   );
 
-  // Reprograma al cargar y cuando cambian los lugares o la ubicación (afecta a qué previsión usar).
+  // El aviso de temperatura lo gestiona el servidor: se (re)suscribe este teléfono con su
+  // ubicación actual y sus umbrales, o se da de baja. Se ejecuta al guardar y cuando cambia la
+  // ubicación (para que el servidor vigile siempre el sitio donde estás).
+  const syncThresholdServer = useCallback(async (threshold: NotificationSettings['threshold']) => {
+    const place = currentLocationRef.current;
+    if (threshold.enabled && place) {
+      await registerThresholdDevice({
+        lat: place.lat,
+        lon: place.lon,
+        placeName: place.name,
+        maxThreshold: threshold.maxThreshold,
+        minThreshold: threshold.minThreshold,
+      });
+    } else if (!threshold.enabled) {
+      await unregisterThresholdDevice();
+    }
+  }, []);
+
+  // Reprograma al cargar y cuando cambian los lugares o la ubicación (afecta a qué previsión usar
+  // en los resúmenes y a qué lugar vigila el servidor para el aviso de temperatura).
   useEffect(() => {
     if (!loaded) {
       return;
     }
     void resync(settingsRef.current);
-  }, [loaded, places, currentLocationPlace, resync]);
+    void syncThresholdServer(settingsRef.current.threshold);
+  }, [loaded, places, currentLocationPlace, resync, syncThresholdServer]);
 
   // Al volver a primer plano se renueva la reserva de días.
   useEffect(() => {
@@ -155,8 +173,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       settingsRef.current = next;
       await AsyncStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(next));
       await resync(next, true);
+      await syncThresholdServer(next.threshold);
     },
-    [resync]
+    [resync, syncThresholdServer]
   );
 
   const saveSummary = useCallback(

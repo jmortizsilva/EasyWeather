@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications';
 import { Alert } from 'react-native';
-import { getForecast, getHourlyTemperatures, HourlyTemperature } from '../services/openMeteo';
+import { getForecast } from '../services/openMeteo';
 import { DayForecast, NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
 import { buildDayDetails } from './dayDetails';
 import { describeWeatherCode } from './weatherCodes';
@@ -18,9 +18,8 @@ export const DAILY_FIELD_OPTIONS = [
   'Salida y puesta de la luna',
 ];
 
-// iOS solo mantiene 64 notificaciones pendientes; se limita cada tipo para no pasarse.
+// iOS solo mantiene 64 notificaciones pendientes; se limita el resumen para no pasarse.
 const MAX_SUMMARY_DAYS = 7;
-const MAX_THRESHOLD_EVENTS = 12;
 
 export const DEFAULT_THRESHOLD: ThresholdAlert = {
   enabled: false,
@@ -134,65 +133,20 @@ async function scheduleSummary(summary: SummaryAlert, place: Place, now: number)
   return count;
 }
 
-// Detecta el momento en que la previsión horaria cruza un límite. Solo el instante del cruce
-// (la hora anterior estaba al otro lado), para no repetir el aviso mientras dura el episodio.
-function findThresholdCrossings(
-  hours: HourlyTemperature[],
-  threshold: ThresholdAlert,
-  place: Place,
-  now: number
-): { date: Date; body: string }[] {
-  const events: { date: Date; body: string }[] = [];
-  for (let i = 1; i < hours.length; i += 1) {
-    const prev = hours[i - 1].temperature;
-    const cur = hours[i].temperature;
-    const date = new Date(hours[i].time);
-    if (prev === undefined || cur === undefined || Number.isNaN(date.getTime()) || date.getTime() <= now) {
-      continue;
-    }
-    if (prev < threshold.maxThreshold && cur >= threshold.maxThreshold) {
-      events.push({
-        date,
-        body: `Ahora en ${place.name} se alcanzan ${cur} grados, por encima de tu aviso de ${threshold.maxThreshold} grados.`,
-      });
-    } else if (prev > threshold.minThreshold && cur <= threshold.minThreshold) {
-      events.push({
-        date,
-        body: `Ahora en ${place.name} se baja a ${cur} grados, por debajo de tu aviso de ${threshold.minThreshold} grados.`,
-      });
-    }
-  }
-  return events.slice(0, MAX_THRESHOLD_EVENTS);
-}
-
-async function scheduleThreshold(threshold: ThresholdAlert, place: Place, now: number): Promise<number> {
-  const hours = await getHourlyTemperatures(place.lat, place.lon, 3);
-  const events = findThresholdCrossings(hours, threshold, place, now);
-  for (const event of events) {
-    await Notifications.scheduleNotificationAsync({
-      content: { title: 'Aviso de temperatura', body: event.body },
-      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: event.date },
-    });
-  }
-  return events.length;
-}
-
 /**
- * Reprograma todos los avisos con datos frescos. iOS no garantiza cuándo despierta a una app en
- * segundo plano, así que en vez de depender de eso se aprovechan los días que da Open-Meteo:
- * los resúmenes se programan a su hora y el aviso de temperatura a la hora en que la previsión
- * horaria prevé el cruce. Se reprograma en cada refresco. Si el usuario pasa muchos días sin
- * abrir la app, los avisos se agotan.
+ * Reprograma los avisos de RESUMEN (tipo 1) como notificaciones locales del teléfono. El aviso
+ * de temperatura NO se programa aquí: lo gestiona el servidor por push (ver utils/push.ts). iOS
+ * no garantiza cuándo despierta a una app en segundo plano, así que se aprovechan los días que
+ * da Open-Meteo y se reprograman en cada refresco. Si el usuario pasa muchos días sin abrir la
+ * app, los resúmenes se agotan (el aviso de temperatura, al ser del servidor, no).
  */
 export async function syncNotifications(
   settings: NotificationSettings,
-  resolvePlace: (id: string) => Place | undefined,
-  currentLocationPlace: Place | undefined
+  resolvePlace: (id: string) => Place | undefined
 ): Promise<number> {
   await cancelAllNotifications();
 
-  const anyEnabled = settings.summaries.some((s) => s.enabled) || settings.threshold.enabled;
-  if (!anyEnabled || !(await hasNotificationPermission())) {
+  if (!settings.summaries.some((s) => s.enabled) || !(await hasNotificationPermission())) {
     return 0;
   }
 
@@ -211,14 +165,6 @@ export async function syncNotifications(
       scheduled += await scheduleSummary(summary, place, now);
     } catch {
       // Si falla la previsión de un lugar, se sigue con los demás avisos.
-    }
-  }
-
-  if (settings.threshold.enabled && currentLocationPlace) {
-    try {
-      scheduled += await scheduleThreshold(settings.threshold, currentLocationPlace, now);
-    } catch {
-      // Sin previsión horaria no se programan cruces, pero no se rompe el resto.
     }
   }
 
