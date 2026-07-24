@@ -118,11 +118,15 @@ function SummaryEditor({
         <View style={styles.card}>
           {DAILY_FIELD_OPTIONS.map((field, index) => (
             <View key={field} style={[styles.switchRow, index < DAILY_FIELD_OPTIONS.length - 1 && styles.rowDivider]}>
-              <Text style={styles.rowTitle}>{field}</Text>
+              {/* El texto se oculta a VoiceOver: la etiqueta va en el propio conmutador para que
+                  se lea "Temperatura, conmutador" y no dos elementos. */}
+              <Text style={styles.rowTitle} importantForAccessibility="no">
+                {field}
+              </Text>
               <Switch
                 value={draft.fields.includes(field)}
                 onValueChange={() => toggleField(field)}
-                accessibilityLabel={`Incluir ${field}`}
+                accessibilityLabel={field}
               />
             </View>
           ))}
@@ -130,7 +134,9 @@ function SummaryEditor({
 
         <View style={styles.card}>
           <View style={styles.switchRow}>
-            <Text style={styles.rowTitle}>Aviso activado</Text>
+            <Text style={styles.rowTitle} importantForAccessibility="no">
+              Aviso activado
+            </Text>
             <Switch
               value={draft.enabled}
               onValueChange={(value) => setDraft((d) => ({ ...d, enabled: value }))}
@@ -185,14 +191,26 @@ export default function AlertsScreen() {
     setMinDraft(String(settings.threshold.minThreshold));
   }, [settings.threshold]);
 
-  const onSaveThreshold = () => {
+  const thresholdValues = () => {
     const max = Number(maxDraft.replace(',', '.'));
     const min = Number(minDraft.replace(',', '.'));
-    void saveThreshold({
-      enabled: thresholdEnabled,
+    return {
       maxThreshold: Number.isFinite(max) ? max : DEFAULT_THRESHOLD.maxThreshold,
       minThreshold: Number.isFinite(min) ? min : DEFAULT_THRESHOLD.minThreshold,
-    });
+    };
+  };
+
+  const onSaveThreshold = () => {
+    void saveThreshold({ enabled: thresholdEnabled, ...thresholdValues() });
+  };
+
+  // Al apagar el conmutador se guarda de inmediato (da de baja del servidor); al encenderlo solo
+  // se muestran los ajustes, que se confirman con el botón Guardar (ahí se pide el permiso).
+  const onToggleThreshold = (value: boolean) => {
+    setThresholdEnabled(value);
+    if (!value) {
+      void saveThreshold({ enabled: false, ...thresholdValues() });
+    }
   };
 
   return (
@@ -227,6 +245,13 @@ export default function AlertsScreen() {
                   summary.hour,
                   summary.minute
                 )}, ${summary.enabled ? 'activado' : 'desactivado'}`}
+                accessibilityHint="Toca dos veces para editarlo. En el rotor de acciones puedes eliminarlo"
+                accessibilityActions={[{ name: 'eliminar', label: 'Eliminar aviso' }]}
+                onAccessibilityAction={(event) => {
+                  if (event.nativeEvent.actionName === 'eliminar') {
+                    void deleteSummary(summary.id);
+                  }
+                }}
               >
                 <Text style={styles.rowTitle}>
                   {placeName(options, summary.placeId)} · {formatTime(summary.hour, summary.minute)}
@@ -250,66 +275,77 @@ export default function AlertsScreen() {
           Aviso de temperatura
         </Text>
         <Text style={styles.note}>
-          La app vigila tu ubicación actual y te avisa a la hora en que se prevé que la temperatura suba de tu máximo o
-          baje de tu mínimo.
+          La app vigila tu ubicación actual y te avisa cuando la temperatura sube de tu máximo o baja de tu mínimo.
         </Text>
-        {!currentLocationPlace && (
-          <Text style={styles.note}>
-            Para usar este aviso, actualiza antes tu ubicación en la pestaña Hoy.
-          </Text>
-        )}
 
         <View style={styles.card}>
-          <View style={[styles.switchRow, styles.rowDivider]}>
-            <Text style={styles.rowTitle}>Aviso de temperatura activado</Text>
+          <View style={styles.switchRow}>
+            <Text style={styles.rowTitle} importantForAccessibility="no">
+              Aviso de temperatura
+            </Text>
             <Switch
               value={thresholdEnabled}
-              onValueChange={setThresholdEnabled}
-              accessibilityLabel="Aviso de temperatura activado"
-            />
-          </View>
-          <View style={[styles.switchRow, styles.rowDivider]}>
-            <Text style={styles.rowTitle}>Avisar si sube de</Text>
-            <TextInput
-              value={maxDraft}
-              onChangeText={setMaxDraft}
-              keyboardType="numbers-and-punctuation"
-              style={styles.input}
-              accessibilityLabel="Grados máximos a partir de los cuales avisar"
-              accessibilityHint="Escribe un número de grados, por ejemplo 30"
-            />
-          </View>
-          <View style={styles.switchRow}>
-            <Text style={styles.rowTitle}>Avisar si baja de</Text>
-            <TextInput
-              value={minDraft}
-              onChangeText={setMinDraft}
-              keyboardType="numbers-and-punctuation"
-              style={styles.input}
-              accessibilityLabel="Grados mínimos por debajo de los cuales avisar"
-              accessibilityHint="Escribe un número de grados, por ejemplo 3"
+              onValueChange={onToggleThreshold}
+              accessibilityLabel="Aviso de temperatura"
             />
           </View>
         </View>
 
-        <Pressable
-          style={styles.buttonPrimary}
-          onPress={onSaveThreshold}
-          accessibilityRole="button"
-          accessibilityLabel="Guardar aviso de temperatura"
-        >
-          <Text style={styles.buttonPrimaryText}>Guardar aviso de temperatura</Text>
-        </Pressable>
+        {thresholdEnabled && (
+          <>
+            {!currentLocationPlace && (
+              <Text style={styles.note}>Para usar este aviso, actualiza antes tu ubicación en la pestaña Hoy.</Text>
+            )}
 
-        <Pressable
-          style={styles.buttonSecondary}
-          onPress={() => void testNotification()}
-          accessibilityRole="button"
-          accessibilityLabel="Probar notificación"
-          accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan"
-        >
-          <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
-        </Pressable>
+            <View style={styles.card}>
+              <View style={[styles.switchRow, styles.rowDivider]}>
+                <Text style={styles.rowTitle} importantForAccessibility="no">
+                  Avisar si sube de
+                </Text>
+                <TextInput
+                  value={maxDraft}
+                  onChangeText={setMaxDraft}
+                  keyboardType="numbers-and-punctuation"
+                  style={styles.input}
+                  accessibilityLabel="Grados máximos a partir de los cuales avisar"
+                  accessibilityHint="Escribe un número de grados, por ejemplo 30"
+                />
+              </View>
+              <View style={styles.switchRow}>
+                <Text style={styles.rowTitle} importantForAccessibility="no">
+                  Avisar si baja de
+                </Text>
+                <TextInput
+                  value={minDraft}
+                  onChangeText={setMinDraft}
+                  keyboardType="numbers-and-punctuation"
+                  style={styles.input}
+                  accessibilityLabel="Grados mínimos por debajo de los cuales avisar"
+                  accessibilityHint="Escribe un número de grados, por ejemplo 3"
+                />
+              </View>
+            </View>
+
+            <Pressable
+              style={styles.buttonPrimary}
+              onPress={onSaveThreshold}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar aviso de temperatura"
+            >
+              <Text style={styles.buttonPrimaryText}>Guardar aviso de temperatura</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.buttonSecondary}
+              onPress={() => void testNotification()}
+              accessibilityRole="button"
+              accessibilityLabel="Probar notificación"
+              accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan"
+            >
+              <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
+            </Pressable>
+          </>
+        )}
 
         <Text style={styles.note}>
           Los avisos de resumen se preparan en el propio teléfono. El aviso de temperatura lo gestiona un servidor para

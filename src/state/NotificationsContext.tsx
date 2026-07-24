@@ -72,6 +72,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     void load();
   }, []);
 
+  // El estado es un mensaje pasajero (confirmaciones, avisos): se anuncia por voz al cambiar y se
+  // borra a los pocos segundos para no dejar texto fijo estorbando en la pantalla con VoiceOver.
+  useEffect(() => {
+    if (!status) {
+      return;
+    }
+    const timer = setTimeout(() => setStatus(''), 6000);
+    return () => clearTimeout(timer);
+  }, [status]);
+
   const resolvePlace = useCallback((id: string): Place | undefined => {
     if (id === CURRENT_LOCATION_ID) {
       return currentLocationRef.current;
