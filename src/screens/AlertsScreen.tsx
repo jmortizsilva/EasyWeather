@@ -238,7 +238,7 @@ export default function AlertsScreen() {
 
   return (
     <>
-      <ScrollView contentContainerStyle={styles.content} accessibilityLabel="Pantalla Avisos">
+      <ScrollView style={styles.screen} contentContainerStyle={styles.content} accessibilityLabel="Pantalla Avisos">
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
@@ -385,13 +385,17 @@ export default function AlertsScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#0d1a2b',
+  },
   modalRoot: {
     backgroundColor: '#0d1a2b',
   },
   content: {
     paddingTop: 24,
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 96,
     gap: 12,
   },
   title: {

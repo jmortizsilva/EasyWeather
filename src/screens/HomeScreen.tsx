@@ -40,7 +40,11 @@ export default function HomeScreen() {
   const updatedAt = formatUpdatedAt(forecastUpdatedAt);
 
   return (
-    <ScrollView contentContainerStyle={styles.content} accessibilityLabel="Pantalla Hoy">
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={styles.content}
+      accessibilityLabel="Pantalla Hoy"
+    >
       {activePlace ? (
         <Text style={styles.cityTitle} accessibilityRole="header">
           {activePlace.name}
@@ -144,10 +148,16 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Fondo oscuro explícito: sin esto, en iOS (userInterfaceStyle light) el fondo del sistema es
+  // blanco y los textos claros de fuera de las tarjetas quedan invisibles.
+  screen: {
+    flex: 1,
+    backgroundColor: '#0d1a2b',
+  },
   content: {
     paddingTop: 24,
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 96,
     gap: 16,
   },
   cityTitle: {

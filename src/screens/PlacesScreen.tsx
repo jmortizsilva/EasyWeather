@@ -13,7 +13,7 @@ export default function PlacesScreen() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} accessibilityLabel="Pantalla Mis lugares">
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content} accessibilityLabel="Pantalla Mis lugares">
       <Text style={styles.title} accessibilityRole="header">
         Mis lugares
       </Text>
@@ -78,10 +78,14 @@ export default function PlacesScreen() {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: '#0d1a2b',
+  },
   content: {
     paddingTop: 24,
     paddingHorizontal: 16,
-    paddingBottom: 40,
+    paddingBottom: 96,
     gap: 16,
   },
   title: {
