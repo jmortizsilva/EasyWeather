@@ -1,0 +1,14 @@
+name = "easyweather-alerts"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# La base de datos donde se guardan los dispositivos y sus umbrales.
+# El database_id lo rellenas tras crear la base de datos (ver README.md, paso 5).
+[[d1_databases]]
+binding = "DB"
+database_name = "easyweather-alerts"
+database_id = "PEGA_AQUI_EL_ID_DE_LA_BASE_DE_DATOS"
+
+# Cada 20 minutos se comprueba la temperatura de cada dispositivo.
+[triggers]
+crons = ["*/20 * * * *"]
