@@ -32,13 +32,15 @@
 <body>
   <main>
     <h1>Política de privacidad de EasyWeather</h1>
-    <p class="updated">Última actualización: 8 de julio de 2026</p>
+    <p class="updated">Última actualización: 24 de julio de 2026</p>
 
     <p>
       EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué
       datos usa la app y cómo los trata. En resumen: <strong>EasyWeather no crea cuentas,
-      no muestra publicidad, no hace seguimiento de sus usuarios y no envía datos a
-      servidores propios.</strong>
+      no muestra publicidad y no hace seguimiento de sus usuarios.</strong> La app funciona
+      sin enviar datos a servidores propios; la única excepción es el <strong>aviso de
+      temperatura</strong>, una función opcional que, si la activas, registra algunos datos
+      en nuestro servidor para poder avisarte (se explica más abajo).
     </p>
 
     <h2>Datos que usa la app</h2>
@@ -58,22 +60,52 @@
       </li>
     </ul>
 
-    <h2>Servicios de terceros</h2>
+    <h2>Aviso de temperatura (opcional)</h2>
     <p>
-      La app obtiene los datos meteorológicos y la búsqueda de lugares de
-      <strong>Open-Meteo</strong> (<a href="https://open-meteo.com">open-meteo.com</a>).
-      Al pedir la previsión se le envían las coordenadas o el nombre del lugar consultado.
-      Consulta su política de privacidad en
-      <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a> para más
-      información.
+      La app incluye un aviso opcional que te notifica cuando la temperatura de tu ubicación
+      sube o baja de los límites que tú elijas, incluso con la app cerrada. Para que esto
+      funcione sin que tengas que abrir la app, <strong>solo si activas este aviso</strong>
+      se registran en nuestro servidor (alojado en Cloudflare) estos datos:
     </p>
+    <ul>
+      <li>
+        Un <strong>identificador de notificaciones</strong> de tu dispositivo (token de
+        push), que no revela tu identidad.
+      </li>
+      <li>Las <strong>coordenadas</strong> de tu ubicación actual y el nombre del lugar.</li>
+      <li>Los <strong>límites de temperatura</strong> que has configurado.</li>
+    </ul>
+    <p>
+      El servidor usa esos datos únicamente para consultar la temperatura y enviarte la
+      notificación. No se asocian a tu nombre ni a ningún dato personal, no se usan para
+      publicidad ni analítica, y <strong>se eliminan del servidor en cuanto desactivas el
+      aviso</strong>. Si no activas esta función, no se envía ninguno de estos datos.
+    </p>
+
+    <h2>Servicios de terceros</h2>
+    <ul>
+      <li>
+        <strong>Open-Meteo</strong> (<a href="https://open-meteo.com">open-meteo.com</a>):
+        proporciona los datos meteorológicos y la búsqueda de lugares. Al pedir la previsión
+        se le envían las coordenadas o el nombre del lugar consultado. Consulta su política
+        en <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.
+      </li>
+      <li>
+        <strong>Cloudflare</strong>: aloja el servidor del aviso de temperatura, con los
+        datos descritos en el apartado anterior.
+      </li>
+      <li>
+        <strong>Expo y Apple</strong>: entregan las notificaciones push del aviso de
+        temperatura a tu iPhone.
+      </li>
+    </ul>
 
     <h2>Lo que la app NO hace</h2>
     <ul>
       <li>No requiere registro ni cuenta de usuario.</li>
       <li>No incluye publicidad ni redes de seguimiento.</li>
       <li>No recopila identificadores para publicidad ni analítica.</li>
-      <li>No comparte tus datos con terceros más allá de la consulta meteorológica descrita.</li>
+      <li>No comparte tus datos con terceros más allá de lo descrito en esta política.</li>
     </ul>
 
     <h2>Contacto</h2>
