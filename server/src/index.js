@@ -67,7 +67,7 @@ export default {
         {
           to: body.token,
           title: 'Notificación de prueba',
-          body: 'Si oyes esto, los avisos de temperatura de EasyWeather funcionan correctamente.',
+          body: 'Esto es una prueba. Los avisos de temperatura de EasyWeather funcionan correctamente.',
           sound: 'default',
         },
       ]);
