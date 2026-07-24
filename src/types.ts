@@ -43,19 +43,31 @@ export interface Forecast {
   days: DayForecast[];
 }
 
-export interface NotificationSettings {
-  /** Lugar fijo (id de Mis lugares) del que hablan las notificaciones. */
-  placeId?: string;
-  dailyEnabled: boolean;
-  dailyHour: number;
-  dailyMinute: number;
-  /** Títulos de los datos a incluir en el resumen, tal y como los devuelve buildDayDetails. */
-  dailyFields: string[];
-  thresholdEnabled: boolean;
-  /** Avisa si la máxima llega o supera este valor. */
+// Tipo 1: resumen que programa el usuario. Puede haber varios independientes.
+export interface SummaryAlert {
+  id: string;
+  /** CURRENT_LOCATION_ID para la ubicación actual, o el id de un lugar guardado. */
+  placeId: string;
+  hour: number;
+  minute: number;
+  /** Títulos de los datos a incluir, tal y como los devuelve buildDayDetails. */
+  fields: string[];
+  enabled: boolean;
+}
+
+// Tipo 2: aviso automático de temperatura, siempre de la ubicación actual. La app lo dispara
+// a la hora en que la previsión horaria prevé que se cruza el límite.
+export interface ThresholdAlert {
+  enabled: boolean;
+  /** Avisa si la temperatura llega o supera este valor. */
   maxThreshold: number;
-  /** Avisa si la mínima llega o baja de este valor. */
+  /** Avisa si la temperatura llega o baja de este valor. */
   minThreshold: number;
+}
+
+export interface NotificationSettings {
+  summaries: SummaryAlert[];
+  threshold: ThresholdAlert;
 }
 
 export interface HourlyForecast {

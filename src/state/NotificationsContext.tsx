@@ -1,21 +1,21 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
-import { getForecast } from '../services/openMeteo';
-import { NotificationSettings } from '../types';
+import { AccessibilityInfo, AppState } from 'react-native';
+import { NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
 import {
   canAskForNotificationPermission,
   cancelAllNotifications,
   DEFAULT_NOTIFICATION_SETTINGS,
   explainNotificationsBeforeAsking,
   hasNotificationPermission,
+  isValidSettings,
   requestNotificationPermission,
   syncNotifications,
 } from '../utils/notifications';
-import { usePlaces } from './PlacesContext';
+import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
-const STORAGE_NOTIFICATIONS = 'tiempo.notifications';
+const STORAGE_NOTIFICATIONS = 'tiempo.notifications.v2';
 
 // Que los avisos también se vean si la app está abierta.
 Notifications.setNotificationHandler({
@@ -29,126 +29,170 @@ Notifications.setNotificationHandler({
 
 interface NotificationsContextValue {
   settings: NotificationSettings;
-  permissionGranted: boolean;
-  /** Mensaje para la interfaz: explica qué está pasando o por qué no hay avisos. */
+  /** Mensaje para la interfaz: confirma un guardado o explica por qué no hay avisos. */
   status: string;
-  updateSettings: (partial: Partial<NotificationSettings>) => Promise<void>;
+  saveSummary: (summary: SummaryAlert) => Promise<void>;
+  deleteSummary: (id: string) => Promise<void>;
+  saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { places } = usePlaces();
+  const { places, currentLocationPlace } = usePlaces();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
-  const [permissionGranted, setPermissionGranted] = useState(false);
   const [status, setStatus] = useState('');
   const [loaded, setLoaded] = useState(false);
+
+  // Espejos en refs para que los listeners (segundo plano) usen siempre lo último.
   const placesRef = useRef(places);
   placesRef.current = places;
+  const currentLocationRef = useRef(currentLocationPlace);
+  currentLocationRef.current = currentLocationPlace;
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
 
   useEffect(() => {
     const load = async () => {
       const stored = await AsyncStorage.getItem(STORAGE_NOTIFICATIONS);
       if (stored) {
         try {
-          const parsed = JSON.parse(stored) as Partial<NotificationSettings>;
-          setSettings({ ...DEFAULT_NOTIFICATION_SETTINGS, ...parsed });
+          const parsed = JSON.parse(stored);
+          if (isValidSettings(parsed)) {
+            setSettings(parsed);
+          }
         } catch {
           // ajustes corruptos: se quedan los valores por defecto
         }
       }
-      setPermissionGranted(await hasNotificationPermission());
       setLoaded(true);
     };
     void load();
   }, []);
 
-  // Reprograma los avisos con datos frescos: al cargar los ajustes, al cambiarlos y cada
-  // vez que la app vuelve a primer plano (que es cuando se renueva la reserva de días).
-  const resync = useCallback(async (next: NotificationSettings) => {
-    if (!next.dailyEnabled && !next.thresholdEnabled) {
-      await cancelAllNotifications();
-      setStatus('Los avisos están desactivados.');
-      return;
+  const resolvePlace = useCallback((id: string): Place | undefined => {
+    if (id === CURRENT_LOCATION_ID) {
+      return currentLocationRef.current;
     }
-
-    const place = placesRef.current.find((p) => p.id === next.placeId);
-    if (!place) {
-      await cancelAllNotifications();
-      setStatus('Elige un lugar para los avisos.');
-      return;
-    }
-    if (!(await hasNotificationPermission())) {
-      setStatus('Falta el permiso de notificaciones del sistema.');
-      return;
-    }
-
-    try {
-      const forecast = await getForecast(place.lat, place.lon);
-      await syncNotifications(next, place, forecast);
-      setStatus(`Avisos programados para ${place.name}.`);
-    } catch (error) {
-      setStatus(`No se han podido programar los avisos: ${String((error as Error).message ?? error)}`);
-    }
+    return placesRef.current.find((p) => p.id === id);
   }, []);
 
-  // Se incluye `places` porque los lugares guardados se cargan de forma asíncrona: sin esto,
-  // la primera programación podría ejecutarse antes de que exista el lugar elegido.
+  // Reprograma todos los avisos con datos frescos.
+  const resync = useCallback(
+    async (next: NotificationSettings, announce = false) => {
+      const anyEnabled = next.summaries.some((s) => s.enabled) || next.threshold.enabled;
+      if (!anyEnabled) {
+        await cancelAllNotifications();
+        setStatus('No tienes ningún aviso activo.');
+        return;
+      }
+      if (!(await hasNotificationPermission())) {
+        setStatus('Falta el permiso de notificaciones del sistema.');
+        return;
+      }
+
+      try {
+        const scheduled = await syncNotifications(next, resolvePlace, currentLocationRef.current);
+        const message =
+          scheduled > 0
+            ? 'Avisos guardados y programados.'
+            : 'Avisos guardados. Ahora mismo no hay ninguno próximo que programar.';
+        setStatus(message);
+        if (announce) {
+          AccessibilityInfo.announceForAccessibility(message);
+        }
+      } catch (error) {
+        setStatus(`No se han podido programar los avisos: ${String((error as Error).message ?? error)}`);
+      }
+    },
+    [resolvePlace]
+  );
+
+  // Reprograma al cargar y cuando cambian los lugares o la ubicación (afecta a qué previsión usar).
   useEffect(() => {
     if (!loaded) {
       return;
     }
-    void resync(settings);
-  }, [loaded, settings, places, resync]);
+    void resync(settingsRef.current);
+  }, [loaded, places, currentLocationPlace, resync]);
 
+  // Al volver a primer plano se renueva la reserva de días.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active' && loaded) {
-        void resync(settings);
+        void resync(settingsRef.current);
       }
     });
     return () => sub.remove();
-  }, [loaded, settings, resync]);
+  }, [loaded, resync]);
 
-  const updateSettings = useCallback(
-    async (partial: Partial<NotificationSettings>) => {
-      // El permiso solo se pide cuando el usuario activa un aviso a propósito.
-      const activating =
-        (partial.dailyEnabled === true && !settings.dailyEnabled) ||
-        (partial.thresholdEnabled === true && !settings.thresholdEnabled);
+  // Pide el permiso (con explicación previa) solo si se está activando un aviso y aún no se tiene.
+  const ensurePermissionForActivation = useCallback(async (willBeEnabled: boolean): Promise<boolean> => {
+    if (!willBeEnabled || (await hasNotificationPermission())) {
+      return true;
+    }
+    if (!(await canAskForNotificationPermission())) {
+      setStatus(
+        'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
+          'en EasyWeather, Notificaciones.'
+      );
+      return false;
+    }
+    if (!(await explainNotificationsBeforeAsking())) {
+      setStatus('El aviso se ha guardado desactivado. Puedes activarlo cuando quieras.');
+      return false;
+    }
+    const granted = await requestNotificationPermission();
+    if (!granted) {
+      setStatus('Sin permiso de notificaciones no se pueden enviar avisos.');
+    }
+    return granted;
+  }, []);
 
-      if (activating && !(await hasNotificationPermission())) {
-        if (!(await canAskForNotificationPermission())) {
-          setStatus(
-            'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
-              'en EasyWeather, Notificaciones.'
-          );
-          return;
-        }
-
-        // Se explica antes cómo funcionan, porque el diálogo del sistema no se puede personalizar.
-        if (!(await explainNotificationsBeforeAsking())) {
-          setStatus('Los avisos siguen desactivados. Puedes activarlos cuando quieras.');
-          return;
-        }
-
-        const granted = await requestNotificationPermission();
-        setPermissionGranted(granted);
-        // Sin permiso el aviso no llegaría, así que no se deja activado para no engañar.
-        if (!granted) {
-          setStatus('Sin permiso de notificaciones no se pueden enviar avisos.');
-          return;
-        }
-      }
-
-      const next = { ...settings, ...partial };
+  const persist = useCallback(
+    async (next: NotificationSettings) => {
       setSettings(next);
+      settingsRef.current = next;
       await AsyncStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(next));
+      await resync(next, true);
     },
-    [settings]
+    [resync]
   );
 
-  const value: NotificationsContextValue = { settings, permissionGranted, status, updateSettings };
+  const saveSummary = useCallback(
+    async (summary: SummaryAlert) => {
+      // Si no se concede el permiso, se guarda desactivado para no aparentar que funciona.
+      const enabled = summary.enabled && (await ensurePermissionForActivation(summary.enabled));
+      const saved = { ...summary, enabled };
+      const current = settingsRef.current;
+      const exists = current.summaries.some((s) => s.id === saved.id);
+      const summaries = exists
+        ? current.summaries.map((s) => (s.id === saved.id ? saved : s))
+        : [...current.summaries, saved];
+      await persist({ ...current, summaries });
+    },
+    [ensurePermissionForActivation, persist]
+  );
+
+  const deleteSummary = useCallback(
+    async (id: string) => {
+      const current = settingsRef.current;
+      await persist({ ...current, summaries: current.summaries.filter((s) => s.id !== id) });
+      AccessibilityInfo.announceForAccessibility('Aviso eliminado.');
+    },
+    [persist]
+  );
+
+  const saveThreshold = useCallback(
+    async (threshold: ThresholdAlert) => {
+      const enabled = threshold.enabled && (await ensurePermissionForActivation(threshold.enabled));
+      const current = settingsRef.current;
+      await persist({ ...current, threshold: { ...threshold, enabled } });
+    },
+    [ensurePermissionForActivation, persist]
+  );
+
+  const value: NotificationsContextValue = { settings, status, saveSummary, deleteSummary, saveThreshold };
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }
