@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, AppState } from 'react-native';
+import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
 import {
   canAskForNotificationPermission,
@@ -30,8 +30,6 @@ Notifications.setNotificationHandler({
 
 interface NotificationsContextValue {
   settings: NotificationSettings;
-  /** Mensaje para la interfaz: confirma un guardado o explica por qué no hay avisos. */
-  status: string;
   saveSummary: (summary: SummaryAlert) => Promise<void>;
   deleteSummary: (id: string) => Promise<void>;
   saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
@@ -43,7 +41,6 @@ const NotificationsContext = createContext<NotificationsContextValue | undefined
 export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { places, currentLocationPlace } = usePlaces();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
-  const [status, setStatus] = useState('');
   const [loaded, setLoaded] = useState(false);
 
   // Espejos en refs para que los listeners (segundo plano) usen siempre lo último.
@@ -72,16 +69,6 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     void load();
   }, []);
 
-  // El estado es un mensaje pasajero (confirmaciones, avisos): se anuncia por voz al cambiar y se
-  // borra a los pocos segundos para no dejar texto fijo estorbando en la pantalla con VoiceOver.
-  useEffect(() => {
-    if (!status) {
-      return;
-    }
-    const timer = setTimeout(() => setStatus(''), 6000);
-    return () => clearTimeout(timer);
-  }, [status]);
-
   const resolvePlace = useCallback((id: string): Place | undefined => {
     if (id === CURRENT_LOCATION_ID) {
       return currentLocationRef.current;
@@ -89,29 +76,34 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return placesRef.current.find((p) => p.id === id);
   }, []);
 
-  // Reprograma todos los avisos con datos frescos.
+  // Reprograma todos los avisos con datos frescos. `announce` es true solo cuando lo dispara una
+  // acción del usuario (guardar), para confirmarlo por voz sin dejar ningún texto fijo en pantalla.
   const resync = useCallback(
     async (next: NotificationSettings, announce = false) => {
       const anyEnabled = next.summaries.some((s) => s.enabled) || next.threshold.enabled;
       if (!anyEnabled) {
         await cancelAllNotifications();
-        setStatus('No tienes ningún aviso activo.');
+        if (announce) {
+          AccessibilityInfo.announceForAccessibility('No tienes ningún aviso activo.');
+        }
         return;
       }
       if (!(await hasNotificationPermission())) {
-        setStatus('Falta el permiso de notificaciones del sistema.');
+        if (announce) {
+          AccessibilityInfo.announceForAccessibility('Falta el permiso de notificaciones del sistema.');
+        }
         return;
       }
 
       try {
         await syncNotifications(next, resolvePlace);
-        const message = 'Avisos guardados.';
-        setStatus(message);
         if (announce) {
-          AccessibilityInfo.announceForAccessibility(message);
+          AccessibilityInfo.announceForAccessibility('Avisos guardados.');
         }
-      } catch (error) {
-        setStatus(`No se han podido programar los avisos: ${String((error as Error).message ?? error)}`);
+      } catch {
+        if (announce) {
+          AccessibilityInfo.announceForAccessibility('No se han podido programar los avisos.');
+        }
       }
     },
     [resolvePlace]
@@ -161,19 +153,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       return true;
     }
     if (!(await canAskForNotificationPermission())) {
-      setStatus(
+      Alert.alert(
+        'Notificaciones bloqueadas',
         'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
           'en EasyWeather, Notificaciones.'
       );
       return false;
     }
     if (!(await explainNotificationsBeforeAsking())) {
-      setStatus('El aviso se ha guardado desactivado. Puedes activarlo cuando quieras.');
       return false;
     }
     const granted = await requestNotificationPermission();
     if (!granted) {
-      setStatus('Sin permiso de notificaciones no se pueden enviar avisos.');
+      AccessibilityInfo.announceForAccessibility('Sin permiso de notificaciones no se pueden enviar avisos.');
     }
     return granted;
   }, []);
@@ -224,16 +216,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const testNotification = useCallback(async () => {
     const ok = await sendTestNotification();
-    const message = ok
-      ? 'Notificación de prueba enviada. Debería llegarte en unos segundos.'
-      : 'No se ha podido enviar la prueba. Comprueba que has dado permiso de notificaciones.';
-    setStatus(message);
-    AccessibilityInfo.announceForAccessibility(message);
+    Alert.alert(
+      'Notificación de prueba',
+      ok
+        ? 'Enviada. Debería llegarte en unos segundos.'
+        : 'No se ha podido enviar. Comprueba que has dado permiso de notificaciones.'
+    );
   }, []);
 
   const value: NotificationsContextValue = {
     settings,
-    status,
     saveSummary,
     deleteSummary,
     saveThreshold,

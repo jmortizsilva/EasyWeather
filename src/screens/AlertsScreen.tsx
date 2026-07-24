@@ -199,7 +199,7 @@ function SummaryEditor({
 export default function AlertsScreen() {
   const { currentLocationPlace } = usePlaces();
   const options = usePlaceOptions();
-  const { settings, status, saveSummary, deleteSummary, saveThreshold, testNotification } = useNotifications();
+  const { settings, saveSummary, deleteSummary, saveThreshold, testNotification } = useNotifications();
 
   const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(undefined);
 
@@ -242,9 +242,6 @@ export default function AlertsScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
-        {/* Siempre montado (aunque esté vacío) para que, al borrarse el mensaje, no se desmonte y
-            no se mueva el foco de VoiceOver. Lo hablado lo emite el contexto con announce. */}
-        <Text style={styles.status}>{status}</Text>
 
         <Text style={styles.sectionHeader} accessibilityRole="header">
           Avisos de resumen
@@ -450,10 +447,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 17,
     textAlign: 'right',
-  },
-  status: {
-    color: '#c2d0e6',
-    fontSize: 15,
   },
   // El interruptor visual no captura el toque: la fila-conmutador (Pressable) es quien cambia.
   switchControl: {
