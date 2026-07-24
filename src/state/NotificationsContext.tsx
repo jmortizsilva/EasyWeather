@@ -13,7 +13,7 @@ import {
   requestNotificationPermission,
   syncNotifications,
 } from '../utils/notifications';
-import { registerThresholdDevice, unregisterThresholdDevice } from '../utils/push';
+import { registerThresholdDevice, sendTestNotification, unregisterThresholdDevice } from '../utils/push';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
 const STORAGE_NOTIFICATIONS = 'tiempo.notifications.v2';
@@ -35,6 +35,7 @@ interface NotificationsContextValue {
   saveSummary: (summary: SummaryAlert) => Promise<void>;
   deleteSummary: (id: string) => Promise<void>;
   saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
+  testNotification: () => Promise<void>;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
@@ -211,7 +212,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [ensurePermissionForActivation, persist]
   );
 
-  const value: NotificationsContextValue = { settings, status, saveSummary, deleteSummary, saveThreshold };
+  const testNotification = useCallback(async () => {
+    const ok = await sendTestNotification();
+    const message = ok
+      ? 'Notificación de prueba enviada. Debería llegarte en unos segundos.'
+      : 'No se ha podido enviar la prueba. Comprueba que has dado permiso de notificaciones.';
+    setStatus(message);
+    AccessibilityInfo.announceForAccessibility(message);
+  }, []);
+
+  const value: NotificationsContextValue = {
+    settings,
+    status,
+    saveSummary,
+    deleteSummary,
+    saveThreshold,
+    testNotification,
+  };
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;
 }

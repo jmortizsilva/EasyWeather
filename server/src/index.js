@@ -58,6 +58,22 @@ export default {
       return json({ ok: true });
     }
 
+    if (request.method === 'POST' && url.pathname === '/test') {
+      const body = await request.json().catch(() => null);
+      if (!body || typeof body.token !== 'string') {
+        return json({ error: 'falta el token' }, 400);
+      }
+      await sendExpoPush([
+        {
+          to: body.token,
+          title: 'Notificación de prueba',
+          body: 'Si oyes esto, los avisos de temperatura de EasyWeather funcionan correctamente.',
+          sound: 'default',
+        },
+      ]);
+      return json({ ok: true });
+    }
+
     if (request.method === 'POST' && url.pathname === '/unregister') {
       const body = await request.json().catch(() => null);
       if (body && typeof body.token === 'string') {

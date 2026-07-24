@@ -41,6 +41,24 @@ export async function registerThresholdDevice(params: ThresholdRegistration): Pr
   }
 }
 
+// Pide al servidor una notificación de prueba inmediata, para comprobar toda la cadena de push.
+export async function sendTestNotification(): Promise<boolean> {
+  const token = await getPushToken();
+  if (!token) {
+    return false;
+  }
+  try {
+    const response = await fetch(`${SERVER_URL}/test`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 // Da de baja este teléfono del aviso de temperatura.
 export async function unregisterThresholdDevice(): Promise<void> {
   const token = await getPushToken();

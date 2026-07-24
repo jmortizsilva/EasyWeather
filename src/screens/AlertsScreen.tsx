@@ -170,7 +170,7 @@ function SummaryEditor({
 export default function AlertsScreen() {
   const { currentLocationPlace } = usePlaces();
   const options = usePlaceOptions();
-  const { settings, status, saveSummary, deleteSummary, saveThreshold } = useNotifications();
+  const { settings, status, saveSummary, deleteSummary, saveThreshold, testNotification } = useNotifications();
 
   const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(undefined);
 
@@ -301,9 +301,19 @@ export default function AlertsScreen() {
           <Text style={styles.buttonPrimaryText}>Guardar aviso de temperatura</Text>
         </Pressable>
 
+        <Pressable
+          style={styles.buttonSecondary}
+          onPress={() => void testNotification()}
+          accessibilityRole="button"
+          accessibilityLabel="Probar notificación"
+          accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan"
+        >
+          <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
+        </Pressable>
+
         <Text style={styles.note}>
-          Los avisos se preparan en el propio teléfono, así que no sale ningún dato tuyo. Para que sigan llegando, abre
-          la app cada pocos días.
+          Los avisos de resumen se preparan en el propio teléfono. El aviso de temperatura lo gestiona un servidor para
+          poder avisarte aunque no abras la app; puedes ver qué datos guarda en la política de privacidad.
         </Text>
       </ScrollView>
 
