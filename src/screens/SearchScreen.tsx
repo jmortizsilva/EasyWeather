@@ -25,6 +25,11 @@ export default function SearchScreen() {
   const [citySearch, setCitySearch] = useState('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [focused, setFocused] = useState(false);
+
+  // "Cancelar" solo tiene sentido si hay algo que cancelar: el campo con foco (teclado abierto) o
+  // con texto escrito. Tras cancelar (sin foco y vacio) desaparece.
+  const showCancel = focused || citySearch.length > 0;
 
   useEffect(() => {
     const trimmed = citySearch.trim();
@@ -72,19 +77,27 @@ export default function SearchScreen() {
           style={styles.input}
           accessibilityLabel="Buscar lugar"
           accessibilityHint="Escribe el nombre de una ciudad o pueblo para ver su previsión"
+          // Tecla "Buscar" en el teclado (en vez de Intro); al pulsarla se cierra el teclado y
+          // quedan a la vista los resultados que ya se cargan en vivo.
+          returnKeyType="search"
+          onSubmitEditing={() => Keyboard.dismiss()}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
           autoFocus
         />
-        <Pressable
-          style={styles.cancelButton}
-          onPress={() => {
-            setCitySearch('');
-            Keyboard.dismiss();
-          }}
-          accessibilityRole="button"
-          accessibilityLabel="Cancelar búsqueda"
-          accessibilityHint="Borra el texto y cierra el teclado">
-          <Text style={styles.cancelText}>Cancelar</Text>
-        </Pressable>
+        {showCancel && (
+          <Pressable
+            style={styles.cancelButton}
+            onPress={() => {
+              setCitySearch('');
+              Keyboard.dismiss();
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Cancelar búsqueda"
+            accessibilityHint="Borra el texto y cierra el teclado">
+            <Text style={styles.cancelText}>Cancelar</Text>
+          </Pressable>
+        )}
       </View>
       {searchLoading && <ActivityIndicator color="#9ed3ff" accessibilityLabel="Buscando lugares" />}
 
