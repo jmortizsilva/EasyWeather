@@ -248,11 +248,14 @@ export default function AlertsScreen() {
   const [maxDraft, setMaxDraft] = useState(String(settings.threshold.maxThreshold));
   const [minDraft, setMinDraft] = useState(String(settings.threshold.minThreshold));
 
-  // Sincroniza el borrador del aviso de temperatura cuando cambian los ajustes guardados.
+  // Sincroniza el borrador del aviso de temperatura cuando cambian los ajustes guardados. Es un
+  // sync de estado local desde una fuente externa (los ajustes persistidos), no una cascada.
   useEffect(() => {
+    /* eslint-disable react-hooks/set-state-in-effect */
     setThresholdEnabled(settings.threshold.enabled);
     setMaxDraft(String(settings.threshold.maxThreshold));
     setMinDraft(String(settings.threshold.minThreshold));
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [settings.threshold]);
 
   const thresholdValues = () => {

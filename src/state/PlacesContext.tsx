@@ -80,13 +80,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   // que aún no haya nada en pantalla (primera carga), donde sí se muestra el indicador.
   const silentReloadRef = useRef(false);
   const forecastRef = useRef<Forecast | undefined>(undefined);
-  forecastRef.current = forecast;
-  // Espejos en refs para poder consultarlos desde los listeners sin cerrar sobre valores viejos.
   const currentLocationRef = useRef<Place | undefined>(undefined);
-  currentLocationRef.current = currentLocationPlace;
   const activeIdRef = useRef<string>(activeId);
-  activeIdRef.current = activeId;
   const lastLocationCheckRef = useRef(0);
+  // Espejos en refs para consultarlos desde los listeners de segundo plano sin cerrar sobre
+  // valores viejos. Se escriben en render a proposito: moverlo a un efecto retrasaria la
+  // actualizacion y un listener que dispara entre el render y el efecto leeria el valor anterior.
+  /* eslint-disable react-hooks/refs */
+  forecastRef.current = forecast;
+  currentLocationRef.current = currentLocationPlace;
+  activeIdRef.current = activeId;
+  /* eslint-enable react-hooks/refs */
 
   // Detecta en segundo plano si el usuario se ha movido de ciudad y, si es así, cambia la
   // previsión a su ubicación actual. No pide permiso nunca: si aún no está concedido, no
@@ -198,8 +202,11 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           (previewPlace?.id === activeId ? previewPlace : undefined));
 
     if (!place) {
+      // Limpia la prevision cuando no hay lugar activo; sync de estado, no cascada.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setForecast(undefined);
       setForecastUpdatedAt(undefined);
+      /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
 

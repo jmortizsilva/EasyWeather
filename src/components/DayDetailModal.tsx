@@ -38,8 +38,12 @@ export default function DayDetailModal({
       return;
     }
 
+    // Indicadores antes de una carga asincrona (getHourlyForecast): el aviso set-state-in-effect
+    // es un falso positivo aqui, no hay repintado en cascada real.
+    /* eslint-disable react-hooks/set-state-in-effect */
     setLoading(true);
     setError('');
+    /* eslint-enable react-hooks/set-state-in-effect */
     getHourlyForecast(place.lat, place.lon, day.date)
       .then(setHours)
       .catch((err) => setError(String((err as Error).message ?? err)))

@@ -28,6 +28,8 @@ export default function SearchScreen() {
   useEffect(() => {
     const trimmed = citySearch.trim();
     if (trimmed.length < 2) {
+      // Limpiar resultados al vaciar el buscador; sincroniza estado con la entrada, no cascada.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchResults([]);
       return;
     }

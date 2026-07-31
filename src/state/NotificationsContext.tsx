@@ -68,13 +68,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     setNotice({ id: noticeSeq.current, text });
   }, []);
 
-  // Espejos en refs para que los listeners (segundo plano) usen siempre lo último.
+  // Espejos en refs para que los listeners (segundo plano) usen siempre lo último. Se escriben en
+  // render a proposito (ver PlacesContext): moverlo a un efecto retrasaria la actualizacion.
   const placesRef = useRef(places);
-  placesRef.current = places;
   const currentLocationRef = useRef(currentLocationPlace);
-  currentLocationRef.current = currentLocationPlace;
   const settingsRef = useRef(settings);
+  /* eslint-disable react-hooks/refs */
+  placesRef.current = places;
+  currentLocationRef.current = currentLocationPlace;
   settingsRef.current = settings;
+  /* eslint-enable react-hooks/refs */
 
   useEffect(() => {
     const load = async () => {
