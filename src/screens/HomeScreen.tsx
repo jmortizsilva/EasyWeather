@@ -94,8 +94,8 @@ export default function HomeScreen() {
             style={styles.buttonSecondary}
             onPress={() => setDetail({ day: today, showSummary: false })}
             accessibilityRole="button"
-            accessibilityLabel="Ver hoy hora a hora">
-            <Text style={styles.buttonSecondaryText}>Hoy hora a hora</Text>
+            accessibilityLabel="Ver hoy (hora a hora)">
+            <Text style={styles.buttonSecondaryText}>Hoy (hora a hora)</Text>
           </Pressable>
         </View>
       )}

@@ -2,6 +2,7 @@ import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -60,16 +61,31 @@ export default function SearchScreen() {
         Buscar
       </Text>
 
-      <TextInput
-        value={citySearch}
-        onChangeText={setCitySearch}
-        placeholder="Busca una ciudad o pueblo"
-        placeholderTextColor="#c2d0e6"
-        style={styles.input}
-        accessibilityLabel="Buscar lugar"
-        accessibilityHint="Escribe el nombre de una ciudad o pueblo para ver su previsión"
-        autoFocus
-      />
+      {/* Campo y "Cancelar" en la misma fila para que el orden de VoiceOver sea campo -> cancelar.
+          Cancelar borra el texto y cierra el teclado (por si ya no se quiere buscar). */}
+      <View style={styles.searchRow}>
+        <TextInput
+          value={citySearch}
+          onChangeText={setCitySearch}
+          placeholder="Busca una ciudad o pueblo"
+          placeholderTextColor="#c2d0e6"
+          style={styles.input}
+          accessibilityLabel="Buscar lugar"
+          accessibilityHint="Escribe el nombre de una ciudad o pueblo para ver su previsión"
+          autoFocus
+        />
+        <Pressable
+          style={styles.cancelButton}
+          onPress={() => {
+            setCitySearch('');
+            Keyboard.dismiss();
+          }}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar búsqueda"
+          accessibilityHint="Borra el texto y cierra el teclado">
+          <Text style={styles.cancelText}>Cancelar</Text>
+        </Pressable>
+      </View>
       {searchLoading && <ActivityIndicator color="#9ed3ff" accessibilityLabel="Buscando lugares" />}
 
       {searchResults.length > 0 && (
@@ -145,13 +161,29 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: '700',
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   input: {
+    flex: 1,
     borderRadius: 12,
     paddingHorizontal: 16,
     minHeight: 44,
     fontSize: 17,
     color: '#ffffff',
     backgroundColor: '#132740',
+  },
+  cancelButton: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  cancelText: {
+    color: '#7cbcff',
+    fontSize: 17,
+    fontWeight: '600',
   },
   card: {
     backgroundColor: '#132740',
