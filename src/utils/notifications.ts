@@ -49,7 +49,9 @@ export function formatTime(hour: number, minute: number): string {
 
 export function isValidSettings(value: unknown): value is NotificationSettings {
   const v = value as NotificationSettings;
-  return !!v && Array.isArray(v.summaries) && typeof v.threshold === 'object' && v.threshold !== null;
+  return (
+    !!v && Array.isArray(v.summaries) && typeof v.threshold === 'object' && v.threshold !== null
+  );
 }
 
 // Las notificaciones se leen en voz alta, así que se usa el texto "hablado" de cada dato
@@ -93,7 +95,7 @@ export function explainNotificationsBeforeAsking(): Promise<boolean> {
         { text: 'Ahora no', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Continuar', onPress: () => resolve(true) },
       ],
-      { cancelable: false }
+      { cancelable: false },
     );
   });
 }
@@ -142,7 +144,7 @@ async function scheduleSummary(summary: SummaryAlert, place: Place, now: number)
  */
 export async function syncNotifications(
   settings: NotificationSettings,
-  resolvePlace: (id: string) => Place | undefined
+  resolvePlace: (id: string) => Place | undefined,
 ): Promise<number> {
   await cancelAllNotifications();
 

@@ -116,8 +116,17 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
   };
 }
 
-export async function getHourlyForecast(lat: number, lon: number, dateISO: string): Promise<HourlyForecast[]> {
-  const hourly = ['temperature_2m', 'weather_code', 'precipitation_probability', 'wind_speed_10m'].join(',');
+export async function getHourlyForecast(
+  lat: number,
+  lon: number,
+  dateISO: string,
+): Promise<HourlyForecast[]> {
+  const hourly = [
+    'temperature_2m',
+    'weather_code',
+    'precipitation_probability',
+    'wind_speed_10m',
+  ].join(',');
 
   const url =
     `${FORECAST_URL}?latitude=${lat}&longitude=${lon}` +

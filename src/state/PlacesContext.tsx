@@ -1,6 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getForecast } from '../services/openMeteo';
 import { Forecast, Place } from '../types';
@@ -99,7 +107,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
       lastLocationCheckRef.current = Date.now();
 
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
       const previous = currentLocationRef.current;
       if (previous && distanceMeters(previous, coords) < LOCATION_CHANGED_METERS) {
@@ -112,7 +122,13 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       });
       const name = geocoded[0]?.city ?? geocoded[0]?.subregion ?? 'Mi ubicación';
       const admin1 = geocoded[0]?.region ?? undefined;
-      const place: Place = { id: CURRENT_LOCATION_ID, name, admin1, lat: coords.lat, lon: coords.lon };
+      const place: Place = {
+        id: CURRENT_LOCATION_ID,
+        name,
+        admin1,
+        lat: coords.lat,
+        lon: coords.lon,
+      };
 
       setCurrentLocationPlace(place);
       currentLocationRef.current = place;
@@ -178,7 +194,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     const place =
       activeId === CURRENT_LOCATION_ID
         ? currentLocationPlace
-        : places.find((p) => p.id === activeId) ?? (previewPlace?.id === activeId ? previewPlace : undefined);
+        : (places.find((p) => p.id === activeId) ??
+          (previewPlace?.id === activeId ? previewPlace : undefined));
 
     if (!place) {
       setForecast(undefined);
@@ -275,11 +292,16 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     try {
       const permissions = await Location.requestForegroundPermissionsAsync();
       if (permissions.status !== 'granted') {
-        Alert.alert('Permiso denegado', 'Necesito permiso de ubicación para dar la previsión de tu zona.');
+        Alert.alert(
+          'Permiso denegado',
+          'Necesito permiso de ubicación para dar la previsión de tu zona.',
+        );
         return;
       }
 
-      const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      const position = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
       const geocoded = await Location.reverseGeocodeAsync({
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
@@ -361,7 +383,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const activePlace =
     activeId === CURRENT_LOCATION_ID
       ? currentLocationPlace
-      : places.find((p) => p.id === activeId) ?? (previewPlace?.id === activeId ? previewPlace : undefined);
+      : (places.find((p) => p.id === activeId) ??
+        (previewPlace?.id === activeId ? previewPlace : undefined));
 
   const value: PlacesContextValue = {
     places,

@@ -29,8 +29,7 @@ export default function DayRow({ day, isLast, onOpen }: DayRowProps) {
           previous();
         }
       }}
-      onPress={onOpen}
-    >
+      onPress={onOpen}>
       <DayRowContent day={day} emoji={info.emoji} />
     </Pressable>
   );

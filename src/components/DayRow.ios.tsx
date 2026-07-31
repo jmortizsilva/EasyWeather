@@ -16,8 +16,7 @@ export default function DayRow({ day, isLast, onOpen }: DayRowProps) {
       hint={DAY_ROW_HINT}
       onAccessibilityActivate={onOpen}
       onAccessibilityDecrement={next}
-      onAccessibilityIncrement={previous}
-    >
+      onAccessibilityIncrement={previous}>
       {/* Toque normal para quien no usa VoiceOver. Se marca accessible={false} porque la
           fila entera ya es un único elemento accesible en la vista nativa. */}
       <Pressable style={dayRowStyles.dayRow} onPress={onOpen} accessible={false}>

@@ -18,7 +18,11 @@ export function formatFullDate(dateISO: string): string {
   if (Number.isNaN(date.getTime())) {
     return dateISO;
   }
-  const formatted = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+  const formatted = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
@@ -68,7 +72,8 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   }
 
   if (day.precipitationSum !== undefined) {
-    const probability = day.rainProbability !== undefined ? `, probabilidad ${day.rainProbability}%` : '';
+    const probability =
+      day.rainProbability !== undefined ? `, probabilidad ${day.rainProbability}%` : '';
     const value = `${day.precipitationSum} mm${probability}`;
     lines.push({ title: 'Precipitación', value, spoken: value });
   }
@@ -82,7 +87,8 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
 
   if (day.moonPhase !== undefined || day.moonIllumination !== undefined) {
     const { name, emoji } = describeMoonPhase(day.moonPhase);
-    const illum = day.moonIllumination !== undefined ? Math.round(day.moonIllumination * 100) : undefined;
+    const illum =
+      day.moonIllumination !== undefined ? Math.round(day.moonIllumination * 100) : undefined;
     const illumValue = illum !== undefined ? `, ${illum}% iluminada` : '';
     const illumSpoken = illum !== undefined ? `, ${illum} por ciento iluminada` : '';
     lines.push({
@@ -126,7 +132,11 @@ export function formatUpdatedAt(timestamp: number | undefined): string | undefin
     return undefined;
   }
 
-  const day = new Intl.DateTimeFormat('es-ES', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+  const day = new Intl.DateTimeFormat('es-ES', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+  }).format(date);
   const time = date.toLocaleTimeString('es-ES', {
     hour: '2-digit',
     minute: '2-digit',
