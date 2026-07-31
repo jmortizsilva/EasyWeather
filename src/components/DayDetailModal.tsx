@@ -1,5 +1,13 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { getHourlyForecast } from '../services/openMeteo';
 import { DayForecast, HourlyForecast, Place } from '../types';
 import { buildDayDetails, formatFullDate, formatTime } from '../utils/dayDetails';
@@ -14,7 +22,13 @@ interface Props {
   showSummary?: boolean;
 }
 
-export default function DayDetailModal({ visible, day, place, onClose, showSummary = true }: Props) {
+export default function DayDetailModal({
+  visible,
+  day,
+  place,
+  onClose,
+  showSummary = true,
+}: Props) {
   const [hours, setHours] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -57,8 +71,7 @@ export default function DayDetailModal({ visible, day, place, onClose, showSumma
               style={styles.closeButton}
               onPress={onClose}
               accessibilityRole="button"
-              accessibilityLabel="Cerrar detalle del día"
-            >
+              accessibilityLabel="Cerrar detalle del día">
               <Text style={styles.closeText}>Cerrar</Text>
             </Pressable>
           </View>
@@ -74,8 +87,7 @@ export default function DayDetailModal({ visible, day, place, onClose, showSumma
                     key={line.title}
                     style={styles.detailRow}
                     accessible
-                    accessibilityLabel={`${line.title}: ${line.spoken}`}
-                  >
+                    accessibilityLabel={`${line.title}: ${line.spoken}`}>
                     <Text style={styles.detailTitle}>{line.title}</Text>
                     <Text style={styles.detailValue}>{line.value}</Text>
                   </View>
@@ -86,7 +98,12 @@ export default function DayDetailModal({ visible, day, place, onClose, showSumma
             <Text style={styles.sectionHeader} accessibilityRole="header">
               Por horas
             </Text>
-            {loading && <ActivityIndicator color="#9ed3ff" accessibilityLabel="Cargando previsión por horas" />}
+            {loading && (
+              <ActivityIndicator
+                color="#9ed3ff"
+                accessibilityLabel="Cargando previsión por horas"
+              />
+            )}
             {!loading && error ? <Text style={styles.note}>Error: {error}</Text> : null}
 
             {!loading &&
@@ -99,10 +116,18 @@ export default function DayDetailModal({ visible, day, place, onClose, showSumma
                   item.windSpeed ?? 'sin dato'
                 } kilómetros por hora`;
                 return (
-                  <View key={item.time} style={styles.hourRow} accessible accessibilityLabel={label}>
-                    <Text style={styles.hourTime}>{formatTime(item.time) ?? item.time}</Text>
+                  <View
+                    key={item.time}
+                    style={styles.hourRow}
+                    accessible
+                    accessibilityLabel={label}>
+                    <Text style={styles.hourTime} numberOfLines={1}>
+                      {formatTime(item.time) ?? item.time}
+                    </Text>
                     <Text style={styles.hourIcon}>{info.emoji}</Text>
-                    <Text style={styles.hourTemp}>{item.temperature ?? '-'}º</Text>
+                    <Text style={styles.hourTemp} numberOfLines={1}>
+                      {item.temperature ?? '-'}º
+                    </Text>
                     <View style={styles.hourMeta}>
                       <Text style={styles.hourMetaText}>Lluvia {item.rainProbability ?? '-'}%</Text>
                       <Text style={styles.hourMetaText}>Viento {item.windSpeed ?? '-'} km/h</Text>
@@ -215,9 +240,12 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 8,
   },
+  // Anchos holgados y numberOfLines={1}: con 56 el "0" de los minutos (10:00) y el simbolo de
+  // grados saltaban a otra linea en las temperaturas de dos digitos o negativas.
   hourTime: {
     color: '#dbe8ff',
-    width: 56,
+    width: 64,
+    flexShrink: 0,
     fontSize: 17,
     fontWeight: '600',
   },
@@ -228,7 +256,8 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 17,
     fontWeight: '700',
-    width: 56,
+    width: 64,
+    flexShrink: 0,
     textAlign: 'center',
   },
   hourMeta: {

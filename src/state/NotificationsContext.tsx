@@ -1,6 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
-import { createContext, ReactNode, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
 import {
@@ -13,7 +21,11 @@ import {
   requestNotificationPermission,
   syncNotifications,
 } from '../utils/notifications';
-import { registerThresholdDevice, sendTestNotification, unregisterThresholdDevice } from '../utils/push';
+import {
+  registerThresholdDevice,
+  sendTestNotification,
+  unregisterThresholdDevice,
+} from '../utils/push';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
 const STORAGE_NOTIFICATIONS = 'tiempo.notifications.v2';
@@ -34,6 +46,9 @@ interface NotificationsContextValue {
   deleteSummary: (id: string) => Promise<void>;
   saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
   testNotification: () => Promise<void>;
+  // Ultima confirmacion para mostrar tambien en pantalla (no solo VoiceOver). El `id` cambia en
+  // cada aviso para que la pantalla lo detecte aunque el texto se repita.
+  notice?: { id: number; text: string };
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
@@ -42,6 +57,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const { places, currentLocationPlace } = usePlaces();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [loaded, setLoaded] = useState(false);
+  const [notice, setNotice] = useState<{ id: number; text: string } | undefined>(undefined);
+  const noticeSeq = useRef(0);
+
+  // Confirma una accion del usuario por los dos canales a la vez: VoiceOver (announceForAccessibility)
+  // y un aviso visible en pantalla. Antes solo se anunciaba por voz y quien ve no tenia feedback.
+  const notify = useCallback((text: string) => {
+    AccessibilityInfo.announceForAccessibility(text);
+    noticeSeq.current += 1;
+    setNotice({ id: noticeSeq.current, text });
+  }, []);
 
   // Espejos en refs para que los listeners (segundo plano) usen siempre lo último.
   const placesRef = useRef(places);
@@ -84,13 +109,13 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       if (!anyEnabled) {
         await cancelAllNotifications();
         if (announce) {
-          AccessibilityInfo.announceForAccessibility('No tienes ningún aviso activo.');
+          notify('No tienes ningún aviso activo.');
         }
         return;
       }
       if (!(await hasNotificationPermission())) {
         if (announce) {
-          AccessibilityInfo.announceForAccessibility('Falta el permiso de notificaciones del sistema.');
+          notify('Falta el permiso de notificaciones del sistema.');
         }
         return;
       }
@@ -98,15 +123,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       try {
         await syncNotifications(next, resolvePlace);
         if (announce) {
-          AccessibilityInfo.announceForAccessibility('Avisos guardados.');
+          notify('Avisos guardados.');
         }
       } catch {
         if (announce) {
-          AccessibilityInfo.announceForAccessibility('No se han podido programar los avisos.');
+          notify('No se han podido programar los avisos.');
         }
       }
     },
-    [resolvePlace]
+    [resolvePlace, notify],
   );
 
   // El aviso de temperatura lo gestiona el servidor: se (re)suscribe este teléfono con su
@@ -148,27 +173,30 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [loaded, resync]);
 
   // Pide el permiso (con explicación previa) solo si se está activando un aviso y aún no se tiene.
-  const ensurePermissionForActivation = useCallback(async (willBeEnabled: boolean): Promise<boolean> => {
-    if (!willBeEnabled || (await hasNotificationPermission())) {
-      return true;
-    }
-    if (!(await canAskForNotificationPermission())) {
-      Alert.alert(
-        'Notificaciones bloqueadas',
-        'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
-          'en EasyWeather, Notificaciones.'
-      );
-      return false;
-    }
-    if (!(await explainNotificationsBeforeAsking())) {
-      return false;
-    }
-    const granted = await requestNotificationPermission();
-    if (!granted) {
-      AccessibilityInfo.announceForAccessibility('Sin permiso de notificaciones no se pueden enviar avisos.');
-    }
-    return granted;
-  }, []);
+  const ensurePermissionForActivation = useCallback(
+    async (willBeEnabled: boolean): Promise<boolean> => {
+      if (!willBeEnabled || (await hasNotificationPermission())) {
+        return true;
+      }
+      if (!(await canAskForNotificationPermission())) {
+        Alert.alert(
+          'Notificaciones bloqueadas',
+          'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
+            'en EasyWeather, Notificaciones.',
+        );
+        return false;
+      }
+      if (!(await explainNotificationsBeforeAsking())) {
+        return false;
+      }
+      const granted = await requestNotificationPermission();
+      if (!granted) {
+        notify('Sin permiso de notificaciones no se pueden enviar avisos.');
+      }
+      return granted;
+    },
+    [notify],
+  );
 
   const persist = useCallback(
     async (next: NotificationSettings) => {
@@ -178,7 +206,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       await resync(next, true);
       await syncThresholdServer(next.threshold);
     },
-    [resync, syncThresholdServer]
+    [resync, syncThresholdServer],
   );
 
   const saveSummary = useCallback(
@@ -193,16 +221,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         : [...current.summaries, saved];
       await persist({ ...current, summaries });
     },
-    [ensurePermissionForActivation, persist]
+    [ensurePermissionForActivation, persist],
   );
 
   const deleteSummary = useCallback(
     async (id: string) => {
       const current = settingsRef.current;
       await persist({ ...current, summaries: current.summaries.filter((s) => s.id !== id) });
-      AccessibilityInfo.announceForAccessibility('Aviso eliminado.');
+      notify('Aviso eliminado.');
     },
-    [persist]
+    [persist, notify],
   );
 
   const saveThreshold = useCallback(
@@ -211,7 +239,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       const current = settingsRef.current;
       await persist({ ...current, threshold: { ...threshold, enabled } });
     },
-    [ensurePermissionForActivation, persist]
+    [ensurePermissionForActivation, persist],
   );
 
   const testNotification = useCallback(async () => {
@@ -220,7 +248,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       'Notificación de prueba',
       ok
         ? 'Enviada. Debería llegarte en unos segundos.'
-        : 'No se ha podido enviar. Comprueba que has dado permiso de notificaciones.'
+        : 'No se ha podido enviar. Comprueba que has dado permiso de notificaciones.',
     );
   }, []);
 
@@ -230,6 +258,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     deleteSummary,
     saveThreshold,
     testNotification,
+    notice,
   };
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;

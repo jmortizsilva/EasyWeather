@@ -1,6 +1,7 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DayDetailModal from '../components/DayDetailModal';
 import DayRow from '../components/DayRow';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
@@ -9,6 +10,7 @@ import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
   const {
     activeId,
     activePlace,
@@ -21,7 +23,9 @@ export default function HomeScreen() {
     refreshCurrentLocation,
     reloadForecast,
   } = usePlaces();
-  const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(undefined);
+  const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
+    undefined,
+  );
 
   // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
   // refresca la previsión. Silencioso si ya hay datos.
@@ -29,7 +33,7 @@ export default function HomeScreen() {
     useCallback(() => {
       void detectCurrentLocation();
       reloadForecast(true);
-    }, [detectCurrentLocation, reloadForecast])
+    }, [detectCurrentLocation, reloadForecast]),
   );
 
   const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
@@ -42,23 +46,23 @@ export default function HomeScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
-      accessibilityLabel="Pantalla Hoy"
-    >
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      accessibilityLabel="Pantalla Hoy">
       {activePlace ? (
         <Text style={styles.cityTitle} accessibilityRole="header">
           {activePlace.name}
         </Text>
       ) : (
-        <Text style={styles.note}>Actualiza tu ubicación o busca un lugar en la pestaña Buscar.</Text>
+        <Text style={styles.note}>
+          Actualiza tu ubicación o busca un lugar en la pestaña Buscar.
+        </Text>
       )}
 
       {today && (
         <View style={styles.currentCard}>
           <View
             accessible
-            accessibilityLabel={`Ahora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}
-          >
+            accessibilityLabel={`Ahora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}>
             <Text style={styles.currentTemp}>{forecast?.current?.temperature ?? '-'}º</Text>
             <Text style={styles.currentSky}>
               {currentInfo.emoji} {currentInfo.label}
@@ -66,7 +70,9 @@ export default function HomeScreen() {
           </View>
 
           {updatedAt && (
-            <Text style={styles.updatedLine} accessibilityLabel={`Datos actualizados el ${updatedAt}`}>
+            <Text
+              style={styles.updatedLine}
+              accessibilityLabel={`Datos actualizados el ${updatedAt}`}>
               Actualizado: {updatedAt}
             </Text>
           )}
@@ -77,8 +83,7 @@ export default function HomeScreen() {
                 key={line.title}
                 style={styles.detailRow}
                 accessible
-                accessibilityLabel={`${line.title}: ${line.spoken}`}
-              >
+                accessibilityLabel={`${line.title}: ${line.spoken}`}>
                 <Text style={styles.detailTitle}>{line.title}</Text>
                 <Text style={styles.detailValue}>{line.value}</Text>
               </View>
@@ -89,8 +94,7 @@ export default function HomeScreen() {
             style={styles.buttonSecondary}
             onPress={() => setDetail({ day: today, showSummary: false })}
             accessibilityRole="button"
-            accessibilityLabel="Ver hoy hora a hora"
-          >
+            accessibilityLabel="Ver hoy hora a hora">
             <Text style={styles.buttonSecondaryText}>Hoy hora a hora</Text>
           </Pressable>
         </View>
@@ -107,13 +111,20 @@ export default function HomeScreen() {
         }}
         accessibilityRole="button"
         accessibilityLabel={isCurrentLocation ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
-        accessibilityHint={isCurrentLocation ? 'Usa el GPS del teléfono para detectar dónde estás' : undefined}
-      >
-        <Text style={styles.buttonText}>{isCurrentLocation ? 'Actualizar mi ubicación' : 'Actualizar previsión'}</Text>
+        accessibilityHint={
+          isCurrentLocation ? 'Usa el GPS del teléfono para detectar dónde estás' : undefined
+        }>
+        <Text style={styles.buttonText}>
+          {isCurrentLocation ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
+        </Text>
       </Pressable>
 
       {(loadingForecast || loadingLocation) && (
-        <ActivityIndicator color="#9ed3ff" accessibilityLabel="Cargando" accessibilityRole="progressbar" />
+        <ActivityIndicator
+          color="#9ed3ff"
+          accessibilityLabel="Cargando"
+          accessibilityRole="progressbar"
+        />
       )}
 
       {upcomingDays.length > 0 && (
@@ -133,7 +144,9 @@ export default function HomeScreen() {
           </View>
         </>
       )}
-      {!loadingForecast && !forecast && <Text style={styles.note}>Todavía no hay datos disponibles.</Text>}
+      {!loadingForecast && !forecast && (
+        <Text style={styles.note}>Todavía no hay datos disponibles.</Text>
+      )}
       <Text style={styles.statusNote}>{message}</Text>
 
       <DayDetailModal
@@ -155,7 +168,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d1a2b',
   },
   content: {
-    paddingTop: 24,
+    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo: sin esto el
+    // titulo se metia debajo de la hora y los iconos de estado del sistema.
     paddingHorizontal: 16,
     paddingBottom: 96,
     gap: 16,
@@ -224,16 +238,21 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
+  // Boton secundario: mismo relleno azul que el primario para que se distinga del fondo oscuro
+  // (antes usaba #0e2238, casi identico al fondo y practicamente invisible). El borde claro lo
+  // mantiene reconocible como accion secundaria sin perder contraste.
   buttonSecondary: {
     borderRadius: 12,
-    backgroundColor: '#0e2238',
+    backgroundColor: '#1b5ea9',
+    borderWidth: 1,
+    borderColor: '#7cbcff',
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   buttonSecondaryText: {
-    color: '#dbe8ff',
+    color: '#ffffff',
     fontSize: 17,
     fontWeight: '600',
   },

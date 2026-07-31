@@ -1,6 +1,15 @@
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../navigation/types';
 import { searchPlaces } from '../services/openMeteo';
 import { usePlaces } from '../state/PlacesContext';
@@ -9,6 +18,7 @@ import { Place } from '../types';
 const SEARCH_DEBOUNCE_MS = 400;
 
 export default function SearchScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<TabParamList>>();
   const { places, addPlace, removePlace, viewPlace } = usePlaces();
   const [citySearch, setCitySearch] = useState('');
@@ -41,10 +51,9 @@ export default function SearchScreen() {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"
-      keyboardShouldPersistTaps="handled"
-    >
+      keyboardShouldPersistTaps="handled">
       <Text style={styles.title} accessibilityRole="header">
         Buscar
       </Text>
@@ -67,7 +76,9 @@ export default function SearchScreen() {
             const saved = places.some((p) => p.id === place.id);
             const where = place.admin1 ? `, ${place.admin1}` : '';
             return (
-              <View key={place.id} style={[styles.resultRow, index < searchResults.length - 1 && styles.rowDivider]}>
+              <View
+                key={place.id}
+                style={[styles.resultRow, index < searchResults.length - 1 && styles.rowDivider]}>
                 <Pressable
                   style={styles.resultSelect}
                   onPress={() => handleView(place)}
@@ -90,8 +101,7 @@ export default function SearchScreen() {
                     } else if (action === 'eliminar') {
                       void removePlace(place.id);
                     }
-                  }}
-                >
+                  }}>
                   <Text style={styles.rowTitle}>{place.name}</Text>
                   <Text style={styles.rowMeta}>{place.admin1 ?? ''}</Text>
                 </Pressable>
@@ -101,8 +111,7 @@ export default function SearchScreen() {
                   style={[styles.saveButton, saved && styles.savedButton]}
                   onPress={() => (saved ? void removePlace(place.id) : void addPlace(place))}
                   accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants"
-                >
+                  importantForAccessibility="no-hide-descendants">
                   <Text style={styles.saveText}>{saved ? 'Quitar' : 'Guardar'}</Text>
                 </Pressable>
               </View>
@@ -112,7 +121,7 @@ export default function SearchScreen() {
       )}
 
       {!searchLoading && citySearch.trim().length >= 2 && searchResults.length === 0 && (
-        <Text style={styles.note}>Sin resultados para "{citySearch.trim()}".</Text>
+        <Text style={styles.note}>Sin resultados para «{citySearch.trim()}».</Text>
       )}
     </ScrollView>
   );
@@ -124,7 +133,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d1a2b',
   },
   content: {
-    paddingTop: 24,
+    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
     paddingHorizontal: 16,
     paddingBottom: 96,
     gap: 16,

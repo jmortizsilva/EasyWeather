@@ -1,9 +1,11 @@
 import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../navigation/types';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 
 export default function PlacesScreen() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<NavigationProp<TabParamList>>();
   const { places, currentLocationPlace, activeId, setActiveId, removePlace } = usePlaces();
 
@@ -13,7 +15,10 @@ export default function PlacesScreen() {
   };
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content} accessibilityLabel="Pantalla Mis lugares">
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+      accessibilityLabel="Pantalla Mis lugares">
       <Text style={styles.title} accessibilityRole="header">
         Mis lugares
       </Text>
@@ -24,15 +29,18 @@ export default function PlacesScreen() {
           onPress={() => selectAndGoHome(CURRENT_LOCATION_ID)}
           accessibilityRole="button"
           accessibilityLabel="Ver previsión de mi ubicación"
-          accessibilityState={{ selected: activeId === CURRENT_LOCATION_ID }}
-        >
+          accessibilityState={{ selected: activeId === CURRENT_LOCATION_ID }}>
           <Text style={styles.rowTitle}>📍 {currentLocationPlace?.name ?? 'Mi ubicación'}</Text>
-          {currentLocationPlace?.admin1 ? <Text style={styles.rowMeta}>{currentLocationPlace.admin1}</Text> : null}
+          {currentLocationPlace?.admin1 ? (
+            <Text style={styles.rowMeta}>{currentLocationPlace.admin1}</Text>
+          ) : null}
         </Pressable>
       </View>
 
       {places.length === 0 && (
-        <Text style={styles.note}>Aún no has añadido ningún lugar. Ve a la pestaña Buscar para encontrar uno.</Text>
+        <Text style={styles.note}>
+          Aún no has añadido ningún lugar. Ve a la pestaña Buscar para encontrar uno.
+        </Text>
       )}
 
       {places.length > 0 && (
@@ -40,8 +48,7 @@ export default function PlacesScreen() {
           {places.map((place, index) => (
             <View
               key={place.id}
-              style={[styles.favoriteRow, index < places.length - 1 && styles.rowDivider]}
-            >
+              style={[styles.favoriteRow, index < places.length - 1 && styles.rowDivider]}>
               <Pressable
                 style={[styles.favoriteSelect, activeId === place.id && styles.rowSelected]}
                 onPress={() => selectAndGoHome(place.id)}
@@ -54,8 +61,7 @@ export default function PlacesScreen() {
                   if (event.nativeEvent.actionName === 'quitar') {
                     void removePlace(place.id);
                   }
-                }}
-              >
+                }}>
                 <Text style={styles.rowTitle}>{place.name}</Text>
                 <Text style={styles.rowMeta}>{place.admin1 ?? ''}</Text>
               </Pressable>
@@ -65,8 +71,7 @@ export default function PlacesScreen() {
                 style={styles.removeButton}
                 onPress={() => void removePlace(place.id)}
                 accessibilityElementsHidden
-                importantForAccessibility="no-hide-descendants"
-              >
+                importantForAccessibility="no-hide-descendants">
                 <Text style={styles.removeText}>Quitar</Text>
               </Pressable>
             </View>
@@ -83,7 +88,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#0d1a2b',
   },
   content: {
-    paddingTop: 24,
+    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
     paddingHorizontal: 16,
     paddingBottom: 96,
     gap: 16,

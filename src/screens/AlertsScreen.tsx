@@ -1,10 +1,25 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { useEffect, useMemo, useState } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { useNotifications } from '../state/NotificationsContext';
-import { Place, SummaryAlert } from '../types';
-import { createSummaryAlert, DAILY_FIELD_OPTIONS, DEFAULT_THRESHOLD, formatTime } from '../utils/notifications';
+import { SummaryAlert } from '../types';
+import {
+  createSummaryAlert,
+  DAILY_FIELD_OPTIONS,
+  DEFAULT_THRESHOLD,
+  formatTime,
+} from '../utils/notifications';
 
 interface PlaceOption {
   id: string;
@@ -15,10 +30,15 @@ function usePlaceOptions(): PlaceOption[] {
   const { places, currentLocationPlace } = usePlaces();
   return useMemo(
     () => [
-      { id: CURRENT_LOCATION_ID, name: currentLocationPlace ? `Mi ubicación (${currentLocationPlace.name})` : 'Mi ubicación actual' },
+      {
+        id: CURRENT_LOCATION_ID,
+        name: currentLocationPlace
+          ? `Mi ubicación (${currentLocationPlace.name})`
+          : 'Mi ubicación actual',
+      },
       ...places.map((p) => ({ id: p.id, name: p.name })),
     ],
-    [places, currentLocationPlace]
+    [places, currentLocationPlace],
   );
 }
 
@@ -46,8 +66,7 @@ function SwitchRow({
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
       accessibilityLabel={label}
-      onPress={() => onValueChange(!value)}
-    >
+      onPress={() => onValueChange(!value)}>
       <Text style={styles.rowTitle}>{label}</Text>
       <Switch
         value={value}
@@ -75,6 +94,7 @@ function SummaryEditor({
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
+  const insets = useSafeAreaInsets();
   const [draft, setDraft] = useState<SummaryAlert>(initial);
 
   const timeValue = useMemo(() => {
@@ -93,10 +113,9 @@ function SummaryEditor({
   return (
     <Modal visible animationType="slide" onRequestClose={onClose}>
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel={isNew ? 'Nuevo aviso de resumen' : 'Editar aviso de resumen'}
-        style={styles.modalRoot}
-      >
+        style={styles.modalRoot}>
         <Text style={styles.title} accessibilityRole="header">
           {isNew ? 'Nuevo aviso' : 'Editar aviso'}
         </Text>
@@ -114,8 +133,7 @@ function SummaryEditor({
                 onPress={() => setDraft((d) => ({ ...d, placeId: option.id }))}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                accessibilityLabel={`${option.name}${selected ? ', seleccionado' : ''}`}
-              >
+                accessibilityLabel={`${option.name}${selected ? ', seleccionado' : ''}`}>
                 <Text style={styles.rowTitle}>
                   {selected ? '● ' : '○ '}
                   {option.name}
@@ -129,7 +147,9 @@ function SummaryEditor({
           Hora
         </Text>
         <View style={styles.card}>
-          <Text style={styles.rowTitle} accessibilityLabel={`Hora del aviso: ${formatTime(draft.hour, draft.minute)}`}>
+          <Text
+            style={styles.rowTitle}
+            accessibilityLabel={`Hora del aviso: ${formatTime(draft.hour, draft.minute)}`}>
             Hora del aviso: {formatTime(draft.hour, draft.minute)}
           </Text>
           <DateTimePicker
@@ -172,8 +192,7 @@ function SummaryEditor({
           style={styles.buttonPrimary}
           onPress={() => onSave(draft)}
           accessibilityRole="button"
-          accessibilityLabel="Guardar aviso"
-        >
+          accessibilityLabel="Guardar aviso">
           <Text style={styles.buttonPrimaryText}>Guardar</Text>
         </Pressable>
 
@@ -182,13 +201,16 @@ function SummaryEditor({
             style={styles.buttonDanger}
             onPress={() => onDelete(draft.id)}
             accessibilityRole="button"
-            accessibilityLabel="Eliminar este aviso"
-          >
+            accessibilityLabel="Eliminar este aviso">
             <Text style={styles.buttonDangerText}>Eliminar aviso</Text>
           </Pressable>
         )}
 
-        <Pressable style={styles.buttonSecondary} onPress={onClose} accessibilityRole="button" accessibilityLabel="Cancelar">
+        <Pressable
+          style={styles.buttonSecondary}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cancelar">
           <Text style={styles.buttonSecondaryText}>Cancelar</Text>
         </Pressable>
       </ScrollView>
@@ -197,11 +219,30 @@ function SummaryEditor({
 }
 
 export default function AlertsScreen() {
+  const insets = useSafeAreaInsets();
   const { currentLocationPlace } = usePlaces();
   const options = usePlaceOptions();
-  const { settings, saveSummary, deleteSummary, saveThreshold, testNotification } = useNotifications();
+  const { settings, saveSummary, deleteSummary, saveThreshold, testNotification, notice } =
+    useNotifications();
 
-  const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(undefined);
+  const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(
+    undefined,
+  );
+
+  // Banner de confirmacion visible: refleja lo mismo que anuncia VoiceOver (guardado, falta permiso,
+  // error...) y se autooculta. Se ignoran los avisos previos al montar para no mostrar uno viejo al
+  // volver a la pestaña.
+  const [banner, setBanner] = useState('');
+  const lastNoticeId = useRef(notice?.id ?? 0);
+  useEffect(() => {
+    if (!notice || notice.id === lastNoticeId.current) {
+      return;
+    }
+    lastNoticeId.current = notice.id;
+    setBanner(notice.text);
+    const timer = setTimeout(() => setBanner(''), 4000);
+    return () => clearTimeout(timer);
+  }, [notice]);
 
   const [thresholdEnabled, setThresholdEnabled] = useState(settings.threshold.enabled);
   const [maxDraft, setMaxDraft] = useState(String(settings.threshold.maxThreshold));
@@ -238,7 +279,10 @@ export default function AlertsScreen() {
 
   return (
     <>
-      <ScrollView style={styles.screen} contentContainerStyle={styles.content} accessibilityLabel="Pantalla Avisos">
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+        accessibilityLabel="Pantalla Avisos">
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
@@ -247,8 +291,8 @@ export default function AlertsScreen() {
           Avisos de resumen
         </Text>
         <Text style={styles.note}>
-          Cada aviso te llega a la hora que elijas, con los datos que quieras, de tu ubicación o de una ciudad. Puedes
-          tener varios.
+          Cada aviso te llega a la hora que elijas, con los datos que quieras, de tu ubicación o de
+          una ciudad. Puedes tener varios.
         </Text>
 
         {settings.summaries.length > 0 && (
@@ -261,7 +305,7 @@ export default function AlertsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel={`Editar aviso de ${placeName(options, summary.placeId)} a las ${formatTime(
                   summary.hour,
-                  summary.minute
+                  summary.minute,
                 )}, ${summary.enabled ? 'activado' : 'desactivado'}`}
                 accessibilityHint="Toca dos veces para editarlo. En el rotor de acciones puedes eliminarlo"
                 accessibilityActions={[{ name: 'eliminar', label: 'Eliminar aviso' }]}
@@ -269,8 +313,7 @@ export default function AlertsScreen() {
                   if (event.nativeEvent.actionName === 'eliminar') {
                     void deleteSummary(summary.id);
                   }
-                }}
-              >
+                }}>
                 <Text style={styles.rowTitle}>
                   {placeName(options, summary.placeId)} · {formatTime(summary.hour, summary.minute)}
                 </Text>
@@ -282,10 +325,11 @@ export default function AlertsScreen() {
 
         <Pressable
           style={styles.buttonPrimary}
-          onPress={() => setEditing({ summary: createSummaryAlert(CURRENT_LOCATION_ID), isNew: true })}
+          onPress={() =>
+            setEditing({ summary: createSummaryAlert(CURRENT_LOCATION_ID), isNew: true })
+          }
           accessibilityRole="button"
-          accessibilityLabel="Añadir aviso de resumen"
-        >
+          accessibilityLabel="Añadir aviso de resumen">
           <Text style={styles.buttonPrimaryText}>Añadir aviso de resumen</Text>
         </Pressable>
 
@@ -293,17 +337,24 @@ export default function AlertsScreen() {
           Aviso de temperatura
         </Text>
         <Text style={styles.note}>
-          La app vigila tu ubicación actual y te avisa cuando la temperatura sube de tu máximo o baja de tu mínimo.
+          La app vigila tu ubicación actual y te avisa cuando la temperatura sube de tu máximo o
+          baja de tu mínimo.
         </Text>
 
         <View style={styles.card}>
-          <SwitchRow label="Aviso de temperatura" value={thresholdEnabled} onValueChange={onToggleThreshold} />
+          <SwitchRow
+            label="Aviso de temperatura"
+            value={thresholdEnabled}
+            onValueChange={onToggleThreshold}
+          />
         </View>
 
         {thresholdEnabled && (
           <>
             {!currentLocationPlace && (
-              <Text style={styles.note}>Para usar este aviso, actualiza antes tu ubicación en la pestaña Hoy.</Text>
+              <Text style={styles.note}>
+                Para usar este aviso, actualiza antes tu ubicación en la pestaña Hoy.
+              </Text>
             )}
 
             <View style={styles.card}>
@@ -341,8 +392,7 @@ export default function AlertsScreen() {
               style={styles.buttonPrimary}
               onPress={onSaveThreshold}
               accessibilityRole="button"
-              accessibilityLabel="Guardar aviso de temperatura"
-            >
+              accessibilityLabel="Guardar aviso de temperatura">
               <Text style={styles.buttonPrimaryText}>Guardar aviso de temperatura</Text>
             </Pressable>
 
@@ -351,16 +401,16 @@ export default function AlertsScreen() {
               onPress={() => void testNotification()}
               accessibilityRole="button"
               accessibilityLabel="Probar notificación"
-              accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan"
-            >
+              accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan">
               <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
             </Pressable>
           </>
         )}
 
         <Text style={styles.note}>
-          Los avisos de resumen se preparan en el propio teléfono. El aviso de temperatura lo gestiona un servidor para
-          poder avisarte aunque no abras la app; puedes ver qué datos guarda en la política de privacidad.
+          Los avisos de resumen se preparan en el propio teléfono. El aviso de temperatura lo
+          gestiona un servidor para poder avisarte aunque no abras la app; puedes ver qué datos
+          guarda en la política de privacidad.
         </Text>
       </ScrollView>
 
@@ -380,6 +430,18 @@ export default function AlertsScreen() {
           onClose={() => setEditing(undefined)}
         />
       )}
+
+      {/* Confirmacion visible flotante. Se oculta de VoiceOver (importantForAccessibility) porque el
+          mismo texto ya se anuncio por voz al fijar el notice; asi no se lee dos veces. */}
+      {banner ? (
+        <View
+          style={[styles.toast, { bottom: insets.bottom + 24 }]}
+          pointerEvents="none"
+          importantForAccessibility="no-hide-descendants"
+          accessibilityElementsHidden>
+          <Text style={styles.toastText}>{banner}</Text>
+        </View>
+      ) : null}
     </>
   );
 }
@@ -474,18 +536,40 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '600',
   },
+  // Boton secundario: relleno azul visible + borde claro. Antes usaba #0e2238, casi identico al
+  // fondo, y "Probar notificación" / "Cancelar" apenas se veian.
   buttonSecondary: {
     borderRadius: 12,
-    backgroundColor: '#0e2238',
+    backgroundColor: '#1b5ea9',
+    borderWidth: 1,
+    borderColor: '#7cbcff',
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 16,
   },
   buttonSecondaryText: {
-    color: '#dbe8ff',
+    color: '#ffffff',
     fontSize: 17,
     fontWeight: '600',
+  },
+  // Aviso visible flotante (toast) para confirmar acciones sin depender solo de VoiceOver.
+  toast: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    borderRadius: 12,
+    backgroundColor: '#1c4a2e',
+    borderWidth: 1,
+    borderColor: '#5fd08a',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  toastText: {
+    color: '#eafff1',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   buttonDanger: {
     borderRadius: 12,
