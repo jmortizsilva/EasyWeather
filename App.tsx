@@ -9,6 +9,7 @@ import PlacesScreen from './src/screens/PlacesScreen';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
 import { TabParamList } from './src/navigation/types';
+import { useActualizaciones } from './src/utils/actualizaciones';
 
 const Tab = createNativeBottomTabNavigator<TabParamList>();
 
@@ -24,6 +25,9 @@ const navigationTheme = {
 };
 
 export default function App() {
+  // Comprueba updates al abrir y al volver a primer plano, y avisa de novedades tras actualizar.
+  useActualizaciones();
+
   return (
     <SafeAreaProvider>
       <PlacesProvider>
