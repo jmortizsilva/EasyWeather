@@ -13,6 +13,47 @@ export interface ThresholdRegistration {
   minThreshold: number;
 }
 
+// Un resumen tal y como lo entiende el servidor. `seguirUbicacion` = usar la ubicacion actual del
+// dispositivo (para los resumenes de "mi ubicacion"); si es false, se usa la lat/lon fija enviada.
+export interface ResumenServidor {
+  id: string;
+  hora: number;
+  minuto: number;
+  campos: string[];
+  seguirUbicacion: boolean;
+  lat: number;
+  lon: number;
+  nombre: string;
+}
+
+// Estado completo de avisos que el cliente manda al servidor. El servidor reemplaza lo que tenga
+// guardado para este token: es idempotente (mandar el estado entero evita descuadres).
+export interface SincronizacionAvisos {
+  zonaHoraria: string;
+  ubicacion: { lat: number; lon: number; nombre: string } | null;
+  umbral: { maxThreshold: number; minThreshold: number } | null;
+  resumenes: ResumenServidor[];
+}
+
+// Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona
+// horaria actuales. Sustituye al antiguo /register: ahora el servidor manda tambien el resumen.
+export async function sincronizarAvisos(datos: SincronizacionAvisos): Promise<boolean> {
+  const token = await getPushToken();
+  if (!token) {
+    return false;
+  }
+  try {
+    const response = await fetch(`${SERVER_URL}/sincronizar`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token, ...datos }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 // Identificador de push de este iPhone. Requiere permiso concedido y un dispositivo real.
 export async function getPushToken(): Promise<string | undefined> {
   try {

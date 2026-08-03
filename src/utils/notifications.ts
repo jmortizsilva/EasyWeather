@@ -78,19 +78,19 @@ export async function canAskForNotificationPermission(): Promise<boolean> {
 /**
  * iOS no permite personalizar el texto del diálogo de permiso de notificaciones (a diferencia
  * del de ubicación), así que antes de lanzarlo se explica con nuestras palabras cómo funcionan
- * los avisos. Lo importante que debe saber el usuario es que tiene que abrir la app cada pocos
- * días para que se sigan programando. Devuelve si quiere continuar.
+ * los avisos. Ahora los avisos los envía un servidor usando tu ubicación (también en segundo
+ * plano), para que te lleguen del sitio donde estás aunque no abras la app. Devuelve si continúa.
  */
 export function explainNotificationsBeforeAsking(): Promise<boolean> {
   return new Promise((resolve) => {
     Alert.alert(
       'Cómo funcionan los avisos',
-      'Los avisos se preparan dentro de tu propio iPhone, así que no se envía ningún dato tuyo a ' +
-        'ningún sitio.\n\n' +
-        'Para que sigan llegando necesitas abrir la app cada pocos días: cada vez que la abres, ' +
-        'deja preparados los avisos de los días siguientes. Si pasas mucho tiempo sin abrirla, ' +
-        'dejarán de llegar hasta que vuelvas a entrar.\n\n' +
-        'A continuación iOS te preguntará si permites las notificaciones.',
+      'Para avisarte del tiempo del sitio donde estás, aunque no tengas la app abierta, ' +
+        'EasyWeather necesita dos permisos: enviarte notificaciones y conocer tu ubicación ' +
+        '(también en segundo plano).\n\n' +
+        'Los avisos los prepara un servidor con tu ubicación y tus preferencias; puedes ver qué ' +
+        'datos guarda en la política de privacidad.\n\n' +
+        'A continuación iOS te preguntará por esos permisos.',
       [
         { text: 'Ahora no', style: 'cancel', onPress: () => resolve(false) },
         { text: 'Continuar', onPress: () => resolve(true) },

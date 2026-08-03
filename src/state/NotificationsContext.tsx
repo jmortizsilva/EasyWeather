@@ -19,14 +19,61 @@ import {
   hasNotificationPermission,
   isValidSettings,
   requestNotificationPermission,
-  syncNotifications,
 } from '../utils/notifications';
 import {
-  registerThresholdDevice,
+  ResumenServidor,
+  SincronizacionAvisos,
+  sincronizarAvisos,
   sendTestNotification,
-  unregisterThresholdDevice,
 } from '../utils/push';
+import {
+  detenerSeguimientoUbicacion,
+  iniciarSeguimientoUbicacion,
+  pedirPermisoUbicacionSiempre,
+} from '../utils/ubicacionFondo';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
+
+// Construye el estado completo de avisos para el servidor a partir de los ajustes. Los resumenes de
+// "mi ubicacion" van con seguirUbicacion=true (el servidor usa la ubicacion viva del telefono); los
+// de una ciudad fija llevan su lat/lon. Un resumen sin lugar resoluble (ubicacion aun desconocida)
+// se omite; se registrara cuando se sepa la ubicacion.
+function construirPayload(
+  next: NotificationSettings,
+  resolvePlace: (id: string) => Place | undefined,
+  ubicacionActual: Place | undefined,
+): SincronizacionAvisos {
+  const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const resumenes: ResumenServidor[] = [];
+  for (const s of next.summaries) {
+    if (!s.enabled) {
+      continue;
+    }
+    const place = resolvePlace(s.placeId);
+    if (!place) {
+      continue;
+    }
+    resumenes.push({
+      id: s.id,
+      hora: s.hour,
+      minuto: s.minute,
+      campos: s.fields,
+      seguirUbicacion: s.placeId === CURRENT_LOCATION_ID,
+      lat: place.lat,
+      lon: place.lon,
+      nombre: place.name,
+    });
+  }
+  return {
+    zonaHoraria,
+    ubicacion: ubicacionActual
+      ? { lat: ubicacionActual.lat, lon: ubicacionActual.lon, nombre: ubicacionActual.name }
+      : null,
+    umbral: next.threshold.enabled
+      ? { maxThreshold: next.threshold.maxThreshold, minThreshold: next.threshold.minThreshold }
+      : null,
+    resumenes,
+  };
+}
 
 const STORAGE_NOTIFICATIONS = 'tiempo.notifications.v2';
 
@@ -81,6 +128,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const load = async () => {
+      // Migracion: en versiones anteriores los resumenes eran notificaciones locales programadas.
+      // Ahora los envia el servidor, asi que se limpian las que quedaran pendientes en iOS.
+      await cancelAllNotifications();
       const stored = await AsyncStorage.getItem(STORAGE_NOTIFICATIONS);
       if (stored) {
         try {
@@ -104,99 +154,84 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     return placesRef.current.find((p) => p.id === id);
   }, []);
 
-  // Reprograma todos los avisos con datos frescos. `announce` es true solo cuando lo dispara una
-  // acción del usuario (guardar), para confirmarlo por voz sin dejar ningún texto fijo en pantalla.
-  const resync = useCallback(
+  // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion actual, y
+  // arranca o para las geovallas segun haya o no algun aviso activo. Todos los avisos los envia el
+  // servidor por push; ya no se programan localmente. `announce` es true solo cuando lo dispara una
+  // accion del usuario (guardar), para confirmarlo por voz.
+  const sincronizarServidor = useCallback(
     async (next: NotificationSettings, announce = false) => {
       const anyEnabled = next.summaries.some((s) => s.enabled) || next.threshold.enabled;
-      if (!anyEnabled) {
-        await cancelAllNotifications();
-        if (announce) {
-          notify('No tienes ningún aviso activo.');
-        }
-        return;
-      }
-      if (!(await hasNotificationPermission())) {
-        if (announce) {
-          notify('Falta el permiso de notificaciones del sistema.');
-        }
-        return;
+      const payload = construirPayload(next, resolvePlace, currentLocationRef.current);
+      const ok = await sincronizarAvisos(payload);
+
+      // Seguir la ubicacion (geovallas) mientras haya algun aviso; si no, dejar de seguirla.
+      if (anyEnabled) {
+        await iniciarSeguimientoUbicacion();
+      } else {
+        await detenerSeguimientoUbicacion();
       }
 
-      try {
-        await syncNotifications(next, resolvePlace);
-        if (announce) {
-          notify('Avisos guardados.');
-        }
-      } catch {
-        if (announce) {
-          notify('No se han podido programar los avisos.');
+      if (announce) {
+        if (!anyEnabled) {
+          notify('No tienes ningún aviso activo.');
+        } else {
+          notify(ok ? 'Avisos guardados.' : 'No se han podido guardar los avisos.');
         }
       }
     },
     [resolvePlace, notify],
   );
 
-  // El aviso de temperatura lo gestiona el servidor: se (re)suscribe este teléfono con su
-  // ubicación actual y sus umbrales, o se da de baja. Se ejecuta al guardar y cuando cambia la
-  // ubicación (para que el servidor vigile siempre el sitio donde estás).
-  const syncThresholdServer = useCallback(async (threshold: NotificationSettings['threshold']) => {
-    const place = currentLocationRef.current;
-    if (threshold.enabled && place) {
-      await registerThresholdDevice({
-        lat: place.lat,
-        lon: place.lon,
-        placeName: place.name,
-        maxThreshold: threshold.maxThreshold,
-        minThreshold: threshold.minThreshold,
-      });
-    } else if (!threshold.enabled) {
-      await unregisterThresholdDevice();
-    }
-  }, []);
-
-  // Reprograma al cargar y cuando cambian los lugares o la ubicación (afecta a qué previsión usar
-  // en los resúmenes y a qué lugar vigila el servidor para el aviso de temperatura).
+  // Resincroniza al cargar y cuando cambian los lugares o la ubicación: el servidor necesita la
+  // ubicación al día y los lugares resueltos de cada resumen.
   useEffect(() => {
     if (!loaded) {
       return;
     }
-    void resync(settingsRef.current);
-    void syncThresholdServer(settingsRef.current.threshold);
-  }, [loaded, places, currentLocationPlace, resync, syncThresholdServer]);
+    void sincronizarServidor(settingsRef.current);
+  }, [loaded, places, currentLocationPlace, sincronizarServidor]);
 
-  // Al volver a primer plano se renueva la reserva de días.
+  // Al volver a primer plano se reenvía la ubicación actual al servidor.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active' && loaded) {
-        void resync(settingsRef.current);
+        void sincronizarServidor(settingsRef.current);
       }
     });
     return () => sub.remove();
-  }, [loaded, resync]);
+  }, [loaded, sincronizarServidor]);
 
-  // Pide el permiso (con explicación previa) solo si se está activando un aviso y aún no se tiene.
+  // Al activar un aviso se necesitan DOS permisos: notificaciones (para el push) y ubicación
+  // "Siempre" (para que los avisos sigan al usuario con la app cerrada). La explicación previa
+  // cubre ambos. Sin notificaciones no se puede activar; sin ubicación "Siempre" se activa igual,
+  // pero los avisos usarán la última ubicación conocida (se avisa de ello).
   const ensurePermissionForActivation = useCallback(
     async (willBeEnabled: boolean): Promise<boolean> => {
-      if (!willBeEnabled || (await hasNotificationPermission())) {
+      if (!willBeEnabled) {
         return true;
       }
-      if (!(await canAskForNotificationPermission())) {
-        Alert.alert(
-          'Notificaciones bloqueadas',
-          'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
-            'en EasyWeather, Notificaciones.',
-        );
-        return false;
+      if (!(await hasNotificationPermission())) {
+        if (!(await canAskForNotificationPermission())) {
+          Alert.alert(
+            'Notificaciones bloqueadas',
+            'iOS tiene bloqueadas las notificaciones de EasyWeather. Puedes permitirlas en Ajustes de iOS, ' +
+              'en EasyWeather, Notificaciones.',
+          );
+          return false;
+        }
+        if (!(await explainNotificationsBeforeAsking())) {
+          return false;
+        }
+        if (!(await requestNotificationPermission())) {
+          notify('Sin permiso de notificaciones no se pueden enviar avisos.');
+          return false;
+        }
       }
-      if (!(await explainNotificationsBeforeAsking())) {
-        return false;
+      // Ubicación en segundo plano: si se rechaza, no se bloquea (degrada a última conocida).
+      if (!(await pedirPermisoUbicacionSiempre())) {
+        notify('Sin permiso de ubicación siempre, los avisos usarán tu última ubicación conocida.');
       }
-      const granted = await requestNotificationPermission();
-      if (!granted) {
-        notify('Sin permiso de notificaciones no se pueden enviar avisos.');
-      }
-      return granted;
+      return true;
     },
     [notify],
   );
@@ -206,10 +241,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       setSettings(next);
       settingsRef.current = next;
       await AsyncStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(next));
-      await resync(next, true);
-      await syncThresholdServer(next.threshold);
+      await sincronizarServidor(next, true);
     },
-    [resync, syncThresholdServer],
+    [sincronizarServidor],
   );
 
   const saveSummary = useCallback(
