@@ -59,6 +59,26 @@ export async function sendTestNotification(): Promise<boolean> {
   }
 }
 
+// Avisa al servidor de la ubicacion actual (y la zona horaria del telefono) para que los avisos
+// y el resumen se calculen desde donde esta el usuario. La llama la tarea de geovallas al moverse.
+export async function reportarUbicacion(lat: number, lon: number): Promise<boolean> {
+  const token = await getPushToken();
+  if (!token) {
+    return false;
+  }
+  const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  try {
+    const response = await fetch(`${SERVER_URL}/ubicacion`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ token, lat, lon, zonaHoraria }),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 // Da de baja este teléfono del aviso de temperatura.
 export async function unregisterThresholdDevice(): Promise<void> {
   const token = await getPushToken();

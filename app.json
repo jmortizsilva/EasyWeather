@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "runtimeVersion": "1.0.0",
+    "runtimeVersion": "1.1.0",
     "updates": {
       "url": "https://u.expo.dev/bdc45482-63ad-4db7-b1cf-12e9a55b0479"
     },
@@ -46,7 +46,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona."
+          "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona.",
+          "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta.",
+          "isIosBackgroundLocationEnabled": true
         }
       ]
     ],
