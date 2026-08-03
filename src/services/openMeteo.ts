@@ -83,6 +83,10 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
 
   const payload = await fetchJson<any>(url);
 
+  // Desfase horario DEL LUGAR (timezone=auto). Se pasa al cálculo de la luna para que sus horas
+  // salgan en la hora local del sitio, iguales en el teléfono y en el servidor.
+  const utcOffsetSeconds = toNumber(payload?.utc_offset_seconds) ?? 0;
+
   const dates: string[] = Array.isArray(payload?.daily?.time) ? payload.daily.time : [];
   const days: DayForecast[] = dates.map((date, index) => ({
     date,
@@ -100,7 +104,7 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
     uvMax: toNumber(payload?.daily?.uv_index_max?.[index]),
     sunrise: payload?.daily?.sunrise?.[index],
     sunset: payload?.daily?.sunset?.[index],
-    ...computeMoonInfo(date, lat, lon),
+    ...computeMoonInfo(date, lat, lon, utcOffsetSeconds),
   }));
 
   if (days.length === 0) {

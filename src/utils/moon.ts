@@ -9,22 +9,42 @@ export interface MoonDayInfo {
   moonAlwaysDown?: boolean;
 }
 
-// Open-Meteo no ofrece datos de la luna, así que los calculamos en local con suncalc
-// (sin red ni clave). Tomamos como referencia el mediodía local del día: la app ya
-// asume que la zona horaria del dispositivo coincide con la del lugar (igual que hace
-// con el amanecer y el anochecer de Open-Meteo), y la luna sigue el mismo criterio.
-export function computeMoonInfo(dateISO: string, lat: number, lon: number): MoonDayInfo {
-  const noon = new Date(`${dateISO}T12:00:00`);
-  if (Number.isNaN(noon.getTime())) {
+// Open-Meteo no ofrece datos de la luna, así que los calculamos en local con suncalc (sin red ni
+// clave). `utcOffsetSeconds` es el desfase horario DEL LUGAR (el que devuelve Open-Meteo): con él
+// las horas salen en la hora local del sitio y son idénticas en el teléfono y en el servidor
+// (que corre en UTC), sin depender de la zona horaria del entorno. Se devuelven como ISO SIN
+// sufijo de zona (igual que el amanecer/anochecer de Open-Meteo) para que se formateen igual.
+export function computeMoonInfo(
+  dateISO: string,
+  lat: number,
+  lon: number,
+  utcOffsetSeconds = 0,
+): MoonDayInfo {
+  const offsetMs = utcOffsetSeconds * 1000;
+  // Mediodía en la hora local del lugar, como instante real (UTC).
+  const noonUtcMs = Date.parse(`${dateISO}T12:00:00Z`) - offsetMs;
+  if (Number.isNaN(noonUtcMs)) {
     return {};
   }
-
-  const times = SunCalc.getMoonTimes(noon, lat, lon);
+  const noon = new Date(noonUtcMs);
+  // inUTC=true: suncalc usa el día natural (UTC) del instante que le pasamos, que es el mediodía
+  // local; así el día de referencia es el del lugar, no el del entorno donde corre el código. El
+  // 4º parámetro existe en el runtime de suncalc pero su tipado no lo declara, de ahí el cast.
+  const getMoonTimes = SunCalc.getMoonTimes as (
+    date: Date,
+    lat: number,
+    lng: number,
+    inUTC?: boolean,
+  ) => { rise?: Date; set?: Date; alwaysUp?: boolean; alwaysDown?: boolean };
+  const times = getMoonTimes(noon, lat, lon, true);
   const illumination = SunCalc.getMoonIllumination(noon);
 
+  const aHoraLocal = (d: Date | null | undefined): string | undefined =>
+    d ? new Date(d.getTime() + offsetMs).toISOString().slice(0, 16) : undefined;
+
   return {
-    moonrise: times.rise ? times.rise.toISOString() : undefined,
-    moonset: times.set ? times.set.toISOString() : undefined,
+    moonrise: aHoraLocal(times.rise),
+    moonset: aHoraLocal(times.set),
     moonPhase: illumination.phase,
     moonIllumination: illumination.fraction,
     moonAlwaysUp: times.alwaysUp,
