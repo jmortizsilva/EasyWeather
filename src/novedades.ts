@@ -6,7 +6,7 @@
 // pantalla de novedades miente sobre lo que se acaba de instalar.
 // Ver comun/docs/GUIA-ENTORNO-IOS.md ("Avisar al usuario y actualizar en caliente").
 export const NOVEDADES: string[] = [
-  'Nuevo boton "Cancelar" en la busqueda, con tecla "Buscar" en el teclado.',
-  'Botones mas visibles y textos que ya no se cortan.',
-  'La app te avisa cuando hay una version nueva y te cuenta las novedades.',
+  'Los avisos ahora te siguen: el resumen y el aviso de temperatura te llegan del tiempo del sitio donde estás, aunque no tengas la app abierta.',
+  'El resumen llega a la hora que elijas, de tu ubicación actual o de una ciudad concreta.',
+  'Nuevo botón "Cancelar" en la búsqueda, con tecla "Buscar" en el teclado.',
 ];
