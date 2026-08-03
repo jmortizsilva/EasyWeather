@@ -411,9 +411,9 @@ export default function AlertsScreen() {
         )}
 
         <Text style={styles.note}>
-          Los avisos de resumen se preparan en el propio teléfono. El aviso de temperatura lo
-          gestiona un servidor para poder avisarte aunque no abras la app; puedes ver qué datos
-          guarda en la política de privacidad.
+          Los avisos los envía un servidor con tu ubicación y tu configuración, para poder avisarte
+          del tiempo del sitio donde estés aunque no abras la app. Puedes ver qué datos guarda en la
+          política de privacidad.
         </Text>
       </ScrollView>
 
