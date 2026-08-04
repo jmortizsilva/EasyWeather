@@ -1,6 +1,6 @@
 # Política de privacidad de EasyWeather
 
-_Última actualización: 1 de agosto de 2026_
+_Última actualización: 4 de agosto de 2026_
 
 EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué datos usa
 la app y cómo los trata. En resumen: **EasyWeather no crea cuentas, no muestra publicidad y no
@@ -37,11 +37,13 @@ registran en ese servidor estos datos:
 
 - Un **identificador de notificaciones** de tu dispositivo (token de push), que no revela tu
   identidad.
-- Las **coordenadas** de tu ubicación actual y tu **zona horaria** (para enviarte el aviso a tu
-  hora local y del sitio donde estás). Para que los avisos te sigan cuando te desplazas, la app
-  puede actualizar esas coordenadas **en segundo plano** cuando cambias de zona; por eso, al
-  activar un aviso, iOS te pedirá el permiso de ubicación **"Siempre"**. Si no lo concedes, los
-  avisos seguirán funcionando pero usarán tu última ubicación conocida.
+- Las **coordenadas** y el **nombre** de tu ubicación actual (por ejemplo, la ciudad) y tu
+  **zona horaria** (para enviarte el aviso a tu hora local, del sitio donde estás y pudiendo
+  nombrarlo en la notificación). El nombre lo resuelve tu propio iPhone a partir de las
+  coordenadas. Para que los avisos te sigan cuando te desplazas, la app puede actualizar esos
+  datos **en segundo plano** cuando cambias de zona; por eso, al activar un aviso, iOS te pedirá
+  el permiso de ubicación **"Siempre"**. Si no lo concedes, los avisos seguirán funcionando pero
+  usarán tu última ubicación conocida.
 - La **configuración de cada aviso**: los límites de temperatura, y para cada resumen su hora,
   los datos que has elegido incluir y el lugar (tu ubicación o una ciudad concreta).
 

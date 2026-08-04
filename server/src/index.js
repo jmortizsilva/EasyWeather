@@ -92,19 +92,23 @@ async function sincronizar(body, env) {
 
   const lat = body.ubicacion && typeof body.ubicacion.lat === 'number' ? body.ubicacion.lat : null;
   const lon = body.ubicacion && typeof body.ubicacion.lon === 'number' ? body.ubicacion.lon : null;
+  const nombre =
+    body.ubicacion && typeof body.ubicacion.nombre === 'string' ? body.ubicacion.nombre : null;
   const tz = typeof body.zonaHoraria === 'string' ? body.zonaHoraria : null;
 
   const sentencias = [];
-  // Upsert del dispositivo. No se pisa la ubicacion con null si esta vez no viene.
+  // Upsert del dispositivo. No se pisa la ubicacion (ni su nombre) con null si esta vez no viene.
   sentencias.push(
     env.DB.prepare(
-      `INSERT INTO dispositivos (token, lat, lon, zona_horaria, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+      `INSERT INTO dispositivos (token, lat, lon, nombre, zona_horaria, updated_at)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6)
        ON CONFLICT(token) DO UPDATE SET
          lat = COALESCE(?2, dispositivos.lat),
          lon = COALESCE(?3, dispositivos.lon),
-         zona_horaria = COALESCE(?4, dispositivos.zona_horaria),
-         updated_at = ?5`,
-    ).bind(token, lat, lon, tz, Date.now()),
+         nombre = COALESCE(?4, dispositivos.nombre),
+         zona_horaria = COALESCE(?5, dispositivos.zona_horaria),
+         updated_at = ?6`,
+    ).bind(token, lat, lon, nombre, tz, Date.now()),
   );
 
   // Umbral (preserva last_above/last_below si ya existia, para no re-avisar).
@@ -170,11 +174,14 @@ async function actualizarUbicacion(body, env) {
     return json({ error: 'datos incompletos' }, 400);
   }
   const tz = typeof body.zonaHoraria === 'string' ? body.zonaHoraria : null;
+  const nombre = typeof body.nombre === 'string' ? body.nombre : null;
   await env.DB.prepare(
-    `UPDATE dispositivos SET lat = ?2, lon = ?3, zona_horaria = COALESCE(?4, zona_horaria), updated_at = ?5
+    `UPDATE dispositivos
+       SET lat = ?2, lon = ?3, nombre = COALESCE(?4, nombre),
+           zona_horaria = COALESCE(?5, zona_horaria), updated_at = ?6
      WHERE token = ?1`,
   )
-    .bind(body.token, body.lat, body.lon, tz, Date.now())
+    .bind(body.token, body.lat, body.lon, nombre, tz, Date.now())
     .run();
   return json({ ok: true });
 }
@@ -240,7 +247,8 @@ async function desregistrarCompat(body, env) {
 
 async function comprobarUmbrales(env) {
   const { results } = await env.DB.prepare(
-    `SELECT u.token, u.max_threshold, u.min_threshold, u.last_above, u.last_below, d.lat, d.lon
+    `SELECT u.token, u.max_threshold, u.min_threshold, u.last_above, u.last_below,
+            d.lat, d.lon, d.nombre
      FROM umbrales u JOIN dispositivos d ON d.token = u.token`,
   ).all();
   const mensajes = [];
@@ -265,12 +273,14 @@ async function comprobarUmbrales(env) {
 
     const above = temperatura >= dev.max_threshold ? 1 : 0;
     const below = temperatura <= dev.min_threshold ? 1 : 0;
+    // Con nombre reportado se dice la ciudad; sin el, el generico "en tu ubicacion".
+    const lugar = dev.nombre ? `en ${dev.nombre}` : 'en tu ubicación';
 
     if (above === 1 && dev.last_above === 0) {
       mensajes.push({
         to: dev.token,
         title: 'Aviso de temperatura',
-        body: `Ahora en tu ubicación se alcanzan ${Math.round(temperatura)} grados, por encima de tu aviso de ${Math.round(dev.max_threshold)} grados.`,
+        body: `Ahora ${lugar} se alcanzan ${Math.round(temperatura)} grados, por encima de tu aviso de ${Math.round(dev.max_threshold)} grados.`,
         sound: 'default',
       });
     }
@@ -278,7 +288,7 @@ async function comprobarUmbrales(env) {
       mensajes.push({
         to: dev.token,
         title: 'Aviso de temperatura',
-        body: `Ahora en tu ubicación se baja a ${Math.round(temperatura)} grados, por debajo de tu aviso de ${Math.round(dev.min_threshold)} grados.`,
+        body: `Ahora ${lugar} se baja a ${Math.round(temperatura)} grados, por debajo de tu aviso de ${Math.round(dev.min_threshold)} grados.`,
         sound: 'default',
       });
     }
@@ -295,7 +305,7 @@ async function enviarResumenes(env) {
   const { results } = await env.DB.prepare(
     `SELECT r.token, r.id, r.hora, r.minuto, r.campos, r.seguir_ubicacion,
             r.lat AS r_lat, r.lon AS r_lon, r.nombre, r.ultimo_envio,
-            d.lat AS d_lat, d.lon AS d_lon, d.zona_horaria
+            d.lat AS d_lat, d.lon AS d_lon, d.nombre AS d_nombre, d.zona_horaria
      FROM resumenes r JOIN dispositivos d ON d.token = r.token`,
   ).all();
   const mensajes = [];
@@ -336,7 +346,13 @@ async function enviarResumenes(env) {
 
     mensajes.push({
       to: r.token,
-      title: r.seguir_ubicacion ? 'El tiempo en tu ubicación' : `El tiempo en ${r.nombre}`,
+      // Si el aviso sigue la ubicacion viva, se titula con el nombre del sitio que reporto el
+      // telefono; mientras no haya nombre (dispositivo antiguo o primer arranque) cae en el generico.
+      title: r.seguir_ubicacion
+        ? r.d_nombre
+          ? `El tiempo en ${r.d_nombre}`
+          : 'El tiempo en tu ubicación'
+        : `El tiempo en ${r.nombre}`,
       body: cuerpoResumen(day, campos),
       sound: 'default',
     });

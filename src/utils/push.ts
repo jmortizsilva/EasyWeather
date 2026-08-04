@@ -102,7 +102,13 @@ export async function sendTestNotification(): Promise<boolean> {
 
 // Avisa al servidor de la ubicacion actual (y la zona horaria del telefono) para que los avisos
 // y el resumen se calculen desde donde esta el usuario. La llama la tarea de geovallas al moverse.
-export async function reportarUbicacion(lat: number, lon: number): Promise<boolean> {
+// `nombre` es el sitio ya geocodificado en el movil; sirve para titular el resumen con la ciudad.
+// Si no se resolvio, se omite y el servidor conserva el nombre anterior (o el generico).
+export async function reportarUbicacion(
+  lat: number,
+  lon: number,
+  nombre?: string,
+): Promise<boolean> {
   const token = await getPushToken();
   if (!token) {
     return false;
@@ -112,7 +118,7 @@ export async function reportarUbicacion(lat: number, lon: number): Promise<boole
     const response = await fetch(`${SERVER_URL}/ubicacion`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token, lat, lon, zonaHoraria }),
+      body: JSON.stringify({ token, lat, lon, nombre, zonaHoraria }),
     });
     return response.ok;
   } catch {

@@ -10,6 +10,10 @@ CREATE TABLE IF NOT EXISTS dispositivos (
   lat REAL,
   lon REAL,
   zona_horaria TEXT,
+  -- Nombre del sitio donde esta el telefono (lo resuelve la app por geocodificacion inversa y lo
+  -- manda al reportar ubicacion). Sirve para titular los resumenes de "mi ubicacion" con la ciudad
+  -- en vez de "tu ubicacion". NULL hasta el primer reporte con nombre.
+  nombre TEXT,
   updated_at INTEGER
 );
 

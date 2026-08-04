@@ -13,6 +13,19 @@ const TAREA_GEOVALLA = 'tiempo-geovalla-ubicacion';
 // el tiempo (nivel ciudad) y evita despertar a la app por moverse dentro del mismo pueblo.
 const RADIO_METROS = 3000;
 
+// Nombre del sitio (ciudad) por geocodificacion inversa nativa, el mismo criterio que la pestana
+// Hoy. Si no hay nada util, devuelve undefined: mejor que el servidor deje el generico "tu
+// ubicacion" a titular con un "Mi ubicacion" que no dice nada. Nunca lanza: geocodificar es
+// secundario y no debe tumbar el reporte de ubicacion.
+async function nombreDeUbicacion(lat: number, lon: number): Promise<string | undefined> {
+  try {
+    const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
+    return geo[0]?.city ?? geo[0]?.subregion ?? undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 async function recentrarGeovalla(lat: number, lon: number): Promise<void> {
   // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
   await Location.startGeofencingAsync(TAREA_GEOVALLA, [
@@ -38,8 +51,10 @@ TaskManager.defineTask<{ eventType: Location.LocationGeofencingEventType }>(
       const posicion = await Location.getCurrentPositionAsync({
         accuracy: Location.Accuracy.Balanced,
       });
-      await reportarUbicacion(posicion.coords.latitude, posicion.coords.longitude);
-      await recentrarGeovalla(posicion.coords.latitude, posicion.coords.longitude);
+      const { latitude, longitude } = posicion.coords;
+      const nombre = await nombreDeUbicacion(latitude, longitude);
+      await reportarUbicacion(latitude, longitude, nombre);
+      await recentrarGeovalla(latitude, longitude);
     } catch {
       // Sin ubicacion o sin red: se reintenta en el proximo cambio de zona.
     }
@@ -67,8 +82,10 @@ export async function iniciarSeguimientoUbicacion(): Promise<void> {
     return;
   }
   const posicion = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  await reportarUbicacion(posicion.coords.latitude, posicion.coords.longitude);
-  await recentrarGeovalla(posicion.coords.latitude, posicion.coords.longitude);
+  const { latitude, longitude } = posicion.coords;
+  const nombre = await nombreDeUbicacion(latitude, longitude);
+  await reportarUbicacion(latitude, longitude, nombre);
+  await recentrarGeovalla(latitude, longitude);
 }
 
 // Detiene el seguimiento (cuando el usuario desactiva todos los avisos).
