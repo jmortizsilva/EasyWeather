@@ -9,6 +9,8 @@ binding = "DB"
 database_name = "easyweather-alerts"
 database_id = "0e066075-34ff-4365-a174-18b516c923c8"
 
-# Cada 20 minutos se comprueba la temperatura de cada dispositivo.
-[triggers]
-crons = ["*/20 * * * *"]
+# Cron DESACTIVADO el 2026-08-06: el servicio de avisos se movio a un VPS propio (api.jmortiz.es).
+# Se dejan los endpoints vivos unos dias como red de seguridad, pero ya no se envian avisos desde
+# aqui (para no duplicar con el servidor nuevo). Para reactivar, descomentar estas dos lineas.
+# [triggers]
+# crons = ["*/20 * * * *"]
