@@ -6,7 +6,5 @@
 // pantalla de novedades miente sobre lo que se acaba de instalar.
 // Ver comun/docs/GUIA-ENTORNO-IOS.md ("Avisar al usuario y actualizar en caliente").
 export const NOVEDADES: string[] = [
-  'Los avisos ahora te siguen: el resumen y el aviso de temperatura te llegan del tiempo del sitio donde estás, aunque no tengas la app abierta, y te dicen el nombre de esa localidad.',
-  'El resumen llega a la hora que elijas, de tu ubicación actual o de una ciudad concreta.',
-  'Nuevo botón "Cancelar" en la búsqueda, con tecla "Buscar" en el teclado.',
+  'Mejoras internas en el sistema de avisos. No cambia nada en tu forma de usarlos.',
 ];

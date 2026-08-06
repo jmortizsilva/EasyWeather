@@ -1,16 +1,21 @@
 import * as Notifications from 'expo-notifications';
 
-// Servidor de avisos (Cloudflare Worker). Vigila la temperatura y envía el push del aviso.
-const SERVER_URL = 'https://easyweather-alerts.easyweather-app.workers.dev';
+// Servidor de avisos propio (Node/Fastify, multi-app). Vigila la temperatura y envia los push.
+// El servidor sirve varias apps: cada ruta cuelga de /apps/<app>/ y exige la clave de la app en la
+// cabecera X-App-Key. La clave llega por variable de entorno EXPO_PUBLIC_APP_KEY: se incrusta en el
+// bundle al publicar (eas update/build) pero NO se sube al repositorio, que es publico.
+const SERVER_URL = 'https://api.jmortiz.es';
+const APP_ID = 'easyweather';
+const APP_KEY = process.env.EXPO_PUBLIC_APP_KEY ?? '';
 // Identificador del proyecto en EAS (necesario para obtener el token de push de Expo).
 const PROJECT_ID = 'bdc45482-63ad-4db7-b1cf-12e9a55b0479';
 
-export interface ThresholdRegistration {
-  lat: number;
-  lon: number;
-  placeName: string;
-  maxThreshold: number;
-  minThreshold: number;
+function endpoint(ruta: string): string {
+  return `${SERVER_URL}/apps/${APP_ID}/${ruta}`;
+}
+
+function cabeceras(): Record<string, string> {
+  return { 'content-type': 'application/json', 'x-app-key': APP_KEY };
 }
 
 // Un resumen tal y como lo entiende el servidor. `seguirUbicacion` = usar la ubicacion actual del
@@ -36,16 +41,16 @@ export interface SincronizacionAvisos {
 }
 
 // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona
-// horaria actuales. Sustituye al antiguo /register: ahora el servidor manda tambien el resumen.
+// horaria actuales.
 export async function sincronizarAvisos(datos: SincronizacionAvisos): Promise<boolean> {
   const token = await getPushToken();
   if (!token) {
     return false;
   }
   try {
-    const response = await fetch(`${SERVER_URL}/sincronizar`, {
+    const response = await fetch(endpoint('sincronizar'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: cabeceras(),
       body: JSON.stringify({ token, ...datos }),
     });
     return response.ok;
@@ -64,24 +69,6 @@ export async function getPushToken(): Promise<string | undefined> {
   }
 }
 
-// Suscribe este teléfono al aviso de temperatura del servidor (o actualiza su ubicación/umbrales).
-export async function registerThresholdDevice(params: ThresholdRegistration): Promise<boolean> {
-  const token = await getPushToken();
-  if (!token) {
-    return false;
-  }
-  try {
-    const response = await fetch(`${SERVER_URL}/register`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token, ...params }),
-    });
-    return response.ok;
-  } catch {
-    return false;
-  }
-}
-
 // Pide al servidor una notificación de prueba inmediata, para comprobar toda la cadena de push.
 export async function sendTestNotification(): Promise<boolean> {
   const token = await getPushToken();
@@ -89,9 +76,9 @@ export async function sendTestNotification(): Promise<boolean> {
     return false;
   }
   try {
-    const response = await fetch(`${SERVER_URL}/test`, {
+    const response = await fetch(endpoint('test'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: cabeceras(),
       body: JSON.stringify({ token }),
     });
     return response.ok;
@@ -115,30 +102,13 @@ export async function reportarUbicacion(
   }
   const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
   try {
-    const response = await fetch(`${SERVER_URL}/ubicacion`, {
+    const response = await fetch(endpoint('ubicacion'), {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: cabeceras(),
       body: JSON.stringify({ token, lat, lon, nombre, zonaHoraria }),
     });
     return response.ok;
   } catch {
     return false;
-  }
-}
-
-// Da de baja este teléfono del aviso de temperatura.
-export async function unregisterThresholdDevice(): Promise<void> {
-  const token = await getPushToken();
-  if (!token) {
-    return;
-  }
-  try {
-    await fetch(`${SERVER_URL}/unregister`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ token }),
-    });
-  } catch {
-    // Si el servidor no responde, no se rompe la app; se reintenta la próxima vez.
   }
 }
