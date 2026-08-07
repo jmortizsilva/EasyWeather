@@ -6,6 +6,13 @@ export interface AdjustableButtonProps extends ViewProps {
   label?: string;
   /** Valor actual, que cambia con cada flick vertical. */
   value?: string;
+  /**
+   * Valor que tendrá la fila tras el próximo flick arriba (incremento) o abajo (decremento).
+   * Se envía por adelantado para poder fijar accessibilityValue de forma síncrona en el gesto,
+   * lo que permite que la línea braille se refresque (ver el Swift del módulo).
+   */
+  valueOnIncrement?: string;
+  valueOnDecrement?: string;
   hint?: string;
   onAccessibilityIncrement?: () => void;
   onAccessibilityDecrement?: () => void;

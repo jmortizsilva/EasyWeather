@@ -15,6 +15,14 @@ public class AdjustableButtonModule: Module {
         view.accessibilityValue = value
       }
 
+      Prop("valueOnIncrement") { (view: AdjustableButtonView, value: String) in
+        view.valueOnIncrement = value
+      }
+
+      Prop("valueOnDecrement") { (view: AdjustableButtonView, value: String) in
+        view.valueOnDecrement = value
+      }
+
       Prop("hint") { (view: AdjustableButtonView, hint: String) in
         view.accessibilityHint = hint
       }

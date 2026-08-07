@@ -119,6 +119,34 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   return lines;
 }
 
+export interface ValoresAjustables {
+  /** Valor verbalizado actual. */
+  value: string;
+  /** Valor que tendrá la fila tras el próximo flick arriba (previous) y abajo (next). */
+  valueOnIncrement: string;
+  valueOnDecrement: string;
+}
+
+// Opción en un índice; vacío si queda fuera de rango (defensivo).
+function opcionEn(opciones: string[], index: number): string {
+  return index >= 0 && index < opciones.length ? opciones[index] : '';
+}
+
+// Valor actual y los que resultarían del siguiente flick, calculados por adelantado. La vista
+// nativa de iOS los necesita para fijar accessibilityValue de forma SÍNCRONA dentro del gesto;
+// si el valor solo llegara por el rebote asíncrono a JS, la línea braille se quedaría con el
+// valor viejo (ver modules/adjustable-button). El clampado replica al de next/previous en
+// useDayRow. `opciones` es la lista completa del ajustable: previsión del día + sus detalles.
+export function valoresFilaDia(opciones: string[], index: number): ValoresAjustables {
+  const indiceSiguiente = Math.min(index + 1, opciones.length - 1);
+  const indiceAnterior = Math.max(index - 1, 0);
+  return {
+    value: opcionEn(opciones, index),
+    valueOnIncrement: opcionEn(opciones, indiceAnterior), // flick arriba = previous
+    valueOnDecrement: opcionEn(opciones, indiceSiguiente), // flick abajo = next
+  };
+}
+
 // Fecha y hora exactas de la última actualización. Se muestra siempre completa (con
 // segundos) para que se pueda confirmar de un vistazo que los datos se han refrescado,
 // en lugar de un impreciso "hace un momento".

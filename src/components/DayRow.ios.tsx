@@ -6,13 +6,16 @@ import { DAY_ROW_HINT, DayRowContent, DayRowProps, dayRowStyles, useDayRow } fro
 // Native no permite expresar desde JavaScript. Así VoiceOver anuncia que la fila se puede
 // pulsar sin perder el flick vertical para recorrer los datos del día.
 export default function DayRow({ day, isLast, onOpen }: DayRowProps) {
-  const { info, label, value, next, previous } = useDayRow(day);
+  const { info, label, value, valueOnIncrement, valueOnDecrement, next, previous } = useDayRow(day);
 
   return (
     <AdjustableButton
       style={!isLast && dayRowStyles.dayRowDivider}
       label={label}
       value={value}
+      // El valor tras el próximo flick, para que la vista nativa refresque la braille síncrona.
+      valueOnIncrement={valueOnIncrement}
+      valueOnDecrement={valueOnDecrement}
       hint={DAY_ROW_HINT}
       onAccessibilityActivate={onOpen}
       onAccessibilityDecrement={next}
