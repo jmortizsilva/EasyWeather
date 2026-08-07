@@ -9,8 +9,9 @@ binding = "DB"
 database_name = "easyweather-alerts"
 database_id = "0e066075-34ff-4365-a174-18b516c923c8"
 
-# Cron DESACTIVADO el 2026-08-06: el servicio de avisos se movio a un VPS propio (api.jmortiz.es).
-# Se dejan los endpoints vivos unos dias como red de seguridad, pero ya no se envian avisos desde
-# aqui (para no duplicar con el servidor nuevo). Para reactivar, descomentar estas dos lineas.
-# [triggers]
-# crons = ["*/20 * * * *"]
+# Cron DESACTIVADO: el servicio de avisos se movio a un VPS propio (api.jmortiz.es).
+# IMPORTANTE: hay que declarar el array VACIO explicito. Comentar el bloque NO basta: wrangler, si
+# no se declaran crons, deja los existentes tal cual (por eso una primera vez el cron siguio vivo y
+# duplicaba avisos). `crons = []` borra todos los triggers al desplegar.
+[triggers]
+crons = []
