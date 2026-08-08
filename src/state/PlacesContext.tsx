@@ -110,10 +110,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   currentByPlaceRef.current = currentByPlace;
   /* eslint-enable react-hooks/refs */
 
-  // Detecta en segundo plano si el usuario se ha movido de ciudad y, si es así, cambia la
-  // previsión a su ubicación actual. No pide permiso nunca: si aún no está concedido, no
-  // hace nada (para eso está el botón "Actualizar mi ubicación", que sí lo solicita). Solo
-  // actúa cuando se está viendo "mi ubicación", para no pisar un lugar elegido a mano.
+  // Comprueba en segundo plano la ubicación actual: refresca su NOMBRE (barrio incluido) siempre, y
+  // recarga la PREVISIÓN solo si te has movido de zona (más de 1,5 km). No pide permiso nunca: si aún
+  // no está concedido, no hace nada (para eso está el botón "Actualizar mi ubicación", que sí lo
+  // solicita). Solo actúa cuando se está viendo "mi ubicación", para no pisar un lugar elegido a mano.
   const detectCurrentLocation = useCallback(async () => {
     if (activeIdRef.current !== CURRENT_LOCATION_ID) {
       return;
@@ -134,34 +134,50 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       });
       const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
       const previous = currentLocationRef.current;
-      if (previous && distanceMeters(previous, coords) < LOCATION_CHANGED_METERS) {
-        return;
-      }
+      const moved = !previous || distanceMeters(previous, coords) >= LOCATION_CHANGED_METERS;
 
+      // El nombre (barrio) se re-geocodifica SIEMPRE, no solo al moverse de ciudad: un barrio es más
+      // pequeño que el umbral de 1,5 km, y el nombre guardado puede ser viejo (p. ej. justo tras
+      // actualizar la app, cuando aún no se ha vuelto a geocodificar). El TIEMPO, en cambio, solo se
+      // recarga si de verdad te has movido de zona; dentro de la ciudad la previsión es la misma.
       const geocoded = await Location.reverseGeocodeAsync({
         latitude: coords.lat,
         longitude: coords.lon,
       });
-      const name = nombreUbicacion(geocoded[0]) ?? 'Mi ubicación';
-      const admin1 = geocoded[0]?.region ?? undefined;
+      const name = nombreUbicacion(geocoded[0]) ?? previous?.name ?? 'Mi ubicación';
+      const admin1 = geocoded[0]?.region ?? previous?.admin1;
+      const nameChanged = previous?.name !== name || previous?.admin1 !== admin1;
+      if (!moved && !nameChanged) {
+        return;
+      }
+
       const place: Place = {
         id: CURRENT_LOCATION_ID,
         name,
         admin1,
-        lat: coords.lat,
-        lon: coords.lon,
+        // Si no te has movido se conservan las coordenadas anteriores: así unos metros de deriva del
+        // GPS no invalidan la caché del tiempo.
+        lat: moved ? coords.lat : (previous?.lat ?? coords.lat),
+        lon: moved ? coords.lon : (previous?.lon ?? coords.lon),
       };
 
       setCurrentLocationPlace(place);
       currentLocationRef.current = place;
       await AsyncStorage.setItem(STORAGE_CURRENT_LOCATION, JSON.stringify(place));
-      // Obligatorio forzar: la previsión guardada bajo la clave "current" es la de la
-      // ciudad anterior, así que sin esto se mostrarían datos del sitio equivocado.
-      forceReloadRef.current = true;
-      setForecastReloadTick((v) => v + 1);
-      // Solo se avisa cuando de verdad cambia de sitio; un refresco normal sigue siendo silencioso.
-      if (previous && previous.name !== name) {
-        setMessage(`Ahora estás en ${name}${admin1 ? `, ${admin1}` : ''}`);
+
+      if (moved) {
+        // Obligatorio forzar: la previsión guardada bajo la clave "current" es la de la zona
+        // anterior, así que sin esto se mostrarían datos del sitio equivocado.
+        forceReloadRef.current = true;
+        setForecastReloadTick((v) => v + 1);
+        // Solo se avisa cuando de verdad cambias de sitio; un refresco de nombre es silencioso.
+        if (previous && previous.name !== name) {
+          setMessage(`Ahora estás en ${name}${admin1 ? `, ${admin1}` : ''}`);
+        }
+      } else {
+        // Mismo sitio, solo cambió el nombre (p. ej. el barrio): la previsión es la misma. El cambio
+        // de estado dispara el efecto de carga; que use la caché y no reanuncie nada.
+        silentReloadRef.current = true;
       }
     } catch {
       // Si el GPS falla se mantiene la última ubicación conocida, sin molestar al usuario.
