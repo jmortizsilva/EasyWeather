@@ -4,14 +4,17 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DayDetailModal from '../components/DayDetailModal';
 import DayRow from '../components/DayRow';
+import SelectorLugar from '../components/SelectorLugar';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
-import { DayForecast } from '../types';
+import { DayForecast, Place } from '../types';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const {
+    places,
+    currentLocationPlace,
     activeId,
     activePlace,
     forecast,
@@ -19,21 +22,64 @@ export default function HomeScreen() {
     loadingForecast,
     loadingLocation,
     message,
+    currentByPlace,
     detectCurrentLocation,
     refreshCurrentLocation,
+    refreshCurrentTemps,
     reloadForecast,
+    setActiveId,
   } = usePlaces();
   const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
     undefined,
   );
 
+  // Lugares que recorre el ajustable: la ubicación actual primero, luego los guardados.
+  const seleccionables = [currentLocationPlace, ...places].filter((p): p is NonNullable<typeof p> =>
+    Boolean(p),
+  );
+  const indiceActivo = seleccionables.findIndex((p) => p.id === activeId);
+  // El ajustable solo tiene sentido con al menos dos destinos y cuando el lugar activo es uno de
+  // ellos (si se está viendo un lugar buscado sin guardar, no aparece).
+  const mostrarSelector = seleccionables.length >= 2 && indiceActivo >= 0;
+
+  // Índice resaltado en el ajustable. Se separa de activeId: el flick solo mueve este índice (sin
+  // recargar Hoy, para que VoiceOver no pierda el foco); la recarga ocurre al SELECCIONAR (botón).
+  const [indiceSeleccionado, setIndiceSeleccionado] = useState(indiceActivo);
+
+  // Si el lugar activo cambia por fuera (GPS, Buscar, Mis lugares, o al seleccionar aquí), el
+  // ajustable se pone al día. Ajuste de estado durante el render (patrón recomendado de React), en
+  // vez de un efecto: no provoca renders en cascada.
+  const [activeIdPrevio, setActiveIdPrevio] = useState(activeId);
+  if (activeId !== activeIdPrevio) {
+    setActiveIdPrevio(activeId);
+    if (indiceActivo >= 0) {
+      setIndiceSeleccionado(indiceActivo);
+    }
+  }
+
+  // Momento actual para calcular la antigüedad de las temperaturas. Se fija al recibir el foco (no
+  // Date.now en render, que sería impuro); mientras tanto 0 hace que se traten como frescas.
+  const [ahora, setAhora] = useState(0);
+
+  // Flick: solo resalta otro lugar en el ajustable, sin tocar la previsión.
+  const cambiarSeleccion = (indice: number) => setIndiceSeleccionado(indice);
+  // Doble toque (botón): aplica el lugar mostrado y recarga Hoy con sus datos.
+  const seleccionarLugar = (place: Place) => {
+    if (place.id !== activeId) {
+      setActiveId(place.id);
+    }
+  };
+
   // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
-  // refresca la previsión. Silencioso si ya hay datos.
+  // refresca la previsión. Silencioso si ya hay datos. También se refrescan las temperaturas
+  // que muestra el ajustable.
   useFocusEffect(
     useCallback(() => {
+      setAhora(Date.now());
       void detectCurrentLocation();
       reloadForecast(true);
-    }, [detectCurrentLocation, reloadForecast]),
+      void refreshCurrentTemps();
+    }, [detectCurrentLocation, reloadForecast, refreshCurrentTemps]),
   );
 
   const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
@@ -56,6 +102,19 @@ export default function HomeScreen() {
         <Text style={styles.note}>
           Actualiza tu ubicación o busca un lugar en la pestaña Buscar.
         </Text>
+      )}
+
+      {/* Justo tras la cabecera, tal como se pidió: con flick arriba/abajo se recorre la lista de
+          lugares y Hoy se actualiza al pararse. */}
+      {mostrarSelector && (
+        <SelectorLugar
+          seleccionables={seleccionables}
+          indiceSeleccionado={indiceSeleccionado}
+          currentByPlace={currentByPlace}
+          ahora={ahora}
+          onCambiar={cambiarSeleccion}
+          onSeleccionar={seleccionarLugar}
+        />
       )}
 
       {today && (

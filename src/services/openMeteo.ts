@@ -120,6 +120,46 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
   };
 }
 
+/** Temperatura actual de un lugar concreto, para la lista y el selector de lugares. */
+export interface CurrentByPlace {
+  temperature?: number;
+  weatherCode?: number;
+}
+
+/**
+ * Temperatura actual de VARIOS lugares en UNA sola petición. Open-Meteo admite coordenadas
+ * separadas por coma y devuelve un array (o un objeto suelto si solo va una), así que N lugares
+ * cuestan una llamada, no N: importa para no rozar el límite de la API (ver notas del proyecto).
+ * El resultado se indexa por el id del lugar en el mismo orden en que se enviaron las coordenadas.
+ */
+export async function getCurrentByPlaces(
+  places: { id: string; lat: number; lon: number }[],
+): Promise<Record<string, CurrentByPlace>> {
+  if (places.length === 0) {
+    return {};
+  }
+
+  const lat = places.map((p) => p.lat).join(',');
+  const lon = places.map((p) => p.lon).join(',');
+  const current = ['temperature_2m', 'weather_code'].join(',');
+  const url =
+    `${FORECAST_URL}?latitude=${lat}&longitude=${lon}` + `&current=${current}&timezone=auto`;
+
+  const payload = await fetchJson<any>(url);
+  // Con una sola coordenada Open-Meteo devuelve un objeto; con varias, un array. Normalizamos.
+  const list: any[] = Array.isArray(payload) ? payload : [payload];
+
+  const result: Record<string, CurrentByPlace> = {};
+  places.forEach((place, index) => {
+    const item = list[index];
+    result[place.id] = {
+      temperature: toNumber(item?.current?.temperature_2m),
+      weatherCode: toNumber(item?.current?.weather_code),
+    };
+  });
+  return result;
+}
+
 export async function getHourlyForecast(
   lat: number,
   lon: number,

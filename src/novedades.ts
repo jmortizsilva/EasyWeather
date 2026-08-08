@@ -6,5 +6,6 @@
 // pantalla de novedades miente sobre lo que se acaba de instalar.
 // Ver comun/docs/GUIA-ENTORNO-IOS.md ("Avisar al usuario y actualizar en caliente").
 export const NOVEDADES: string[] = [
-  'Mejoras internas en el sistema de avisos. No cambia nada en tu forma de usarlos.',
+  'En Mis lugares ahora se lee la temperatura actual de cada lugar.',
+  'En Hoy hay un ajustable tras el título: desliza arriba y abajo para recorrer tus lugares y toca dos veces para ver la previsión del que elijas.',
 ];

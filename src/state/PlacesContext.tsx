@@ -10,8 +10,9 @@ import {
   useState,
 } from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
-import { getForecast } from '../services/openMeteo';
+import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { Forecast, Place } from '../types';
+import { TempGuardada } from '../utils/tempActual';
 
 const STORAGE_PLACES = 'tiempo.places';
 const STORAGE_CURRENT_LOCATION = 'tiempo.currentLocation';
@@ -19,7 +20,13 @@ const STORAGE_CURRENT_LOCATION = 'tiempo.currentLocation';
 // versionar la clave descarta cachés antiguas sin esos campos.
 const STORAGE_FORECAST_PREFIX = 'tiempo.forecast.v2.';
 const STORAGE_FORECAST_TS_PREFIX = 'tiempo.forecast.ts.v2.';
+// Temperatura actual de todos los lugares (lista de "Mis lugares" y selector de "Hoy"), cada una
+// con la hora en que se obtuvo para poder anunciar su antiguedad.
+const STORAGE_CURRENT_TEMPS = 'tiempo.currentTemps.v1';
 const FORECAST_TTL_MS = 30 * 60 * 1000;
+// No se piden las temperaturas de todos los lugares mas de una vez cada 3 min al cambiar de
+// pestana; es una sola llamada, pero no hace falta repetirla en cada foco.
+const TEMPS_RECHECK_MS = 3 * 60 * 1000;
 // No se vuelve a consultar el GPS más de una vez cada 2 minutos, para no gastar batería
 // cuando se cambia de pestaña; y solo se considera que el usuario se ha movido de sitio
 // si se ha desplazado más de 1,5 km (dentro de la misma ciudad la previsión es la misma).
@@ -50,6 +57,10 @@ interface PlacesContextValue {
   loadingForecast: boolean;
   loadingLocation: boolean;
   message: string;
+  /** Temperatura actual de cada lugar (por id), con la hora en que se obtuvo. */
+  currentByPlace: Record<string, TempGuardada>;
+  /** Refresca en una sola llamada la temperatura actual de todos los lugares. Con throttle. */
+  refreshCurrentTemps: (force?: boolean) => Promise<void>;
   setActiveId: (id: string) => void;
   refreshCurrentLocation: () => Promise<void>;
   /** Comprueba en silencio si el usuario ha cambiado de ubicación (no pide permiso). */
@@ -74,6 +85,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const [loadingForecast, setLoadingForecast] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [message, setMessage] = useState('Actualiza tu ubicación para empezar.');
+  const [currentByPlace, setCurrentByPlace] = useState<Record<string, TempGuardada>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -82,7 +94,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const forecastRef = useRef<Forecast | undefined>(undefined);
   const currentLocationRef = useRef<Place | undefined>(undefined);
   const activeIdRef = useRef<string>(activeId);
+  const placesRef = useRef<Place[]>(places);
+  const currentByPlaceRef = useRef<Record<string, TempGuardada>>(currentByPlace);
   const lastLocationCheckRef = useRef(0);
+  const lastTempsFetchRef = useRef(0);
   // Espejos en refs para consultarlos desde los listeners de segundo plano sin cerrar sobre
   // valores viejos. Se escriben en render a proposito: moverlo a un efecto retrasaria la
   // actualizacion y un listener que dispara entre el render y el efecto leeria el valor anterior.
@@ -90,6 +105,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   forecastRef.current = forecast;
   currentLocationRef.current = currentLocationPlace;
   activeIdRef.current = activeId;
+  placesRef.current = places;
+  currentByPlaceRef.current = currentByPlace;
   /* eslint-enable react-hooks/refs */
 
   // Detecta en segundo plano si el usuario se ha movido de ciudad y, si es así, cambia la
@@ -150,11 +167,55 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Refresca la temperatura actual de todos los lugares (ubicación actual + guardados) en una sola
+  // llamada. Silenciosa: si falla, se conservan los últimos valores conocidos (que quedarán marcados
+  // como viejos por su hora). El throttle evita repetir la llamada al cambiar de pestaña.
+  const refreshCurrentTemps = useCallback(async (force = false) => {
+    if (!force && Date.now() - lastTempsFetchRef.current < TEMPS_RECHECK_MS) {
+      return;
+    }
+
+    const candidatos = [currentLocationRef.current, ...placesRef.current].filter((p): p is Place =>
+      Boolean(p),
+    );
+    // La ubicación actual y un lugar guardado podrían compartir id; se consulta cada uno una vez.
+    const vistos = new Set<string>();
+    const consulta = candidatos.filter((p) =>
+      vistos.has(p.id) ? false : (vistos.add(p.id), true),
+    );
+    if (consulta.length === 0) {
+      return;
+    }
+
+    lastTempsFetchRef.current = Date.now();
+    try {
+      const res = await getCurrentByPlaces(
+        consulta.map((p) => ({ id: p.id, lat: p.lat, lon: p.lon })),
+      );
+      const ahora = Date.now();
+      const next: Record<string, TempGuardada> = { ...currentByPlaceRef.current };
+      for (const p of consulta) {
+        const temperature = res[p.id]?.temperature;
+        // Si un lugar no devuelve temperatura se conserva la anterior; no se pisa con un hueco.
+        if (temperature !== undefined) {
+          next[p.id] = { temperature, fetchedAt: ahora };
+        }
+      }
+      setCurrentByPlace(next);
+      currentByPlaceRef.current = next;
+      await AsyncStorage.setItem(STORAGE_CURRENT_TEMPS, JSON.stringify(next));
+    } catch {
+      // Sin red: se mantienen los últimos valores. Se permite reintentar antes del throttle.
+      lastTempsFetchRef.current = 0;
+    }
+  }, []);
+
   useEffect(() => {
     const loadStored = async () => {
-      const [storedPlaces, storedLocation] = await Promise.all([
+      const [storedPlaces, storedLocation, storedTemps] = await Promise.all([
         AsyncStorage.getItem(STORAGE_PLACES),
         AsyncStorage.getItem(STORAGE_CURRENT_LOCATION),
+        AsyncStorage.getItem(STORAGE_CURRENT_TEMPS),
       ]);
 
       if (storedPlaces) {
@@ -181,6 +242,18 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           // ignora cache corrupta
         }
       }
+
+      if (storedTemps) {
+        try {
+          const parsed = JSON.parse(storedTemps) as Record<string, TempGuardada>;
+          if (parsed && typeof parsed === 'object') {
+            setCurrentByPlace(parsed);
+            currentByPlaceRef.current = parsed;
+          }
+        } catch {
+          // ignora cache corrupta
+        }
+      }
     };
 
     // Al abrir la app se comprueba la ubicación por si el usuario ha viajado.
@@ -193,6 +266,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     }
     void AccessibilityInfo.announceForAccessibility(message);
   }, [message]);
+
+  // Mantiene al día la temperatura de todos los lugares. Se fuerza cuando aparece uno sin dato
+  // (lugar recién añadido, o la ubicación actual al terminar de detectarse en el arranque); si no,
+  // el throttle decide. Las pantallas también lo piden al recibir el foco.
+  useEffect(() => {
+    const ids = [currentLocationPlace, ...places]
+      .filter((p): p is Place => Boolean(p))
+      .map((p) => p.id);
+    const faltaAlguno = ids.some((id) => currentByPlaceRef.current[id] === undefined);
+    void refreshCurrentTemps(faltaAlguno);
+  }, [places, currentLocationPlace, refreshCurrentTemps]);
 
   useEffect(() => {
     const place =
@@ -403,6 +487,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     loadingForecast,
     loadingLocation,
     message,
+    currentByPlace,
+    refreshCurrentTemps,
     setActiveId,
     refreshCurrentLocation,
     detectCurrentLocation,
