@@ -1,5 +1,6 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { nombreUbicacion } from './geocode';
 import { reportarUbicacion } from './push';
 
 // Seguimiento de ubicacion con la app cerrada mediante GEOVALLAS (bajo consumo, sobrevive a
@@ -13,14 +14,14 @@ const TAREA_GEOVALLA = 'tiempo-geovalla-ubicacion';
 // el tiempo (nivel ciudad) y evita despertar a la app por moverse dentro del mismo pueblo.
 const RADIO_METROS = 3000;
 
-// Nombre del sitio (ciudad) por geocodificacion inversa nativa, el mismo criterio que la pestana
-// Hoy. Si no hay nada util, devuelve undefined: mejor que el servidor deje el generico "tu
-// ubicacion" a titular con un "Mi ubicacion" que no dice nada. Nunca lanza: geocodificar es
-// secundario y no debe tumbar el reporte de ubicacion.
+// Nombre del sitio (barrio y ciudad) por geocodificacion inversa nativa, el mismo criterio que la
+// pestana Hoy (helper nombreUbicacion). Si no hay nada util, devuelve undefined: mejor que el
+// servidor deje el generico "tu ubicacion" a titular con un "Mi ubicacion" que no dice nada. Nunca
+// lanza: geocodificar es secundario y no debe tumbar el reporte de ubicacion.
 async function nombreDeUbicacion(lat: number, lon: number): Promise<string | undefined> {
   try {
     const geo = await Location.reverseGeocodeAsync({ latitude: lat, longitude: lon });
-    return geo[0]?.city ?? geo[0]?.subregion ?? undefined;
+    return nombreUbicacion(geo[0]);
   } catch {
     return undefined;
   }

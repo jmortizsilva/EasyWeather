@@ -1,7 +1,10 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
+  InputAccessoryView,
+  Keyboard,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -20,6 +23,11 @@ import {
   DEFAULT_THRESHOLD,
   formatTime,
 } from '../utils/notifications';
+
+// Id de la barra "Listo" que se ancla sobre el teclado numerico (solo iOS): sin ella, el teclado
+// tapa el boton "Guardar aviso" y no habia forma clara de cerrarlo. Los teclados numericos no traen
+// tecla de retorno visible, asi que la barra es la unica salida accesible.
+const TECLADO_GRADOS_ID = 'avisoTemperaturaTeclado';
 
 interface PlaceOption {
   id: string;
@@ -372,6 +380,9 @@ export default function AlertsScreen() {
                   onChangeText={setMaxDraft}
                   keyboardType="numbers-and-punctuation"
                   style={styles.input}
+                  inputAccessoryViewID={Platform.OS === 'ios' ? TECLADO_GRADOS_ID : undefined}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
                   accessibilityLabel="Grados máximos a partir de los cuales avisar"
                   accessibilityHint="Escribe un número de grados, por ejemplo 30"
                 />
@@ -385,6 +396,9 @@ export default function AlertsScreen() {
                   onChangeText={setMinDraft}
                   keyboardType="numbers-and-punctuation"
                   style={styles.input}
+                  inputAccessoryViewID={Platform.OS === 'ios' ? TECLADO_GRADOS_ID : undefined}
+                  returnKeyType="done"
+                  onSubmitEditing={() => Keyboard.dismiss()}
                   accessibilityLabel="Grados mínimos por debajo de los cuales avisar"
                   accessibilityHint="Escribe un número de grados, por ejemplo 3"
                 />
@@ -407,6 +421,21 @@ export default function AlertsScreen() {
               accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan">
               <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
             </Pressable>
+
+            {/* Barra sobre el teclado numerico para cerrarlo y llegar al boton Guardar. Solo iOS. */}
+            {Platform.OS === 'ios' && (
+              <InputAccessoryView nativeID={TECLADO_GRADOS_ID}>
+                <View style={styles.tecladoBarra}>
+                  <Pressable
+                    onPress={() => Keyboard.dismiss()}
+                    accessibilityRole="button"
+                    accessibilityLabel="Listo, cerrar teclado"
+                    style={styles.tecladoBoton}>
+                    <Text style={styles.tecladoBotonTexto}>Listo</Text>
+                  </Pressable>
+                </View>
+              </InputAccessoryView>
+            )}
           </>
         )}
 
@@ -573,6 +602,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  // Barra "Listo" sobre el teclado numerico.
+  tecladoBarra: {
+    backgroundColor: '#132740',
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: '#2a4367',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    alignItems: 'flex-end',
+  },
+  tecladoBoton: {
+    minHeight: 44,
+    minWidth: 72,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#1b5ea9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tecladoBotonTexto: {
+    color: '#ffffff',
+    fontSize: 17,
+    fontWeight: '600',
   },
   buttonDanger: {
     borderRadius: 12,

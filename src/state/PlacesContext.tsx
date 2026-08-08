@@ -12,6 +12,7 @@ import {
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { Forecast, Place } from '../types';
+import { nombreUbicacion } from '../utils/geocode';
 import { TempGuardada } from '../utils/tempActual';
 
 const STORAGE_PLACES = 'tiempo.places';
@@ -141,7 +142,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         latitude: coords.lat,
         longitude: coords.lon,
       });
-      const name = geocoded[0]?.city ?? geocoded[0]?.subregion ?? 'Mi ubicación';
+      const name = nombreUbicacion(geocoded[0]) ?? 'Mi ubicación';
       const admin1 = geocoded[0]?.region ?? undefined;
       const place: Place = {
         id: CURRENT_LOCATION_ID,
@@ -264,7 +265,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     if (!message.trim()) {
       return;
     }
-    void AccessibilityInfo.announceForAccessibility(message);
+    // queue: true (iOS) encola el anuncio tras el que esté sonando —p. ej. la activación del botón
+    // al seleccionar un lugar en el ajustable—. Con announceForAccessibility a secas, el anuncio
+    // competía con esa activación y VoiceOver lo descartaba a veces ("no siempre lo dice").
+    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
   }, [message]);
 
   // Mantiene al día la temperatura de todos los lugares. Se fuerza cuando aparece uno sin dato
@@ -398,7 +402,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         longitude: position.coords.longitude,
       });
 
-      const name = geocoded[0]?.city ?? geocoded[0]?.subregion ?? 'Mi ubicación';
+      const name = nombreUbicacion(geocoded[0]) ?? 'Mi ubicación';
       const admin1 = geocoded[0]?.region ?? undefined;
 
       const place: Place = {

@@ -8,6 +8,7 @@ import SelectorLugar from '../components/SelectorLugar';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { DayForecast, Place } from '../types';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
+import { vibrarConfirmacion } from '../utils/haptica';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 export default function HomeScreen() {
@@ -63,8 +64,10 @@ export default function HomeScreen() {
 
   // Flick: solo resalta otro lugar en el ajustable, sin tocar la previsión.
   const cambiarSeleccion = (indice: number) => setIndiceSeleccionado(indice);
-  // Doble toque (botón): aplica el lugar mostrado y recarga Hoy con sus datos.
+  // Doble toque (botón): aplica el lugar mostrado y recarga Hoy con sus datos. Se vibra siempre para
+  // confirmar el toque (VoiceOver no anuncia nada al activar un ajustable que no cambia de valor).
   const seleccionarLugar = (place: Place) => {
+    vibrarConfirmacion();
     if (place.id !== activeId) {
       setActiveId(place.id);
     }

@@ -31,6 +31,7 @@ import {
   iniciarSeguimientoUbicacion,
   pedirPermisoUbicacionSiempre,
 } from '../utils/ubicacionFondo';
+import { vibrarConfirmacion, vibrarError } from '../utils/haptica';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
 // Construye el estado completo de avisos para el servidor a partir de los ajustes. Los resumenes de
@@ -107,10 +108,17 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [notice, setNotice] = useState<{ id: number; text: string } | undefined>(undefined);
   const noticeSeq = useRef(0);
 
-  // Confirma una accion del usuario por los dos canales a la vez: VoiceOver (announceForAccessibility)
-  // y un aviso visible en pantalla. Antes solo se anunciaba por voz y quien ve no tenia feedback.
-  const notify = useCallback((text: string) => {
-    AccessibilityInfo.announceForAccessibility(text);
+  // Confirma una accion del usuario por TRES canales a la vez: VoiceOver (announceForAccessibility),
+  // un aviso visible en pantalla y una vibracion. La vibracion es el canal mas fiable: el anuncio de
+  // VoiceOver se pierde a veces al competir con el gesto, y no todos ven el banner.
+  const notify = useCallback((text: string, kind: 'ok' | 'error' = 'ok') => {
+    // queue: true (iOS) encola el anuncio para que no lo pise el sonido de activar el botón.
+    AccessibilityInfo.announceForAccessibilityWithOptions(text, { queue: true });
+    if (kind === 'error') {
+      vibrarError();
+    } else {
+      vibrarConfirmacion();
+    }
     noticeSeq.current += 1;
     setNotice({ id: noticeSeq.current, text });
   }, []);
@@ -175,7 +183,10 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         if (!anyEnabled) {
           notify('No tienes ningún aviso activo.');
         } else {
-          notify(ok ? 'Avisos guardados.' : 'No se han podido guardar los avisos.');
+          notify(
+            ok ? 'Avisos guardados.' : 'No se han podido guardar los avisos.',
+            ok ? 'ok' : 'error',
+          );
         }
       }
     },
@@ -223,13 +234,16 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           return false;
         }
         if (!(await requestNotificationPermission())) {
-          notify('Sin permiso de notificaciones no se pueden enviar avisos.');
+          notify('Sin permiso de notificaciones no se pueden enviar avisos.', 'error');
           return false;
         }
       }
       // Ubicación en segundo plano: si se rechaza, no se bloquea (degrada a última conocida).
       if (!(await pedirPermisoUbicacionSiempre())) {
-        notify('Sin permiso de ubicación siempre, los avisos usarán tu última ubicación conocida.');
+        notify(
+          'Sin permiso de ubicación siempre, los avisos usarán tu última ubicación conocida.',
+          'error',
+        );
       }
       return true;
     },
@@ -281,6 +295,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const testNotification = useCallback(async () => {
     const ok = await sendTestNotification();
+    if (ok) {
+      vibrarConfirmacion();
+    } else {
+      vibrarError();
+    }
     Alert.alert(
       'Notificación de prueba',
       ok
