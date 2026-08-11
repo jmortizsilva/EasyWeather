@@ -65,16 +65,18 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
   // quedaría en el resultado de la búsqueda que se acaba de ocultar. 'focus' es el único evento que
   // iOS admite aquí y publica layoutChanged CON la vista, que es justo lo que hace falta: invalida
   // el árbol y lleva el foco al título.
-  useEffect(() => {
-    // Aplazado a la siguiente pantalla pintada: en la arquitectura nueva el montaje va por el hilo
-    // principal y con un setTimeout(0) la vista puede no estar aún registrada.
-    const id = requestAnimationFrame(() => {
-      if (tituloRef.current) {
-        AccessibilityInfo.sendAccessibilityEvent(tituloRef.current, 'focus');
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [place]);
+  //
+  // Se dispara desde onLayout del título, NO tras un retardo: un temporizador se calibra sin querer
+  // con el móvil en el que se prueba y en uno más lento salta antes de que la vista exista, sin dar
+  // error. El guardado por id evita repetirlo en cada recolocación.
+  const focoPuestoEn = useRef<string | undefined>(undefined);
+  const moverFocoAlTitulo = () => {
+    if (focoPuestoEn.current === place.id || !tituloRef.current) {
+      return;
+    }
+    focoPuestoEn.current = place.id;
+    AccessibilityInfo.sendAccessibilityEvent(tituloRef.current, 'focus');
+  };
 
   // Se vibra porque VoiceOver no anuncia nada al desaparecer la hoja, y sin confirmación no se
   // sabe si se llegó a guardar (mismo motivo que en la lista de resultados).
@@ -92,7 +94,11 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
       onAccessibilityEscape={onCerrar}>
       <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
         <View style={styles.filaCabecera}>
-          <Text ref={tituloRef} style={styles.titulo} accessibilityRole="header">
+          <Text
+            ref={tituloRef}
+            style={styles.titulo}
+            accessibilityRole="header"
+            onLayout={moverFocoAlTitulo}>
             {place.name}
           </Text>
           <Pressable
