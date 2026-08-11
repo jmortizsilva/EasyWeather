@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 import { TempGuardada, textoLugar } from '../utils/tempActual';
 
@@ -56,9 +57,11 @@ export function SelectorLugarContent({
   puedeAnterior,
   puedeSiguiente,
 }: ContentProps) {
+  const colores = useColores();
   return (
-    <View style={styles.contenedor}>
-      <Text style={styles.etiqueta}>Lugar</Text>
+    <View
+      style={[styles.contenedor, { backgroundColor: colores.tarjeta, borderColor: colores.borde }]}>
+      <Text style={[styles.etiqueta, { color: colores.textoTenue }]}>Lugar</Text>
       <View style={styles.fila}>
         <Pressable
           onPress={onAnterior}
@@ -66,12 +69,13 @@ export function SelectorLugarContent({
           accessible={false}
           style={({ pressed }) => [
             styles.boton,
+            { backgroundColor: colores.primario },
             { opacity: !puedeAnterior ? 0.3 : pressed ? 0.75 : 1 },
           ]}>
-          <Text style={styles.signo}>−</Text>
+          <Text style={[styles.signo, { color: colores.textoPrimario }]}>−</Text>
         </Pressable>
         <Pressable onPress={onSeleccionar} accessible={false} style={styles.centro}>
-          <Text style={styles.valor} numberOfLines={1}>
+          <Text style={[styles.valor, { color: colores.texto }]} numberOfLines={1}>
             {texto}
           </Text>
         </Pressable>
@@ -81,26 +85,25 @@ export function SelectorLugarContent({
           accessible={false}
           style={({ pressed }) => [
             styles.boton,
+            { backgroundColor: colores.primario },
             { opacity: !puedeSiguiente ? 0.3 : pressed ? 0.75 : 1 },
           ]}>
-          <Text style={styles.signo}>+</Text>
+          <Text style={[styles.signo, { color: colores.textoPrimario }]}>+</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
+// Solo medidas: el color lo aplica el componente con los tokens del tema.
 const styles = StyleSheet.create({
   contenedor: {
-    backgroundColor: '#132740',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2a4367',
     padding: 12,
     gap: 8,
   },
   etiqueta: {
-    color: '#b8c6dc',
     fontSize: 15,
   },
   fila: {
@@ -115,7 +118,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   valor: {
-    color: '#f4f8ff',
     fontSize: 20,
     fontWeight: '700',
     textAlign: 'center',
@@ -124,12 +126,10 @@ const styles = StyleSheet.create({
     minWidth: 56,
     minHeight: 44,
     borderRadius: 12,
-    backgroundColor: '#1b5ea9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   signo: {
-    color: '#ffffff',
     fontSize: 26,
     fontWeight: '700',
   },

@@ -16,6 +16,9 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { useNotifications } from '../state/NotificationsContext';
+import { Paleta } from '../theme/colores';
+import { ETIQUETA_PREFERENCIA, PreferenciaTema } from '../theme/preferencia';
+import { useColores, useTema } from '../theme/ThemeContext';
 import { SummaryAlert } from '../types';
 import {
   createSummaryAlert,
@@ -68,6 +71,8 @@ function SwitchRow({
   onValueChange: (value: boolean) => void;
   divider?: boolean;
 }) {
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   return (
     <Pressable
       style={[styles.switchRow, divider && styles.rowDivider]}
@@ -87,6 +92,43 @@ function SwitchRow({
 }
 
 // Editor de un aviso de resumen. Mantiene su propio borrador; nada se guarda hasta pulsar Guardar.
+// Aspecto de la app. Se resuelve con tres opciones excluyentes en vez de un interruptor porque
+// "Automático" es un tercer estado real (seguir al iPhone), no el apagado de "Oscuro". VoiceOver
+// las anuncia como botones de opción, que es justo lo que son.
+function SelectorTema() {
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
+  const { preferencia, cambiarPreferencia } = useTema();
+  const opciones: PreferenciaTema[] = ['automatico', 'claro', 'oscuro'];
+
+  return (
+    <>
+      <Text style={styles.sectionHeader} accessibilityRole="header">
+        Aspecto
+      </Text>
+      <Text style={styles.note}>
+        Con Automático, la app sigue el modo claro u oscuro que tengas en el iPhone.
+      </Text>
+      <View style={styles.card}>
+        {opciones.map((opcion, index) => (
+          <Pressable
+            key={opcion}
+            style={[styles.row, index < opciones.length - 1 && styles.rowDivider]}
+            onPress={() => cambiarPreferencia(opcion)}
+            accessibilityRole="radio"
+            accessibilityState={{ checked: preferencia === opcion }}
+            accessibilityLabel={ETIQUETA_PREFERENCIA[opcion]}>
+            <Text style={styles.rowTitle}>
+              {preferencia === opcion ? '✓ ' : ''}
+              {ETIQUETA_PREFERENCIA[opcion]}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+    </>
+  );
+}
+
 function SummaryEditor({
   initial,
   options,
@@ -103,6 +145,8 @@ function SummaryEditor({
   onClose: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const [draft, setDraft] = useState<SummaryAlert>(initial);
 
   const timeValue = useMemo(() => {
@@ -228,6 +272,8 @@ function SummaryEditor({
 
 export default function AlertsScreen() {
   const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const { currentLocationPlace } = usePlaces();
   const options = usePlaceOptions();
   const { settings, saveSummary, deleteSummary, saveThreshold, testNotification, notice } =
@@ -297,6 +343,8 @@ export default function AlertsScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
+
+        <SelectorTema />
 
         <Text style={styles.sectionHeader} accessibilityRole="header">
           Avisos de resumen
@@ -478,165 +526,171 @@ export default function AlertsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0d1a2b',
-  },
-  modalRoot: {
-    backgroundColor: '#0d1a2b',
-  },
-  content: {
-    paddingTop: 24,
-    paddingHorizontal: 16,
-    paddingBottom: 96,
-    gap: 12,
-  },
-  title: {
-    color: '#f4f8ff',
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    color: '#eaf3ff',
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 8,
-  },
-  card: {
-    backgroundColor: '#132740',
-    borderRadius: 16,
-    overflow: 'hidden',
-    paddingHorizontal: 16,
-  },
-  row: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingVertical: 12,
-  },
-  switchRow: {
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  rowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  rowTitle: {
-    color: '#f0f5ff',
-    fontSize: 17,
-    flexShrink: 1,
-  },
-  rowMeta: {
-    color: '#c2d0e6',
-    fontSize: 15,
-    marginTop: 2,
-  },
-  input: {
-    minWidth: 80,
-    minHeight: 44,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    backgroundColor: '#0e2238',
-    color: '#ffffff',
-    fontSize: 17,
-    textAlign: 'right',
-  },
-  // El interruptor visual no captura el toque: la fila-conmutador (Pressable) es quien cambia.
-  switchControl: {
-    pointerEvents: 'none',
-  },
-  note: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  buttonPrimary: {
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    marginTop: 4,
-  },
-  buttonPrimaryText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  // Boton secundario: relleno azul visible + borde claro. Antes usaba #0e2238, casi identico al
-  // fondo, y "Probar notificación" / "Cancelar" apenas se veian.
-  buttonSecondary: {
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    borderWidth: 1,
-    borderColor: '#7cbcff',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  buttonSecondaryText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  // Aviso visible flotante (toast) para confirmar acciones sin depender solo de VoiceOver.
-  toast: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    borderRadius: 12,
-    backgroundColor: '#1c4a2e',
-    borderWidth: 1,
-    borderColor: '#5fd08a',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-  },
-  toastText: {
-    color: '#eafff1',
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  // Barra "Listo" sobre el teclado numerico.
-  tecladoBarra: {
-    backgroundColor: '#132740',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#2a4367',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    alignItems: 'flex-end',
-  },
-  tecladoBoton: {
-    minHeight: 44,
-    minWidth: 72,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  tecladoBotonTexto: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  buttonDanger: {
-    borderRadius: 12,
-    backgroundColor: '#7a2a38',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  buttonDangerText: {
-    color: '#ffe8ed',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-});
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.fondo,
+    },
+    modalRoot: {
+      backgroundColor: c.fondo,
+    },
+    content: {
+      paddingTop: 24,
+      paddingHorizontal: 16,
+      paddingBottom: 96,
+      gap: 12,
+    },
+    title: {
+      color: c.texto,
+      fontSize: 34,
+      fontWeight: '700',
+    },
+    sectionHeader: {
+      color: c.textoSeccion,
+      fontSize: 20,
+      fontWeight: '600',
+      marginTop: 8,
+    },
+    card: {
+      backgroundColor: c.tarjeta,
+      borderRadius: 16,
+      overflow: 'hidden',
+      paddingHorizontal: 16,
+    },
+    row: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingVertical: 12,
+    },
+    switchRow: {
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingVertical: 8,
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borde,
+    },
+    rowTitle: {
+      color: c.textoFila,
+      fontSize: 17,
+      flexShrink: 1,
+    },
+    rowMeta: {
+      color: c.textoMeta,
+      fontSize: 15,
+      marginTop: 2,
+    },
+    // El campo lleva borde: en la paleta clara su relleno es blanco como el de la tarjeta y sin
+    // borde no se distinguiria donde se escribe.
+    input: {
+      minWidth: 80,
+      minHeight: 44,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      backgroundColor: c.campo,
+      borderWidth: 1,
+      borderColor: c.borde,
+      color: c.textoCampo,
+      fontSize: 17,
+      textAlign: 'right',
+    },
+    // El interruptor visual no captura el toque: la fila-conmutador (Pressable) es quien cambia.
+    switchControl: {
+      pointerEvents: 'none',
+    },
+    note: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    buttonPrimary: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      marginTop: 4,
+    },
+    buttonPrimaryText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    // Boton secundario: relleno visible + borde del color del texto (un borde de acento se volvia
+    // invisible en la paleta clara, donde acento y primario coinciden). Antes el relleno era casi
+    // identico al fondo y "Probar notificación" / "Cancelar" apenas se veian.
+    buttonSecondary: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      borderWidth: 1,
+      borderColor: c.textoPrimario,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    buttonSecondaryText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    // Aviso visible flotante (toast) para confirmar acciones sin depender solo de VoiceOver.
+    toast: {
+      position: 'absolute',
+      left: 16,
+      right: 16,
+      borderRadius: 12,
+      backgroundColor: c.exitoFondo,
+      borderWidth: 1,
+      borderColor: c.exitoBorde,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    toastText: {
+      color: c.exitoTexto,
+      fontSize: 16,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    // Barra "Listo" sobre el teclado numerico.
+    tecladoBarra: {
+      backgroundColor: c.tarjeta,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.borde,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      alignItems: 'flex-end',
+    },
+    tecladoBoton: {
+      minHeight: 44,
+      minWidth: 72,
+      paddingHorizontal: 16,
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    tecladoBotonTexto: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    buttonDanger: {
+      borderRadius: 12,
+      backgroundColor: c.peligro,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    buttonDangerText: {
+      color: c.textoPeligro,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+  });

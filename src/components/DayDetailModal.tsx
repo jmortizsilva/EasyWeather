@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
@@ -9,6 +9,8 @@ import {
   View,
 } from 'react-native';
 import { getHourlyForecast } from '../services/openMeteo';
+import { Paleta } from '../theme/colores';
+import { useColores } from '../theme/ThemeContext';
 import { DayForecast, HourlyForecast, Place } from '../types';
 import { buildDayDetails, formatFullDate, formatTime } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
@@ -29,6 +31,8 @@ export default function DayDetailModal({
   onClose,
   showSummary = true,
 }: Props) {
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const [hours, setHours] = useState<HourlyForecast[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -104,7 +108,7 @@ export default function DayDetailModal({
             </Text>
             {loading && (
               <ActivityIndicator
-                color="#9ed3ff"
+                color={colores.acentoSuave}
                 accessibilityLabel="Cargando previsión por horas"
               />
             )}
@@ -146,130 +150,137 @@ export default function DayDetailModal({
   );
 }
 
-const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    backgroundColor: '#132740',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-    maxHeight: '85%',
-  },
-  grabber: {
-    alignSelf: 'center',
-    width: 36,
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#3a5578',
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: 12,
-    paddingVertical: 8,
-  },
-  headerText: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    color: '#f4f8ff',
-    fontSize: 22,
-    fontWeight: '700',
-  },
-  subtitle: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  closeButton: {
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    paddingHorizontal: 16,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  closeText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    color: '#eaf3ff',
-    fontSize: 20,
-    fontWeight: '600',
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 44,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  detailTitle: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  detailValue: {
-    color: '#f4f8ff',
-    fontSize: 17,
-    fontWeight: '600',
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  note: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  hourRow: {
-    borderRadius: 12,
-    backgroundColor: '#0e2238',
-    padding: 12,
-    marginBottom: 8,
-    minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  // Anchos holgados y numberOfLines={1}: con 56 el "0" de los minutos (10:00) y el simbolo de
-  // grados saltaban a otra linea en las temperaturas de dos digitos o negativas.
-  hourTime: {
-    color: '#dbe8ff',
-    width: 64,
-    flexShrink: 0,
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  hourIcon: {
-    fontSize: 20,
-  },
-  hourTemp: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '700',
-    width: 64,
-    flexShrink: 0,
-    textAlign: 'center',
-  },
-  hourMeta: {
-    alignItems: 'flex-end',
-    gap: 2,
-  },
-  hourMetaText: {
-    color: '#b7c7e1',
-    fontSize: 13,
-  },
-});
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    // El velo se queda negro translucido en las dos paletas: es lo que hace iOS con sus hojas
+    // modales, y en claro tambien separa bien la hoja del fondo.
+    backdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.55)',
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: c.tarjeta,
+      borderTopLeftRadius: 20,
+      borderTopRightRadius: 20,
+      paddingHorizontal: 16,
+      paddingBottom: 24,
+      maxHeight: '85%',
+    },
+    grabber: {
+      alignSelf: 'center',
+      width: 36,
+      height: 5,
+      borderRadius: 3,
+      backgroundColor: c.agarre,
+      marginTop: 8,
+      marginBottom: 4,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+      paddingVertical: 8,
+    },
+    headerText: {
+      flex: 1,
+      gap: 2,
+    },
+    title: {
+      color: c.texto,
+      fontSize: 22,
+      fontWeight: '700',
+    },
+    subtitle: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    closeButton: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      paddingHorizontal: 16,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    closeText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    sectionHeader: {
+      color: c.textoSeccion,
+      fontSize: 20,
+      fontWeight: '600',
+      marginTop: 16,
+      marginBottom: 8,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 12,
+      minHeight: 44,
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borde,
+    },
+    detailTitle: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    detailValue: {
+      color: c.texto,
+      fontSize: 17,
+      fontWeight: '600',
+      flexShrink: 1,
+      textAlign: 'right',
+    },
+    note: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    // La pastilla de cada hora va sobre la hoja (que ya es "tarjeta"): en claro necesita un borde,
+    // porque campo y tarjeta son ambos blancos y si no se pierde la separacion entre horas.
+    hourRow: {
+      borderRadius: 12,
+      backgroundColor: c.campo,
+      borderWidth: 1,
+      borderColor: c.borde,
+      padding: 12,
+      marginBottom: 8,
+      minHeight: 44,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 8,
+    },
+    // Anchos holgados y numberOfLines={1}: con 56 el "0" de los minutos (10:00) y el simbolo de
+    // grados saltaban a otra linea en las temperaturas de dos digitos o negativas.
+    hourTime: {
+      color: c.textoCampo,
+      width: 64,
+      flexShrink: 0,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    hourIcon: {
+      fontSize: 20,
+    },
+    hourTemp: {
+      color: c.texto,
+      fontSize: 17,
+      fontWeight: '700',
+      width: 64,
+      flexShrink: 0,
+      textAlign: 'center',
+    },
+    hourMeta: {
+      alignItems: 'flex-end',
+      gap: 2,
+    },
+    hourMetaText: {
+      color: c.textoMeta,
+      fontSize: 13,
+    },
+  });

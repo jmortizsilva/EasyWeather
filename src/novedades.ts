@@ -6,9 +6,5 @@
 // pantalla de novedades miente sobre lo que se acaba de instalar.
 // Ver comun/docs/GUIA-ENTORNO-IOS.md ("Avisar al usuario y actualizar en caliente").
 export const NOVEDADES: string[] = [
-  'En Mis lugares ahora se lee la temperatura actual de cada lugar.',
-  'En Hoy hay un ajustable tras el título: desliza arriba y abajo para recorrer tus lugares y toca dos veces para ver la previsión del que elijas.',
-  'La app vibra para confirmar acciones: guardar avisos, enviar una prueba o elegir un lugar.',
-  'Al escribir los grados del aviso de temperatura, el teclado trae un botón Listo para cerrarlo.',
-  'Tu ubicación actual muestra también el barrio cuando iOS lo conoce, por ejemplo "Ciudad Lineal, Madrid".',
+  'La app ya tiene modo claro y modo oscuro. Por defecto sigue el aspecto que tengas en el iPhone; en Avisos, apartado Aspecto, puedes forzar Claro u Oscuro.',
 ];

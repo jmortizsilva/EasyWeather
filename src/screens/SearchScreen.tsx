@@ -1,5 +1,5 @@
 import { NavigationProp, useNavigation } from '@react-navigation/native';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -14,12 +14,16 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../navigation/types';
 import { searchPlaces } from '../services/openMeteo';
 import { usePlaces } from '../state/PlacesContext';
+import { Paleta } from '../theme/colores';
+import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const navigation = useNavigation<NavigationProp<TabParamList>>();
   const { places, addPlace, removePlace, viewPlace } = usePlaces();
   const [citySearch, setCitySearch] = useState('');
@@ -73,7 +77,7 @@ export default function SearchScreen() {
           value={citySearch}
           onChangeText={setCitySearch}
           placeholder="Busca una ciudad o pueblo"
-          placeholderTextColor="#c2d0e6"
+          placeholderTextColor={colores.textoTenue}
           style={styles.input}
           accessibilityLabel="Buscar lugar"
           accessibilityHint="Escribe el nombre de una ciudad o pueblo para ver su previsión"
@@ -99,7 +103,9 @@ export default function SearchScreen() {
           </Pressable>
         )}
       </View>
-      {searchLoading && <ActivityIndicator color="#9ed3ff" accessibilityLabel="Buscando lugares" />}
+      {searchLoading && (
+        <ActivityIndicator color={colores.acentoSuave} accessibilityLabel="Buscando lugares" />
+      )}
 
       {searchResults.length > 0 && (
         <View style={styles.card}>
@@ -158,93 +164,98 @@ export default function SearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0d1a2b',
-  },
-  content: {
-    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
-    paddingHorizontal: 16,
-    paddingBottom: 96,
-    gap: 16,
-  },
-  title: {
-    color: '#f4f8ff',
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  input: {
-    flex: 1,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    minHeight: 44,
-    fontSize: 17,
-    color: '#ffffff',
-    backgroundColor: '#132740',
-  },
-  cancelButton: {
-    minHeight: 44,
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-  },
-  cancelText: {
-    color: '#7cbcff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  card: {
-    backgroundColor: '#132740',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  resultRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  rowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  resultSelect: {
-    flex: 1,
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  rowTitle: {
-    color: '#f0f5ff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  rowMeta: {
-    color: '#c2d0e6',
-    fontSize: 15,
-    marginTop: 2,
-  },
-  saveButton: {
-    backgroundColor: '#1b5ea9',
-    paddingHorizontal: 16,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  savedButton: {
-    backgroundColor: '#7a2a38',
-  },
-  saveText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  note: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-});
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.fondo,
+    },
+    content: {
+      // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
+      paddingHorizontal: 16,
+      paddingBottom: 96,
+      gap: 16,
+    },
+    title: {
+      color: c.texto,
+      fontSize: 34,
+      fontWeight: '700',
+    },
+    searchRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    input: {
+      flex: 1,
+      borderRadius: 12,
+      paddingHorizontal: 16,
+      minHeight: 44,
+      fontSize: 17,
+      color: c.textoCampo,
+      backgroundColor: c.campo,
+      // En la paleta clara el campo es blanco sobre fondo casi blanco: sin borde no se ve donde
+      // empieza. En la oscura el borde queda discreto y no molesta.
+      borderWidth: 1,
+      borderColor: c.borde,
+    },
+    cancelButton: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingHorizontal: 12,
+    },
+    cancelText: {
+      color: c.acento,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    card: {
+      backgroundColor: c.tarjeta,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    resultRow: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borde,
+    },
+    resultSelect: {
+      flex: 1,
+      minHeight: 44,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      justifyContent: 'center',
+    },
+    rowTitle: {
+      color: c.textoFila,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    rowMeta: {
+      color: c.textoMeta,
+      fontSize: 15,
+      marginTop: 2,
+    },
+    saveButton: {
+      backgroundColor: c.primario,
+      paddingHorizontal: 16,
+      minWidth: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    savedButton: {
+      backgroundColor: c.peligro,
+    },
+    saveText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    note: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+  });

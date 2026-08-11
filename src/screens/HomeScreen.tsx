@@ -1,11 +1,13 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import DayDetailModal from '../components/DayDetailModal';
 import DayRow from '../components/DayRow';
 import SelectorLugar from '../components/SelectorLugar';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
+import { Paleta } from '../theme/colores';
+import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { vibrarConfirmacion } from '../utils/haptica';
@@ -13,6 +15,8 @@ import { describeWeatherCode } from '../utils/weatherCodes';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const {
     places,
     currentLocationPlace,
@@ -183,7 +187,7 @@ export default function HomeScreen() {
 
       {(loadingForecast || loadingLocation) && (
         <ActivityIndicator
-          color="#9ed3ff"
+          color={colores.acentoSuave}
           accessibilityLabel="Cargando"
           accessibilityRole="progressbar"
         />
@@ -222,118 +226,120 @@ export default function HomeScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  // Fondo oscuro explícito: sin esto, en iOS (userInterfaceStyle light) el fondo del sistema es
-  // blanco y los textos claros de fuera de las tarjetas quedan invisibles.
-  screen: {
-    flex: 1,
-    backgroundColor: '#0d1a2b',
-  },
-  content: {
-    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo: sin esto el
-    // titulo se metia debajo de la hora y los iconos de estado del sistema.
-    paddingHorizontal: 16,
-    paddingBottom: 96,
-    gap: 16,
-  },
-  cityTitle: {
-    color: '#f4f8ff',
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  currentCard: {
-    backgroundColor: '#132740',
-    borderRadius: 16,
-    padding: 20,
-    gap: 12,
-  },
-  currentTemp: {
-    color: '#ffffff',
-    fontSize: 54,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  currentSky: {
-    color: '#dbe8ff',
-    fontSize: 17,
-    textAlign: 'center',
-  },
-  updatedLine: {
-    color: '#b8c6dc',
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  detailList: {
-    marginTop: 4,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 44,
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  detailTitle: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  detailValue: {
-    color: '#f4f8ff',
-    fontSize: 17,
-    fontWeight: '600',
-    flexShrink: 1,
-    textAlign: 'right',
-  },
-  buttonPrimary: {
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  // Boton secundario: mismo relleno azul que el primario para que se distinga del fondo oscuro
-  // (antes usaba #0e2238, casi identico al fondo y practicamente invisible). El borde claro lo
-  // mantiene reconocible como accion secundaria sin perder contraste.
-  buttonSecondary: {
-    borderRadius: 12,
-    backgroundColor: '#1b5ea9',
-    borderWidth: 1,
-    borderColor: '#7cbcff',
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  buttonSecondaryText: {
-    color: '#ffffff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  sectionHeader: {
-    color: '#eaf3ff',
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  daysCard: {
-    backgroundColor: '#132740',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  note: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  statusNote: {
-    color: '#c2d0e6',
-    fontSize: 13,
-  },
-});
+// Los estilos dependen del tema, así que se construyen con la paleta activa (memoizados en el
+// componente). Fondo siempre explícito: sin él, el de iOS asoma y los textos quedan invisibles.
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.fondo,
+    },
+    content: {
+      // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo: sin esto el
+      // titulo se metia debajo de la hora y los iconos de estado del sistema.
+      paddingHorizontal: 16,
+      paddingBottom: 96,
+      gap: 16,
+    },
+    cityTitle: {
+      color: c.texto,
+      fontSize: 34,
+      fontWeight: '700',
+    },
+    currentCard: {
+      backgroundColor: c.tarjeta,
+      borderRadius: 16,
+      padding: 20,
+      gap: 12,
+    },
+    currentTemp: {
+      color: c.textoFuerte,
+      fontSize: 54,
+      fontWeight: '700',
+      textAlign: 'center',
+    },
+    currentSky: {
+      color: c.textoCampo,
+      fontSize: 17,
+      textAlign: 'center',
+    },
+    updatedLine: {
+      color: c.textoTenue,
+      fontSize: 15,
+      textAlign: 'center',
+    },
+    detailList: {
+      marginTop: 4,
+    },
+    detailRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      gap: 12,
+      minHeight: 44,
+      paddingVertical: 8,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borde,
+    },
+    detailTitle: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    detailValue: {
+      color: c.texto,
+      fontSize: 17,
+      fontWeight: '600',
+      flexShrink: 1,
+      textAlign: 'right',
+    },
+    buttonPrimary: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    buttonText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    // Boton secundario: mismo relleno que el primario para que se distinga del fondo (antes usaba un
+    // tono casi identico al fondo y era practicamente invisible). El borde lo mantiene reconocible
+    // como accion secundaria; va del color del TEXTO del boton, que contrasta con el relleno en las
+    // dos paletas (un borde de acento se volvia invisible en la clara, donde acento = primario).
+    buttonSecondary: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      borderWidth: 1,
+      borderColor: c.textoPrimario,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    buttonSecondaryText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    sectionHeader: {
+      color: c.textoSeccion,
+      fontSize: 20,
+      fontWeight: '600',
+    },
+    daysCard: {
+      backgroundColor: c.tarjeta,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    note: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    statusNote: {
+      color: c.textoMeta,
+      fontSize: 13,
+    },
+  });

@@ -1,13 +1,17 @@
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../navigation/types';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
+import { Paleta } from '../theme/colores';
+import { useColores } from '../theme/ThemeContext';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
 
 export default function PlacesScreen() {
   const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
   const navigation = useNavigation<NavigationProp<TabParamList>>();
   const {
     places,
@@ -125,75 +129,76 @@ export default function PlacesScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: '#0d1a2b',
-  },
-  content: {
-    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
-    paddingHorizontal: 16,
-    paddingBottom: 96,
-    gap: 16,
-  },
-  title: {
-    color: '#f4f8ff',
-    fontSize: 34,
-    fontWeight: '700',
-  },
-  card: {
-    backgroundColor: '#132740',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  note: {
-    color: '#b8c6dc',
-    fontSize: 15,
-  },
-  row: {
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  rowDivider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
-  },
-  rowSelected: {
-    backgroundColor: '#1a3a5f',
-  },
-  rowTitle: {
-    color: '#f0f5ff',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  rowMeta: {
-    color: '#c2d0e6',
-    fontSize: 15,
-    marginTop: 2,
-  },
-  favoriteRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  favoriteSelect: {
-    flex: 1,
-    minHeight: 44,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-  },
-  removeButton: {
-    backgroundColor: '#7a2a38',
-    paddingHorizontal: 16,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  removeText: {
-    color: '#ffe8ed',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-});
+const crearEstilos = (c: Paleta) =>
+  StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: c.fondo,
+    },
+    content: {
+      // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo.
+      paddingHorizontal: 16,
+      paddingBottom: 96,
+      gap: 16,
+    },
+    title: {
+      color: c.texto,
+      fontSize: 34,
+      fontWeight: '700',
+    },
+    card: {
+      backgroundColor: c.tarjeta,
+      borderRadius: 16,
+      overflow: 'hidden',
+    },
+    note: {
+      color: c.textoTenue,
+      fontSize: 15,
+    },
+    row: {
+      minHeight: 44,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      justifyContent: 'center',
+    },
+    rowDivider: {
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.borde,
+    },
+    rowSelected: {
+      backgroundColor: c.tarjetaSeleccionada,
+    },
+    rowTitle: {
+      color: c.textoFila,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    rowMeta: {
+      color: c.textoMeta,
+      fontSize: 15,
+      marginTop: 2,
+    },
+    favoriteRow: {
+      flexDirection: 'row',
+      alignItems: 'stretch',
+    },
+    favoriteSelect: {
+      flex: 1,
+      minHeight: 44,
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+      justifyContent: 'center',
+    },
+    removeButton: {
+      backgroundColor: c.peligro,
+      paddingHorizontal: 16,
+      minWidth: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    removeText: {
+      color: c.textoPeligro,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+  });

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import { useColores } from '../theme/ThemeContext';
 import { DayForecast } from '../types';
 import { buildDayDetails, formatFullDate, valoresFilaDia } from '../utils/dayDetails';
 import { describeWeatherCode } from '../utils/weatherCodes';
@@ -40,20 +41,32 @@ export function useDayRow(day: DayForecast) {
 }
 
 export function DayRowContent({ day, emoji }: { day: DayForecast; emoji: string }) {
+  const colores = useColores();
   return (
     <>
-      <Text style={dayRowStyles.dayDate}>{formatFullDate(day.date)}</Text>
+      <Text style={[dayRowStyles.dayDate, { color: colores.textoFila }]}>
+        {formatFullDate(day.date)}
+      </Text>
       <View style={dayRowStyles.dayRight}>
         <Text style={dayRowStyles.daySky}>{emoji}</Text>
-        <Text style={dayRowStyles.dayTemp}>
+        <Text style={[dayRowStyles.dayTemp, { color: colores.textoFuerte }]}>
           {day.tMin ?? '-'}º / {day.tMax ?? '-'}º
         </Text>
-        <Text style={dayRowStyles.dayMeta}>💧 {day.rainProbability ?? '-'}%</Text>
+        <Text style={[dayRowStyles.dayMeta, { color: colores.textoMeta }]}>
+          💧 {day.rainProbability ?? '-'}%
+        </Text>
       </View>
     </>
   );
 }
 
+/** Separador entre filas. El color va aparte porque depende del tema. */
+export function useDayRowDivider() {
+  const colores = useColores();
+  return { ...dayRowStyles.dayRowDivider, borderBottomColor: colores.borde };
+}
+
+// Solo medidas: el color lo ponen los componentes con los tokens del tema.
 export const dayRowStyles = StyleSheet.create({
   dayRow: {
     minHeight: 44,
@@ -63,10 +76,8 @@ export const dayRowStyles = StyleSheet.create({
   },
   dayRowDivider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#2a4367',
   },
   dayDate: {
-    color: '#f0f5ff',
     fontSize: 17,
     fontWeight: '600',
   },
@@ -79,11 +90,9 @@ export const dayRowStyles = StyleSheet.create({
     fontSize: 18,
   },
   dayTemp: {
-    color: '#ffffff',
     fontSize: 17,
   },
   dayMeta: {
-    color: '#b7c7e1',
     fontSize: 15,
     marginLeft: 'auto',
   },

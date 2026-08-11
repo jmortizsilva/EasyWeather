@@ -1,16 +1,24 @@
 import { Pressable } from 'react-native';
 import AdjustableButton from '../../modules/adjustable-button';
-import { DAY_ROW_HINT, DayRowContent, DayRowProps, dayRowStyles, useDayRow } from './DayRowContent';
+import {
+  DAY_ROW_HINT,
+  DayRowContent,
+  DayRowProps,
+  dayRowStyles,
+  useDayRow,
+  useDayRowDivider,
+} from './DayRowContent';
 
 // Variante de iOS: la vista nativa combina los rasgos "ajustable" y "botón", algo que React
 // Native no permite expresar desde JavaScript. Así VoiceOver anuncia que la fila se puede
 // pulsar sin perder el flick vertical para recorrer los datos del día.
 export default function DayRow({ day, isLast, onOpen }: DayRowProps) {
   const { info, label, value, valueOnIncrement, valueOnDecrement, next, previous } = useDayRow(day);
+  const divisor = useDayRowDivider();
 
   return (
     <AdjustableButton
-      style={!isLast && dayRowStyles.dayRowDivider}
+      style={!isLast && divisor}
       label={label}
       value={value}
       // El valor tras el próximo flick, para que la vista nativa refresque la braille síncrona.

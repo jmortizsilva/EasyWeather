@@ -1,15 +1,23 @@
 import { Pressable } from 'react-native';
-import { DAY_ROW_HINT, DayRowContent, DayRowProps, dayRowStyles, useDayRow } from './DayRowContent';
+import {
+  DAY_ROW_HINT,
+  DayRowContent,
+  DayRowProps,
+  dayRowStyles,
+  useDayRow,
+  useDayRowDivider,
+} from './DayRowContent';
 
 // Variante para plataformas que no son iOS (y para el preview web). Solo puede declarar un
 // rol, así que se queda con "ajustable": el flick vertical recorre los datos y el doble
 // toque abre la ficha. En iOS se usa DayRow.ios.tsx, que además transmite el rol de botón.
 export default function DayRow({ day, isLast, onOpen }: DayRowProps) {
   const { info, label, value, next, previous } = useDayRow(day);
+  const divisor = useDayRowDivider();
 
   return (
     <Pressable
-      style={[dayRowStyles.dayRow, !isLast && dayRowStyles.dayRowDivider]}
+      style={[dayRowStyles.dayRow, !isLast && divisor]}
       accessibilityRole="adjustable"
       accessibilityLabel={label}
       accessibilityValue={{ text: value }}
