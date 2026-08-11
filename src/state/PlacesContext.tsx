@@ -168,6 +168,11 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         id: CURRENT_LOCATION_ID,
         name,
         admin1,
+        // Para poner delante los resultados de búsqueda de tu propio país. Se guarda el código ISO
+        // porque es lo único comparable con lo que devuelve Open-Meteo; el nombre va como respaldo
+        // por si iOS no diera el código.
+        country: geocoded[0]?.country ?? previous?.country,
+        countryCode: geocoded[0]?.isoCountryCode ?? previous?.countryCode,
         // Si no te has movido se conservan las coordenadas anteriores: así unos metros de deriva del
         // GPS no invalidan la caché del tiempo.
         lat: moved ? coords.lat : (previous?.lat ?? coords.lat),
@@ -461,6 +466,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         id: CURRENT_LOCATION_ID,
         name,
         admin1,
+        country: geocoded[0]?.country ?? undefined,
+        countryCode: geocoded[0]?.isoCountryCode ?? undefined,
         lat: position.coords.latitude,
         lon: position.coords.longitude,
       };

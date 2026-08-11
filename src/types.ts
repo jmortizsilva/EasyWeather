@@ -4,13 +4,20 @@ export interface Place {
   /** Region (comunidad, estado, condado...). Es el dato que se muestra bajo el nombre. */
   admin1?: string;
   /**
-   * Niveles administrativos mas finos y pais. Solo se usan para DISTINGUIR resultados de busqueda
-   * que se llamarian igual (ver utils/resultadosBusqueda). Son opcionales: los lugares guardados
-   * antes de que existieran estos campos siguen valiendo.
+   * Niveles administrativos mas finos. Solo se usan para DISTINGUIR resultados de busqueda que se
+   * llamarian igual (ver utils/resultadosBusqueda). Son opcionales: los lugares guardados antes de
+   * que existieran estos campos siguen valiendo.
    */
   admin2?: string;
   admin3?: string;
+  /** Pais, ya traducido. Se muestra SIEMPRE en los resultados de busqueda. */
   country?: string;
+  /**
+   * Codigo ISO del pais ("ES", "MX"). Se compara este y no el nombre para saber que resultados son
+   * del pais donde estas: el nombre viene traducido por dos proveedores distintos (Open-Meteo y la
+   * geocodificacion de iOS) y no tiene por que coincidir letra a letra.
+   */
+  countryCode?: string;
   lat: number;
   lon: number;
 }

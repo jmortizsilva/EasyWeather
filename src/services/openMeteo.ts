@@ -57,6 +57,7 @@ export async function searchPlaces(query: string): Promise<Place[]> {
         admin2: texto(item?.admin2),
         admin3: texto(item?.admin3),
         country: texto(item?.country),
+        countryCode: texto(item?.country_code),
         lat,
         lon,
       };

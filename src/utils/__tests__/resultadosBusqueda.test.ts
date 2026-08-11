@@ -23,8 +23,27 @@ describe('describirResultados', () => {
       p('2', 'Londres', { admin1: 'Inglaterra', admin2: 'City of London', country: 'Reino Unido' }),
     ]);
     expect(r).toHaveLength(2);
-    expect(r[0].detalle).toBe('Inglaterra · Gran Londres');
-    expect(r[1].detalle).toBe('Inglaterra · City of London');
+    expect(r[0].detalle).toBe('Inglaterra · Gran Londres · Reino Unido');
+    expect(r[1].detalle).toBe('Inglaterra · City of London · Reino Unido');
+  });
+
+  it('el pais se dice siempre, aunque no haga falta para distinguir', () => {
+    // Es lo que permite descartar un resultado sin saberse la geografia de medio mundo.
+    const r = describirResultados([p('1', 'Merida', { admin1: 'Extremadura', country: 'Espana' })]);
+    expect(r[0].detalle).toBe('Extremadura · Espana');
+  });
+
+  it('el pais no sustituye a la region: se anade detras', () => {
+    const r = describirResultados([
+      p('1', 'Merida', { admin1: 'Extremadura', country: 'Espana' }),
+      p('2', 'Merida', { admin1: 'Estado de Yucatan', country: 'Mexico' }),
+    ]);
+    expect(r.map((x) => x.detalle)).toEqual(['Extremadura · Espana', 'Estado de Yucatan · Mexico']);
+  });
+
+  it('no repite el pais si un nivel administrativo ya lo decia', () => {
+    const r = describirResultados([p('1', 'Ciudad', { admin1: 'Singapur', country: 'Singapur' })]);
+    expect(r[0].detalle).toBe('Singapur');
   });
 
   it('no alarga los que ya se distinguen por la region', () => {

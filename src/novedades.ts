@@ -18,4 +18,5 @@ export const NOVEDADES: string[] = [
   'Al consultar la previsión de un lugar buscado, ya no te lleva a Hoy sin salida: se abre encima de la búsqueda, con botón Atrás y con la opción de guardarlo.',
   'Arreglado: al tocar un resultado de la búsqueda, la previsión no llegaba a aparecer y la pantalla se quedaba sin responder hasta cerrar la app. Ahora se abre, y el botón Atrás devuelve a la búsqueda con sus resultados para poder consultar otro lugar.',
   'En la búsqueda ya no hace falta cerrar el teclado antes de elegir: los resultados responden al primer doble toque aunque el teclado siga abierto. El botón Listo sigue estando para quitarlo de en medio.',
+  'Los resultados de la búsqueda salen ordenados: primero los de tu país, del más cercano al más lejano, y después el resto. Buscando Mérida desde España, la de Extremadura ya no queda detrás de las de México y Venezuela. Además cada resultado dice ahora el país al que pertenece.',
 ];

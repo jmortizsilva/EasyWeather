@@ -16,6 +16,7 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 import { vibrarConfirmacion } from '../utils/haptica';
+import { ordenarPorCercania } from '../utils/ordenarResultados';
 import { describirResultados } from '../utils/resultadosBusqueda';
 
 const SEARCH_DEBOUNCE_MS = 400;
@@ -31,7 +32,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
-  const { places, addPlace, removePlace } = usePlaces();
+  const { places, addPlace, removePlace, currentLocationPlace } = usePlaces();
   const [citySearch, setCitySearch] = useState('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -59,6 +60,14 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
 
     return () => clearTimeout(timer);
   }, [citySearch]);
+
+  // Open-Meteo ordena por relevancia mundial, que para quien busca desde su casa es el orden
+  // equivocado: "Mérida" desde España devolvía antes la de México y la de Venezuela que la de
+  // Extremadura. Se reordena aquí y no en el servicio para que la capa de red siga siendo tonta.
+  const resultadosOrdenados = useMemo(
+    () => ordenarPorCercania(searchResults, currentLocationPlace),
+    [searchResults, currentLocationPlace],
+  );
 
   // Consultar un lugar buscado NO lo convierte en el lugar de "Hoy": se abre una vista propia con
   // botón de volver. Antes acababas viendo en Hoy un lugar sin guardar y sin forma de salir.
@@ -155,9 +164,9 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
         <ActivityIndicator color={colores.acentoSuave} accessibilityLabel="Buscando lugares" />
       )}
 
-      {searchResults.length > 0 && (
+      {resultadosOrdenados.length > 0 && (
         <View style={styles.card}>
-          {describirResultados(searchResults).map(({ place, detalle }, index, lista) => {
+          {describirResultados(resultadosOrdenados).map(({ place, detalle }, index, lista) => {
             const saved = places.some((p) => p.id === place.id);
             // El detalle ya viene calculado para que ESTA fila no suene igual que otra de la lista.
             const where = detalle ? `, ${detalle}` : '';
