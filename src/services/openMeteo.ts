@@ -1,5 +1,6 @@
 import { DayForecast, Forecast, HourlyForecast, Place } from '../types';
 import { computeMoonInfo } from '../utils/moon';
+import { sinDuplicados } from '../utils/resultadosBusqueda';
 import { toNumber } from '../utils/text';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -38,7 +39,7 @@ export async function searchPlaces(query: string): Promise<Place[]> {
   const url = `${GEOCODING_URL}?name=${encodeURIComponent(trimmed)}&count=10&language=es`;
   const payload = await fetchJson<{ results?: any[] }>(url);
 
-  return (payload.results ?? [])
+  const lugares = (payload.results ?? [])
     .map((item): Place | undefined => {
       const lat = toNumber(item?.latitude);
       const lon = toNumber(item?.longitude);
@@ -56,6 +57,10 @@ export async function searchPlaces(query: string): Promise<Place[]> {
       };
     })
     .filter((item): item is Place => Boolean(item));
+
+  // Open-Meteo devuelve entradas indistinguibles entre si para una misma ciudad (con "Londres"
+  // salian dos filas "Londres, Inglaterra"); se dejan fuera antes de que lleguen a la pantalla.
+  return sinDuplicados(lugares);
 }
 
 export async function getForecast(lat: number, lon: number): Promise<Forecast> {

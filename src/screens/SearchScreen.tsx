@@ -17,6 +17,7 @@ import { usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
+import { vibrarConfirmacion } from '../utils/haptica';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -66,12 +67,23 @@ export default function SearchScreen({ onClose }: Props) {
     navigation.navigate('Home');
   };
 
+  // Guardar es la razón de ser de esta pantalla: al hacerlo se cierra sola, que es lo que se
+  // esperaba (antes había que cerrarla a mano). Se vibra porque VoiceOver no anuncia nada al
+  // desaparecer la hoja, y sin confirmación no se sabe si se llegó a guardar.
+  const guardarYCerrar = async (place: Place) => {
+    await addPlace(place);
+    vibrarConfirmacion();
+    onClose();
+  };
+
   return (
     <ScrollView
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"
-      keyboardShouldPersistTaps="handled">
+      // "always", no "handled": con "handled" el primer toque sobre "Guardar" se gastaba en cerrar
+      // el teclado y había que pulsar dos veces para que guardase de verdad.
+      keyboardShouldPersistTaps="always">
       {/* Cabecera con "Cerrar": al ser una hoja modal, tiene que haber una salida visible además
           del gesto de escape de VoiceOver que lleva el contenedor. */}
       <View style={styles.headerRow}>
@@ -148,7 +160,7 @@ export default function SearchScreen({ onClose }: Props) {
                   onAccessibilityAction={(event) => {
                     const action = event.nativeEvent.actionName;
                     if (action === 'guardar') {
-                      void addPlace(place);
+                      void guardarYCerrar(place);
                     } else if (action === 'eliminar') {
                       void removePlace(place.id);
                     }
@@ -161,7 +173,7 @@ export default function SearchScreen({ onClose }: Props) {
                     esta pantalla, así que tiene que ser un botón que salga al hacer flick. */}
                 <Pressable
                   style={[styles.saveButton, saved && styles.savedButton]}
-                  onPress={() => (saved ? void removePlace(place.id) : void addPlace(place))}
+                  onPress={() => (saved ? void removePlace(place.id) : void guardarYCerrar(place))}
                   accessibilityRole="button"
                   accessibilityLabel={
                     saved

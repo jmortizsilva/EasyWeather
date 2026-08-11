@@ -12,4 +12,7 @@ export const NOVEDADES: string[] = [
   'La pestaña Buscar desaparece: ahora se añaden lugares con el botón Añadir lugar de Mis lugares. Quedan tres pestañas.',
   'Al añadir un lugar, el botón Guardar ya se encuentra con VoiceOver haciendo flick, sin tener que usar el rotor de acciones.',
   'La app pide el permiso de ubicación al abrirla por primera vez, en vez de esperar a que busques algo o configures un aviso.',
+  'Arreglado: al cambiar de lugar en Hoy, VoiceOver ya lee la previsión del lugar elegido y no la del primero de la lista.',
+  'Al guardar un lugar basta con pulsar una vez y la pantalla de búsqueda se cierra sola.',
+  'La búsqueda ya no repite el mismo lugar varias veces en los resultados.',
 ];

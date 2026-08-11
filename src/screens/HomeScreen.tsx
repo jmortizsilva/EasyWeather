@@ -310,8 +310,17 @@ export default function HomeScreen() {
           // Es un UIScrollView de verdad: de ahí que el gesto de tres dedos de VoiceOver pase de
           // página cuando el foco está dentro de una.
           contentOffset={{ x: indicePagina * anchoPantalla, y: 0 }}>
-          {seleccionables.map((place) => (
-            <View key={place.id} style={{ width: anchoPantalla }}>
+          {seleccionables.map((place, indice) => (
+            <View
+              key={place.id}
+              style={{ width: anchoPantalla }}
+              // SOLO la página visible está en el árbol de accesibilidad. Es lo que hace la app
+              // Tiempo de iOS con su UIPageViewController, que mantiene únicamente la página
+              // actual en la jerarquía. Sin esto, las N páginas siguen siendo elementos de
+              // VoiceOver aunque estén fuera de pantalla, y un flick a la derecha desde el control
+              // de páginas se iba al contenido de la PRIMERA página en vez de al de la que se ve.
+              accessibilityElementsHidden={indice !== indicePagina}
+              importantForAccessibility={indice === indicePagina ? 'auto' : 'no-hide-descendants'}>
               <PaginaLugar
                 place={place}
                 prevision={previsionDe(place)}
