@@ -20,7 +20,12 @@ import { Place } from '../types';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
-export default function SearchScreen() {
+interface Props {
+  /** Cierra la búsqueda. Se pasa cuando se abre como hoja desde "Mis lugares". */
+  onClose: () => void;
+}
+
+export default function SearchScreen({ onClose }: Props) {
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -57,6 +62,7 @@ export default function SearchScreen() {
 
   const handleView = (place: Place) => {
     viewPlace(place);
+    onClose();
     navigation.navigate('Home');
   };
 
@@ -66,9 +72,20 @@ export default function SearchScreen() {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"
       keyboardShouldPersistTaps="handled">
-      <Text style={styles.title} accessibilityRole="header">
-        Buscar
-      </Text>
+      {/* Cabecera con "Cerrar": al ser una hoja modal, tiene que haber una salida visible además
+          del gesto de escape de VoiceOver que lleva el contenedor. */}
+      <View style={styles.headerRow}>
+        <Text style={styles.title} accessibilityRole="header">
+          Buscar
+        </Text>
+        <Pressable
+          style={styles.closeButton}
+          onPress={onClose}
+          accessibilityRole="button"
+          accessibilityLabel="Cerrar búsqueda">
+          <Text style={styles.closeText}>Cerrar</Text>
+        </Pressable>
+      </View>
 
       {/* Campo y "Cancelar" en la misma fila para que el orden de VoiceOver sea campo -> cancelar.
           Cancelar borra el texto y cierra el teclado (por si ya no se quiere buscar). */}
@@ -180,6 +197,25 @@ const crearEstilos = (c: Paleta) =>
       color: c.texto,
       fontSize: 34,
       fontWeight: '700',
+      flexShrink: 1,
+    },
+    headerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    closeButton: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      paddingHorizontal: 16,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    closeText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
     },
     searchRow: {
       flexDirection: 'row',

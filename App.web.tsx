@@ -1,87 +1,97 @@
 import { Ionicons } from '@expo/vector-icons';
-import { DarkTheme, NavigationContainer } from '@react-navigation/native';
+import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AlertsScreen from './src/screens/AlertsScreen';
-import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
 import { TabParamList } from './src/navigation/types';
+import { ThemeProvider, useTema } from './src/theme/ThemeContext';
 
 // Variante solo para web: react-native-bottom-tabs no tiene soporte web, así que aquí
 // se usa el navegador de pestañas en JS. Sirve únicamente para poder verificar la app
 // en el navegador durante el desarrollo; en iOS/Android se usa App.tsx (pestañas nativas).
+// Buscar no es pestaña: se abre como hoja desde "Mis lugares", igual que en iOS.
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const navigationTheme = {
-  ...DarkTheme,
-  colors: {
-    ...DarkTheme.colors,
-    background: '#0d1a2b',
-    card: '#132740',
-    border: '#244061',
-    primary: '#7cbcff',
-  },
-};
+function Navegacion() {
+  const { colores, tema } = useTema();
+  const base = tema === 'oscuro' ? DarkTheme : DefaultTheme;
+  const navigationTheme = {
+    ...base,
+    colors: {
+      ...base.colors,
+      background: colores.fondo,
+      card: colores.tarjeta,
+      border: colores.bordeNavegacion,
+      primary: colores.acento,
+      text: colores.texto,
+    },
+  };
+
+  return (
+    <>
+      <StatusBar style={tema === 'oscuro' ? 'light' : 'dark'} />
+      <NavigationContainer theme={navigationTheme}>
+        <Tab.Navigator
+          screenOptions={{
+            headerShown: false,
+            tabBarStyle: {
+              backgroundColor: colores.tarjeta,
+              borderTopColor: colores.bordeNavegacion,
+            },
+            tabBarActiveTintColor: colores.acento,
+            tabBarInactiveTintColor: colores.tabInactivo,
+          }}>
+          <Tab.Screen
+            name="Home"
+            component={HomeScreen}
+            options={{
+              tabBarLabel: 'Hoy',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="sunny-outline" color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Places"
+            component={PlacesScreen}
+            options={{
+              tabBarLabel: 'Mis lugares',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="list-outline" color={color} size={size} />
+              ),
+            }}
+          />
+          <Tab.Screen
+            name="Alerts"
+            component={AlertsScreen}
+            options={{
+              tabBarLabel: 'Avisos',
+              tabBarIcon: ({ color, size }) => (
+                <Ionicons name="notifications-outline" color={color} size={size} />
+              ),
+            }}
+          />
+        </Tab.Navigator>
+      </NavigationContainer>
+    </>
+  );
+}
 
 export default function App() {
   return (
-    <PlacesProvider>
-      <NotificationsProvider>
-        <StatusBar style="light" />
-        <NavigationContainer theme={navigationTheme}>
-          <Tab.Navigator
-            screenOptions={{
-              headerShown: false,
-              tabBarStyle: { backgroundColor: '#132740', borderTopColor: '#244061' },
-              tabBarActiveTintColor: '#7cbcff',
-              tabBarInactiveTintColor: '#a9bcd6',
-            }}>
-            <Tab.Screen
-              name="Home"
-              component={HomeScreen}
-              options={{
-                tabBarLabel: 'Hoy',
-                tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="sunny-outline" color={color} size={size} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Places"
-              component={PlacesScreen}
-              options={{
-                tabBarLabel: 'Mis lugares',
-                tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="list-outline" color={color} size={size} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Search"
-              component={SearchScreen}
-              options={{
-                tabBarLabel: 'Buscar',
-                tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="search-outline" color={color} size={size} />
-                ),
-              }}
-            />
-            <Tab.Screen
-              name="Alerts"
-              component={AlertsScreen}
-              options={{
-                tabBarLabel: 'Avisos',
-                tabBarIcon: ({ color, size }) => (
-                  <Ionicons name="notifications-outline" color={color} size={size} />
-                ),
-              }}
-            />
-          </Tab.Navigator>
-        </NavigationContainer>
-      </NotificationsProvider>
-    </PlacesProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <PlacesProvider>
+          <NotificationsProvider>
+            <Navegacion />
+          </NotificationsProvider>
+        </PlacesProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }

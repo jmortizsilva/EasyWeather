@@ -1,12 +1,14 @@
 import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Swipeable } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../navigation/types';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
+import SearchScreen from './SearchScreen';
 
 export default function PlacesScreen() {
   const insets = useSafeAreaInsets();
@@ -26,6 +28,7 @@ export default function PlacesScreen() {
   // Momento actual para la antigüedad de las temperaturas. Se fija al recibir el foco (no Date.now
   // en render, que sería impuro); con 0 hasta entonces se tratan como frescas.
   const [ahora, setAhora] = useState(0);
+  const [buscando, setBuscando] = useState(false);
 
   // Al abrir "Mis lugares" se refresca la temperatura de todos los lugares (una sola llamada).
   useFocusEffect(
@@ -82,7 +85,7 @@ export default function PlacesScreen() {
 
       {places.length === 0 && (
         <Text style={styles.note}>
-          Aún no has añadido ningún lugar. Ve a la pestaña Buscar para encontrar uno.
+          Aún no has añadido ningún lugar. Usa el botón Añadir lugar para buscar uno.
         </Text>
       )}
 
@@ -92,11 +95,37 @@ export default function PlacesScreen() {
             const { hablado, tempVisible } = etiquetaLugar(place.name, currentByPlace[place.id]);
             const meta = [place.admin1, tempVisible].filter(Boolean).join(' · ');
             return (
-              <View
+              <Swipeable
                 key={place.id}
-                style={[styles.favoriteRow, index < places.length - 1 && styles.rowDivider]}>
+                renderRightActions={() => (
+                  // Se revela al deslizar; queda FUERA del árbol de accesibilidad a propósito,
+                  // porque para VoiceOver la misma acción ya está en el rotor (más rápida que
+                  // tener que deslizar).
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => void removePlace(place.id)}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants">
+                    <Text style={styles.removeText}>Quitar</Text>
+                  </Pressable>
+                )}
+                // Se permite deslizar en los dos sentidos: se pidió "flick a la derecha o a la
+                // izquierda", y la acción revelada es la misma.
+                renderLeftActions={() => (
+                  <Pressable
+                    style={styles.removeButton}
+                    onPress={() => void removePlace(place.id)}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants">
+                    <Text style={styles.removeText}>Quitar</Text>
+                  </Pressable>
+                )}>
                 <Pressable
-                  style={[styles.favoriteSelect, activeId === place.id && styles.rowSelected]}
+                  style={[
+                    styles.favoriteSelect,
+                    index < places.length - 1 && styles.rowDivider,
+                    activeId === place.id && styles.rowSelected,
+                  ]}
                   onPress={() => selectAndGoHome(place.id)}
                   accessibilityRole="button"
                   accessibilityLabel={hablado}
@@ -111,20 +140,36 @@ export default function PlacesScreen() {
                   <Text style={styles.rowTitle}>{place.name}</Text>
                   {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
                 </Pressable>
-                {/* Botón visible para quien NO usa VoiceOver; se oculta del árbol de
-                  accesibilidad porque para VoiceOver la acción va por el rotor. */}
-                <Pressable
-                  style={styles.removeButton}
-                  onPress={() => void removePlace(place.id)}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants">
-                  <Text style={styles.removeText}>Quitar</Text>
-                </Pressable>
-              </View>
+              </Swipeable>
             );
           })}
         </View>
       )}
+
+      <Pressable
+        style={styles.buttonPrimary}
+        onPress={() => setBuscando(true)}
+        accessibilityRole="button"
+        accessibilityLabel="Añadir lugar"
+        accessibilityHint="Abre la búsqueda para encontrar una ciudad o pueblo">
+        <Text style={styles.buttonText}>Añadir lugar</Text>
+      </Pressable>
+
+      {/* La búsqueda ya no es una pestaña: su contenido es "añadir un lugar", así que vive aquí
+          como hoja. accessibilityViewIsModal deja fuera del recorrido de VoiceOver lo que queda
+          detrás, y onAccessibilityEscape permite cerrarla con el gesto de la Z. */}
+      <Modal
+        visible={buscando}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setBuscando(false)}>
+        <View
+          style={styles.hoja}
+          accessibilityViewIsModal
+          onAccessibilityEscape={() => setBuscando(false)}>
+          <SearchScreen onClose={() => setBuscando(false)} />
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -178,21 +223,19 @@ const crearEstilos = (c: Paleta) =>
       fontSize: 15,
       marginTop: 2,
     },
-    favoriteRow: {
-      flexDirection: 'row',
-      alignItems: 'stretch',
-    },
+    // El fondo explícito importa: la fila se desliza por encima del botón "Quitar", y sin fondo
+    // propio se transparentaría y se leerían los dos textos superpuestos.
     favoriteSelect: {
-      flex: 1,
       minHeight: 44,
       paddingVertical: 12,
       paddingHorizontal: 16,
       justifyContent: 'center',
+      backgroundColor: c.tarjeta,
     },
     removeButton: {
       backgroundColor: c.peligro,
-      paddingHorizontal: 16,
-      minWidth: 44,
+      paddingHorizontal: 24,
+      minWidth: 88,
       justifyContent: 'center',
       alignItems: 'center',
     },
@@ -200,5 +243,23 @@ const crearEstilos = (c: Paleta) =>
       color: c.textoPeligro,
       fontSize: 17,
       fontWeight: '600',
+    },
+    buttonPrimary: {
+      borderRadius: 12,
+      backgroundColor: c.primario,
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+    },
+    buttonText: {
+      color: c.textoPrimario,
+      fontSize: 17,
+      fontWeight: '600',
+    },
+    // Fondo propio de la hoja de búsqueda: una hoja modal de iOS no hereda el de la pantalla.
+    hoja: {
+      flex: 1,
+      backgroundColor: c.fondo,
     },
   });

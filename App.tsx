@@ -1,9 +1,9 @@
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AlertsScreen from './src/screens/AlertsScreen';
-import SearchScreen from './src/screens/SearchScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { NotificationsProvider } from './src/state/NotificationsContext';
@@ -56,15 +56,8 @@ function Navegacion() {
               tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
             }}
           />
-          <Tab.Screen
-            name="Search"
-            component={SearchScreen}
-            options={{
-              tabBarLabel: 'Buscar',
-              tabBarIcon: () => ({ sfSymbol: 'magnifyingglass' }),
-              role: 'search',
-            }}
-          />
+          {/* Buscar ya no es pestaña: su contenido es "añadir un lugar", así que se abre como
+              hoja desde el botón "Añadir lugar" de Mis lugares. Una pestaña menos que recorrer. */}
           <Tab.Screen
             name="Alerts"
             component={AlertsScreen}
@@ -84,14 +77,18 @@ export default function App() {
   useActualizaciones();
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <PlacesProvider>
-          <NotificationsProvider>
-            <Navegacion />
-          </NotificationsProvider>
-        </PlacesProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    // GestureHandlerRootView es obligatorio para react-native-gesture-handler (v2) y tiene que
+    // envolverlo TODO: sin él, el deslizamiento de las filas de "Mis lugares" no llega a activarse.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <PlacesProvider>
+            <NotificationsProvider>
+              <Navegacion />
+            </NotificationsProvider>
+          </PlacesProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

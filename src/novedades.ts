@@ -8,4 +8,6 @@
 export const NOVEDADES: string[] = [
   'La app ya tiene modo claro y modo oscuro. Por defecto sigue el aspecto que tengas en el iPhone; en Avisos, apartado Aspecto, puedes forzar Claro u Oscuro.',
   'En Hoy, cada lugar es ahora una página. Tras el título hay un control de páginas: desliza arriba o abajo para cambiar de lugar, o pasa página con tres dedos a izquierda y derecha. Ya no hay botones de más y menos.',
+  'En Mis lugares, para quitar un lugar se desliza la fila a izquierda o derecha. Con VoiceOver sigue estando en el rotor de acciones, como hasta ahora.',
+  'La pestaña Buscar desaparece: ahora se añaden lugares con el botón Añadir lugar de Mis lugares. Quedan tres pestañas.',
 ];
