@@ -81,10 +81,11 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"
-      // "always" evita que un toque en la lista cierre el teclado. NO basta con VoiceOver: ahí el
-      // primer toque se pierde igual porque quien retira el teclado es iOS, no React Native; para
-      // eso está el botón "Listo". Para quien usa la pantalla a la vista, arrastrar la lista
-      // también cierra el teclado, que es lo habitual en iOS.
+      // "always" evita que un toque en la lista cierre el teclado en vez de activar la fila. Con
+      // VoiceOver no interviene: allí quien tiene que resolverlo es onAccessibilityTap en cada
+      // fila (ver más abajo), porque el doble toque no pasa por el sistema de toques de React
+      // Native. Para quien usa la pantalla a la vista, arrastrar la lista sí cierra el teclado,
+      // que es lo habitual en iOS.
       keyboardShouldPersistTaps="always"
       keyboardDismissMode="on-drag">
       {/* Cabecera con "Cerrar": al ser una hoja modal, tiene que haber una salida visible además
@@ -113,7 +114,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           placeholderTextColor={colores.textoTenue}
           style={styles.input}
           accessibilityLabel="Buscar lugar"
-          accessibilityHint="Escribe el nombre de una ciudad o pueblo. Cuando termines, pulsa Listo o la tecla Buscar del teclado para cerrarlo y ver los resultados"
+          accessibilityHint="Escribe el nombre de una ciudad o pueblo. Los resultados salen debajo según escribes; con Listo o con la tecla Buscar del teclado lo cierras y se recorren más cómodos"
           // Tecla "Buscar" en el teclado (en vez de Intro); al pulsarla se cierra el teclado y
           // quedan a la vista los resultados que ya se cargan en vivo.
           returnKeyType="search"
@@ -122,10 +123,10 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           onBlur={() => setFocused(false)}
           autoFocus
         />
-        {/* Cerrar el teclado tiene botón propio porque NO es un detalle estético: con el teclado
-            abierto, iOS se come el primer toque sobre cualquier resultado (se va en retirar el
-            teclado) y hay que pulsar dos veces. Cerrarlo antes deja la lista utilizable al primer
-            toque. La tecla "Buscar" del teclado hace lo mismo, pero no todo el mundo la conoce. */}
+        {/* Cerrar el teclado tiene botón propio: con el teclado abierto tapa media pantalla y
+            quedan menos resultados a la vista. La tecla "Buscar" hace lo mismo, pero no todo el
+            mundo la conoce. Ya NO hace falta pulsarlo para que los resultados respondan al primer
+            toque; eso lo resuelve onAccessibilityTap en cada fila. */}
         {focused && (
           <Pressable
             style={styles.cancelButton}
@@ -169,22 +170,20 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
                   onPress={() => handleView(place)}
                   accessibilityRole="button"
                   accessibilityLabel={`Ver previsión de ${place.name}${where}${saved ? ', guardado en mis lugares' : ''}`}
-                  // 'activate' declarado A PROPÓSITO: al declararlo, el doble toque de VoiceOver
-                  // llega por la vía de accesibilidad en vez de como un toque sintetizado. El
-                  // toque sintetizado se lo comía el cierre del teclado del ScrollView (había que
-                  // pulsar dos veces), y keyboardShouldPersistTaps no lo evitaba dentro de un
-                  // Modal. La acción del rotor se mantiene para quien ya la conocía.
+                  // onAccessibilityTap, NO una acción 'activate': accessibilityActivate de
+                  // RCTViewComponentView.mm solo mira esta prop, y si devuelve NO, VoiceOver
+                  // sintetiza un toque normal, que es el que se come el cierre del teclado (había
+                  // que pulsar dos veces con el teclado abierto). Declarar 'activate' en
+                  // accessibilityActions NO vale: eso solo lo mete en el rotor.
+                  onAccessibilityTap={() => handleView(place)}
                   accessibilityActions={[
-                    { name: 'activate' },
                     saved
                       ? { name: 'eliminar', label: 'Eliminar de mis lugares' }
                       : { name: 'guardar', label: 'Guardar en mis lugares' },
                   ]}
                   onAccessibilityAction={(event) => {
                     const action = event.nativeEvent.actionName;
-                    if (action === 'activate') {
-                      handleView(place);
-                    } else if (action === 'guardar') {
+                    if (action === 'guardar') {
                       void guardarYCerrar(place);
                     } else if (action === 'eliminar') {
                       void removePlace(place.id);
@@ -205,16 +204,13 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
                       ? `Quitar ${place.name} de mis lugares`
                       : `Guardar ${place.name} en mis lugares`
                   }
-                  // Ver arriba: sin declarar 'activate', el primer doble toque se gastaba en
-                  // cerrar el teclado y había que pulsar el botón dos veces para guardar.
-                  accessibilityActions={[{ name: 'activate' }]}
-                  onAccessibilityAction={(event) => {
-                    if (event.nativeEvent.actionName === 'activate') {
-                      if (saved) {
-                        void removePlace(place.id);
-                      } else {
-                        void guardarYCerrar(place);
-                      }
+                  // Ver arriba: sin onAccessibilityTap, el primer doble toque se gasta en cerrar
+                  // el teclado y hay que pulsar el botón dos veces para guardar.
+                  onAccessibilityTap={() => {
+                    if (saved) {
+                      void removePlace(place.id);
+                    } else {
+                      void guardarYCerrar(place);
                     }
                   }}>
                   <Text style={styles.saveText}>{saved ? 'Quitar' : 'Guardar'}</Text>

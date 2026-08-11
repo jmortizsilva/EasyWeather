@@ -17,4 +17,5 @@ export const NOVEDADES: string[] = [
   'Cuando la búsqueda devuelve varios sitios con el mismo nombre, cada uno indica ahora el dato que lo diferencia (provincia, comarca o país) en vez de repetirse.',
   'Al consultar la previsión de un lugar buscado, ya no te lleva a Hoy sin salida: se abre encima de la búsqueda, con botón Atrás y con la opción de guardarlo.',
   'Arreglado: al tocar un resultado de la búsqueda, la previsión no llegaba a aparecer y la pantalla se quedaba sin responder hasta cerrar la app. Ahora se abre, y el botón Atrás devuelve a la búsqueda con sus resultados para poder consultar otro lugar.',
+  'En la búsqueda ya no hace falta cerrar el teclado antes de elegir: los resultados responden al primer doble toque aunque el teclado siga abierto. El botón Listo sigue estando para quitarlo de en medio.',
 ];
