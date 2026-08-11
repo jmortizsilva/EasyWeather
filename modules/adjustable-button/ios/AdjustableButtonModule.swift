@@ -5,10 +5,21 @@ public class AdjustableButtonModule: Module {
     Name("AdjustableButton")
 
     View(AdjustableButtonView.self) {
-      Events("onAccessibilityIncrement", "onAccessibilityDecrement", "onAccessibilityActivate")
+      Events(
+        "onAccessibilityIncrement",
+        "onAccessibilityDecrement",
+        "onAccessibilityActivate",
+        "onAccessibilityScrollNext",
+        "onAccessibilityScrollPrevious"
+      )
 
       Prop("label") { (view: AdjustableButtonView, label: String) in
         view.accessibilityLabel = label
+      }
+
+      // Por defecto true: las filas de dia contaban con el rasgo de boton desde el principio.
+      Prop("esBoton") { (view: AdjustableButtonView, esBoton: Bool?) in
+        view.esBoton = esBoton ?? true
       }
 
       Prop("value") { (view: AdjustableButtonView, value: String) in

@@ -7,4 +7,5 @@
 // Ver comun/docs/GUIA-ENTORNO-IOS.md ("Avisar al usuario y actualizar en caliente").
 export const NOVEDADES: string[] = [
   'La app ya tiene modo claro y modo oscuro. Por defecto sigue el aspecto que tengas en el iPhone; en Avisos, apartado Aspecto, puedes forzar Claro u Oscuro.',
+  'En Hoy, cada lugar es ahora una página. Tras el título hay un control de páginas: desliza arriba o abajo para cambiar de lugar, o pasa página con tres dedos a izquierda y derecha. Ya no hay botones de más y menos.',
 ];

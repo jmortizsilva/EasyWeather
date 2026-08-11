@@ -14,9 +14,17 @@ export interface AdjustableButtonProps extends ViewProps {
   valueOnIncrement?: string;
   valueOnDecrement?: string;
   hint?: string;
+  /**
+   * Si además de ajustable debe anunciarse como botón. Por defecto sí (las filas de día se abren).
+   * El control de páginas lo pone a false: no hay nada que activar y anunciarlo confunde.
+   */
+  esBoton?: boolean;
   onAccessibilityIncrement?: () => void;
   onAccessibilityDecrement?: () => void;
   onAccessibilityActivate?: () => void;
+  /** Gesto de tres dedos: izquierda avanza, derecha retrocede. */
+  onAccessibilityScrollNext?: () => void;
+  onAccessibilityScrollPrevious?: () => void;
 }
 
 // Vista nativa de iOS que combina los rasgos "ajustable" y "botón" (ver el Swift del módulo).

@@ -47,6 +47,11 @@ function distanceMeters(a: { lat: number; lon: number }, b: { lat: number; lon: 
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+export interface PrevisionGuardada {
+  forecast: Forecast;
+  updatedAt: number | undefined;
+}
+
 interface PlacesContextValue {
   places: Place[];
   currentLocationPlace: Place | undefined;
@@ -60,6 +65,11 @@ interface PlacesContextValue {
   message: string;
   /** Temperatura actual de cada lugar (por id), con la hora en que se obtuvo. */
   currentByPlace: Record<string, TempGuardada>;
+  /**
+   * Previsión ya cargada de cada lugar, para que las páginas de "Hoy" puedan pintarse mientras
+   * se desliza sin pedir nada. Se llena con lo que se va visitando; NO dispara consultas extra.
+   */
+  forecastByPlace: Record<string, PrevisionGuardada>;
   /** Refresca en una sola llamada la temperatura actual de todos los lugares. Con throttle. */
   refreshCurrentTemps: (force?: boolean) => Promise<void>;
   setActiveId: (id: string) => void;
@@ -87,6 +97,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [message, setMessage] = useState('Actualiza tu ubicación para empezar.');
   const [currentByPlace, setCurrentByPlace] = useState<Record<string, TempGuardada>>({});
+  const [forecastByPlace, setForecastByPlace] = useState<Record<string, PrevisionGuardada>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -314,6 +325,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Muestra la previsión y la guarda además en el mapa por lugar, del que se pintan las páginas
+    // de "Hoy" al deslizar. El mapa solo recoge lo ya cargado: no provoca ninguna consulta extra.
+    const aplicarPrevision = (data: Forecast, updatedAt: number | undefined) => {
+      setForecast(data);
+      setForecastUpdatedAt(updatedAt);
+      setForecastByPlace((previo) => ({ ...previo, [activeId]: { forecast: data, updatedAt } }));
+    };
+
     const loadForecast = async (force: boolean, silent: boolean) => {
       if (!force) {
         const [cachedRaw, tsRaw] = await Promise.all([
@@ -325,8 +344,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           try {
             const parsed = JSON.parse(cachedRaw) as Forecast;
             if (parsed?.days?.length > 0) {
-              setForecast(parsed);
-              setForecastUpdatedAt(tsRaw ? Number(tsRaw) : undefined);
+              aplicarPrevision(parsed, tsRaw ? Number(tsRaw) : undefined);
               if (!silent) {
                 setMessage(`Previsión de ${place.name}`);
               }
@@ -345,8 +363,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       try {
         const data = await getForecast(place.lat, place.lon);
         const now = Date.now();
-        setForecast(data);
-        setForecastUpdatedAt(now);
+        aplicarPrevision(data, now);
         await Promise.all([
           AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${activeId}`, JSON.stringify(data)),
           AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${activeId}`, String(now)),
@@ -369,8 +386,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
           try {
             const parsed = JSON.parse(cached) as Forecast;
             if (parsed?.days?.length > 0) {
-              setForecast(parsed);
-              setForecastUpdatedAt(cachedTs ? Number(cachedTs) : undefined);
+              aplicarPrevision(parsed, cachedTs ? Number(cachedTs) : undefined);
               setMessage('Sin conexión. Mostrando los últimos datos disponibles.');
               return;
             }
@@ -508,6 +524,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     loadingLocation,
     message,
     currentByPlace,
+    forecastByPlace,
     refreshCurrentTemps,
     setActiveId,
     refreshCurrentLocation,

@@ -9,17 +9,32 @@ class AdjustableButtonView: ExpoView {
   let onAccessibilityIncrement = EventDispatcher()
   let onAccessibilityDecrement = EventDispatcher()
   let onAccessibilityActivate = EventDispatcher()
+  // Gesto de tres dedos (izquierda / derecha), el mismo que pasa de pagina en la app Tiempo de
+  // iOS. Lo sirve accessibilityScroll, que VoiceOver envia al elemento enfocado; sin esto el
+  // gesto solo funcionaria con el foco DENTRO del scroll paginado, no sobre el control de puntos.
+  let onAccessibilityScrollNext = EventDispatcher()
+  let onAccessibilityScrollPrevious = EventDispatcher()
 
   // Valor que tendra la fila tras el proximo flick, calculado en JS y enviado por adelantado.
   // Permite fijar accessibilityValue de forma sincrona dentro del gesto (ver mas abajo).
   var valueOnIncrement = ""
   var valueOnDecrement = ""
 
+  // Hay dos usos con necesidades distintas: las filas de dia SI se abren (rasgo de boton), y el
+  // control de paginas NO tiene nada que activar, asi que anunciarlo como boton solo confunde.
+  var esBoton = true {
+    didSet { actualizarRasgos() }
+  }
+
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
     // La fila entera es un único elemento para VoiceOver; sus hijos quedan ocultos.
     isAccessibilityElement = true
-    accessibilityTraits = [.adjustable, .button]
+    actualizarRasgos()
+  }
+
+  private func actualizarRasgos() {
+    accessibilityTraits = esBoton ? [.adjustable, .button] : [.adjustable]
   }
 
   // Flick vertical de un dedo con VoiceOver. Fijamos accessibilityValue AQUI, antes de devolver:
@@ -46,5 +61,29 @@ class AdjustableButtonView: ExpoView {
   override func accessibilityActivate() -> Bool {
     onAccessibilityActivate()
     return true
+  }
+
+  // Tres dedos a izquierda/derecha. Devolver true le dice a VoiceOver que el gesto se ha
+  // atendido; si devolvieramos false, buscaria un scroll en los ancestros y no encontraria
+  // ninguno cuando el foco esta en el control de puntos. El valor se fija de forma sincrona, por
+  // el mismo motivo que en los flicks verticales (linea braille).
+  override func accessibilityScroll(_ direction: UIAccessibilityScrollDirection) -> Bool {
+    switch direction {
+    case .left:
+      // Arrastrar el contenido hacia la izquierda muestra la pagina siguiente.
+      if !valueOnDecrement.isEmpty {
+        accessibilityValue = valueOnDecrement
+      }
+      onAccessibilityScrollNext()
+      return true
+    case .right:
+      if !valueOnIncrement.isEmpty {
+        accessibilityValue = valueOnIncrement
+      }
+      onAccessibilityScrollPrevious()
+      return true
+    default:
+      return false
+    }
   }
 }

@@ -1,129 +1,68 @@
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ControlPaginas from '../components/ControlPaginas';
 import DayDetailModal from '../components/DayDetailModal';
 import DayRow from '../components/DayRow';
-import SelectorLugar from '../components/SelectorLugar';
-import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
+import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
-import { vibrarConfirmacion } from '../utils/haptica';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
-export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
-  const colores = useColores();
-  const styles = useMemo(() => crearEstilos(colores), [colores]);
-  const {
-    places,
-    currentLocationPlace,
-    activeId,
-    activePlace,
-    forecast,
-    forecastUpdatedAt,
-    loadingForecast,
-    loadingLocation,
-    message,
-    currentByPlace,
-    detectCurrentLocation,
-    refreshCurrentLocation,
-    refreshCurrentTemps,
-    reloadForecast,
-    setActiveId,
-  } = usePlaces();
-  const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
-    undefined,
-  );
+type Estilos = ReturnType<typeof crearEstilos>;
 
-  // Lugares que recorre el ajustable: la ubicación actual primero, luego los guardados.
-  const seleccionables = [currentLocationPlace, ...places].filter((p): p is NonNullable<typeof p> =>
-    Boolean(p),
-  );
-  const indiceActivo = seleccionables.findIndex((p) => p.id === activeId);
-  // El ajustable solo tiene sentido con al menos dos destinos y cuando el lugar activo es uno de
-  // ellos (si se está viendo un lugar buscado sin guardar, no aparece).
-  const mostrarSelector = seleccionables.length >= 2 && indiceActivo >= 0;
+interface PaginaProps {
+  place: Place;
+  prevision: PrevisionGuardada | undefined;
+  esActiva: boolean;
+  cargando: boolean;
+  message: string;
+  styles: Estilos;
+  colorCarga: string;
+  onActualizar: () => void;
+  onAbrirDia: (day: DayForecast, showSummary: boolean) => void;
+}
 
-  // Índice resaltado en el ajustable. Se separa de activeId: el flick solo mueve este índice (sin
-  // recargar Hoy, para que VoiceOver no pierda el foco); la recarga ocurre al SELECCIONAR (botón).
-  const [indiceSeleccionado, setIndiceSeleccionado] = useState(indiceActivo);
-
-  // Si el lugar activo cambia por fuera (GPS, Buscar, Mis lugares, o al seleccionar aquí), el
-  // ajustable se pone al día. Ajuste de estado durante el render (patrón recomendado de React), en
-  // vez de un efecto: no provoca renders en cascada.
-  const [activeIdPrevio, setActiveIdPrevio] = useState(activeId);
-  if (activeId !== activeIdPrevio) {
-    setActiveIdPrevio(activeId);
-    if (indiceActivo >= 0) {
-      setIndiceSeleccionado(indiceActivo);
-    }
-  }
-
-  // Momento actual para calcular la antigüedad de las temperaturas. Se fija al recibir el foco (no
-  // Date.now en render, que sería impuro); mientras tanto 0 hace que se traten como frescas.
-  const [ahora, setAhora] = useState(0);
-
-  // Flick: solo resalta otro lugar en el ajustable, sin tocar la previsión.
-  const cambiarSeleccion = (indice: number) => setIndiceSeleccionado(indice);
-  // Doble toque (botón): aplica el lugar mostrado y recarga Hoy con sus datos. Se vibra siempre para
-  // confirmar el toque (VoiceOver no anuncia nada al activar un ajustable que no cambia de valor).
-  const seleccionarLugar = (place: Place) => {
-    vibrarConfirmacion();
-    if (place.id !== activeId) {
-      setActiveId(place.id);
-    }
-  };
-
-  // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
-  // refresca la previsión. Silencioso si ya hay datos. También se refrescan las temperaturas
-  // que muestra el ajustable.
-  useFocusEffect(
-    useCallback(() => {
-      setAhora(Date.now());
-      void detectCurrentLocation();
-      reloadForecast(true);
-      void refreshCurrentTemps();
-    }, [detectCurrentLocation, reloadForecast, refreshCurrentTemps]),
-  );
-
-  const isCurrentLocation = activeId === CURRENT_LOCATION_ID;
+// Una página del carrusel: la previsión de UN lugar. Se pinta con lo que ya está cargado de ese
+// lugar (mapa forecastByPlace), así que al deslizar no aparece un hueco en blanco ni se dispara
+// ninguna consulta de más: la que toque la hace el lugar activo, como siempre.
+function PaginaLugar({
+  place,
+  prevision,
+  esActiva,
+  cargando,
+  message,
+  styles,
+  colorCarga,
+  onActualizar,
+  onAbrirDia,
+}: PaginaProps) {
+  const forecast = prevision?.forecast;
   const currentInfo = describeWeatherCode(forecast?.current?.weatherCode);
   const today = forecast?.days[0];
   const todayDetails = today ? buildDayDetails(today) : [];
   const upcomingDays = forecast?.days.slice(1) ?? [];
-  const updatedAt = formatUpdatedAt(forecastUpdatedAt);
+  const updatedAt = formatUpdatedAt(prevision?.updatedAt);
+  const esUbicacionActual = place.id === CURRENT_LOCATION_ID;
 
   return (
     <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
-      accessibilityLabel="Pantalla Hoy">
-      {activePlace ? (
-        <Text style={styles.cityTitle} accessibilityRole="header">
-          {activePlace.name}
-        </Text>
-      ) : (
-        <Text style={styles.note}>
-          Actualiza tu ubicación o busca un lugar en la pestaña Buscar.
-        </Text>
-      )}
-
-      {/* Justo tras la cabecera, tal como se pidió: con flick arriba/abajo se recorre la lista de
-          lugares y Hoy se actualiza al pararse. */}
-      {mostrarSelector && (
-        <SelectorLugar
-          seleccionables={seleccionables}
-          indiceSeleccionado={indiceSeleccionado}
-          currentByPlace={currentByPlace}
-          ahora={ahora}
-          onCambiar={cambiarSeleccion}
-          onSeleccionar={seleccionarLugar}
-        />
-      )}
-
+      style={styles.pagina}
+      contentContainerStyle={styles.content}
+      accessibilityLabel={`Previsión de ${place.name}`}>
       {today && (
         <View style={styles.currentCard}>
           <View
@@ -158,7 +97,7 @@ export default function HomeScreen() {
 
           <Pressable
             style={styles.buttonSecondary}
-            onPress={() => setDetail({ day: today, showSummary: false })}
+            onPress={() => onAbrirDia(today, false)}
             accessibilityRole="button"
             accessibilityLabel="Ver hoy (hora a hora)">
             <Text style={styles.buttonSecondaryText}>Hoy (hora a hora)</Text>
@@ -168,26 +107,20 @@ export default function HomeScreen() {
 
       <Pressable
         style={styles.buttonPrimary}
-        onPress={() => {
-          if (isCurrentLocation) {
-            void refreshCurrentLocation();
-          } else {
-            reloadForecast();
-          }
-        }}
+        onPress={onActualizar}
         accessibilityRole="button"
-        accessibilityLabel={isCurrentLocation ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
+        accessibilityLabel={esUbicacionActual ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
         accessibilityHint={
-          isCurrentLocation ? 'Usa el GPS del teléfono para detectar dónde estás' : undefined
+          esUbicacionActual ? 'Usa el GPS del teléfono para detectar dónde estás' : undefined
         }>
         <Text style={styles.buttonText}>
-          {isCurrentLocation ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
+          {esUbicacionActual ? 'Actualizar mi ubicación' : 'Actualizar previsión'}
         </Text>
       </Pressable>
 
-      {(loadingForecast || loadingLocation) && (
+      {esActiva && cargando && (
         <ActivityIndicator
-          color={colores.acentoSuave}
+          color={colorCarga}
           accessibilityLabel="Cargando"
           accessibilityRole="progressbar"
         />
@@ -204,16 +137,212 @@ export default function HomeScreen() {
                 key={day.date}
                 day={day}
                 isLast={index === upcomingDays.length - 1}
-                onOpen={() => setDetail({ day, showSummary: true })}
+                onOpen={() => onAbrirDia(day, true)}
               />
             ))}
           </View>
         </>
       )}
-      {!loadingForecast && !forecast && (
-        <Text style={styles.note}>Todavía no hay datos disponibles.</Text>
+
+      {!forecast && !cargando && <Text style={styles.note}>Todavía no hay datos disponibles.</Text>}
+      {esActiva && <Text style={styles.statusNote}>{message}</Text>}
+    </ScrollView>
+  );
+}
+
+export default function HomeScreen() {
+  const insets = useSafeAreaInsets();
+  const colores = useColores();
+  const styles = useMemo(() => crearEstilos(colores), [colores]);
+  const { width: anchoPantalla } = useWindowDimensions();
+  const {
+    places,
+    currentLocationPlace,
+    activeId,
+    activePlace,
+    forecast,
+    forecastUpdatedAt,
+    loadingForecast,
+    loadingLocation,
+    message,
+    currentByPlace,
+    forecastByPlace,
+    detectCurrentLocation,
+    refreshCurrentLocation,
+    refreshCurrentTemps,
+    reloadForecast,
+    setActiveId,
+  } = usePlaces();
+  const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
+    undefined,
+  );
+  const scrollRef = useRef<ScrollView>(null);
+
+  // Páginas del carrusel: la ubicación actual primero, luego los guardados.
+  const seleccionables = [currentLocationPlace, ...places].filter((p): p is NonNullable<typeof p> =>
+    Boolean(p),
+  );
+  const indiceActivo = seleccionables.findIndex((p) => p.id === activeId);
+  // Con un solo destino no hay nada que pasar; y si se está viendo un lugar buscado sin guardar
+  // (no está en la lista), tampoco: esa vista es de un único lugar.
+  const hayPaginas = seleccionables.length >= 2 && indiceActivo >= 0;
+
+  // Página mostrada. Se lleva aparte de activeId porque el scroll físico va por delante del estado.
+  const [indicePagina, setIndicePagina] = useState(Math.max(indiceActivo, 0));
+
+  // Si el lugar activo cambia por fuera (GPS, Mis lugares, Buscar), la página se pone al día.
+  // Ajuste de estado durante el render (patrón recomendado de React) en vez de un efecto: no
+  // provoca renders en cascada. Del scroll se encarga el efecto de abajo, no el render.
+  const [activeIdPrevio, setActiveIdPrevio] = useState(activeId);
+  if (activeId !== activeIdPrevio) {
+    setActiveIdPrevio(activeId);
+    if (indiceActivo >= 0 && indiceActivo !== indicePagina) {
+      setIndicePagina(indiceActivo);
+    }
+  }
+
+  // Página en la que ya está el scroll de verdad. Evita reordenar el carrusel cuando el cambio
+  // vino del propio dedo del usuario (ahí el scroll ya está donde toca y animarlo daría un tirón).
+  const paginaDesplazada = useRef(Math.max(indiceActivo, 0));
+
+  // Mover el scroll es un efecto sobre una vista nativa: no puede hacerse durante el render.
+  useEffect(() => {
+    if (paginaDesplazada.current === indicePagina) {
+      return;
+    }
+    paginaDesplazada.current = indicePagina;
+    scrollRef.current?.scrollTo({ x: indicePagina * anchoPantalla, animated: true });
+  }, [indicePagina, anchoPantalla]);
+
+  // Momento actual para calcular la antigüedad de las temperaturas. Se fija al recibir el foco (no
+  // Date.now en render, que sería impuro); mientras tanto 0 hace que se traten como frescas.
+  const [ahora, setAhora] = useState(0);
+
+  // Cambio de página desde el control de puntos (flick vertical o gesto de tres dedos). Se mueve
+  // el scroll Y se cambia el lugar activo: en este diseño la página ES la selección.
+  const irAPagina = (indice: number) => {
+    if (indice === indicePagina) {
+      return;
+    }
+    setIndicePagina(indice);
+    const destino = seleccionables[indice];
+    if (destino && destino.id !== activeId) {
+      setActiveId(destino.id);
+    }
+  };
+
+  // Deslizamiento con el dedo: el scroll ya se ha movido, solo hay que igualar el estado. Se marca
+  // la página como ya desplazada para que el efecto no vuelva a animarla hasta donde ya está.
+  const alTerminarDeslizamiento = (evento: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const indice = Math.round(evento.nativeEvent.contentOffset.x / anchoPantalla);
+    if (indice === indicePagina || indice < 0 || indice >= seleccionables.length) {
+      return;
+    }
+    paginaDesplazada.current = indice;
+    setIndicePagina(indice);
+    const destino = seleccionables[indice];
+    if (destino && destino.id !== activeId) {
+      setActiveId(destino.id);
+    }
+  };
+
+  // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
+  // refresca la previsión. Silencioso si ya hay datos. También se refrescan las temperaturas
+  // que muestra el control de páginas.
+  useFocusEffect(
+    useCallback(() => {
+      setAhora(Date.now());
+      void detectCurrentLocation();
+      reloadForecast(true);
+      void refreshCurrentTemps();
+    }, [detectCurrentLocation, reloadForecast, refreshCurrentTemps]),
+  );
+
+  const actualizar = (place: Place) => {
+    if (place.id === CURRENT_LOCATION_ID) {
+      void refreshCurrentLocation();
+    } else {
+      reloadForecast();
+    }
+  };
+
+  // La previsión del lugar activo se toma del estado vivo (es el que refleja la carga en curso);
+  // el resto de páginas, del mapa por lugar.
+  const previsionDe = (place: Place): PrevisionGuardada | undefined =>
+    place.id === activeId && forecast
+      ? { forecast, updatedAt: forecastUpdatedAt }
+      : forecastByPlace[place.id];
+
+  const abrirDia = (day: DayForecast, showSummary: boolean) => setDetail({ day, showSummary });
+  const cargando = loadingForecast || loadingLocation;
+  // Título: el lugar de la página que se está viendo.
+  const lugarVisible = hayPaginas ? seleccionables[indicePagina] : activePlace;
+
+  return (
+    <View style={styles.screen}>
+      {/* Cabecera fija (no se desliza con las páginas): título y, justo detrás, el control de
+          páginas, que es el orden que se pidió para VoiceOver. */}
+      <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
+        {lugarVisible ? (
+          <Text style={styles.cityTitle} accessibilityRole="header">
+            {lugarVisible.name}
+          </Text>
+        ) : (
+          <Text style={styles.note}>Actualiza tu ubicación o busca un lugar para empezar.</Text>
+        )}
+
+        {hayPaginas && (
+          <ControlPaginas
+            lugares={seleccionables}
+            indice={indicePagina}
+            currentByPlace={currentByPlace}
+            ahora={ahora}
+            onCambiar={irAPagina}
+          />
+        )}
+      </View>
+
+      {hayPaginas ? (
+        <ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onMomentumScrollEnd={alTerminarDeslizamiento}
+          // Es un UIScrollView de verdad: de ahí que el gesto de tres dedos de VoiceOver pase de
+          // página cuando el foco está dentro de una.
+          contentOffset={{ x: indicePagina * anchoPantalla, y: 0 }}>
+          {seleccionables.map((place) => (
+            <View key={place.id} style={{ width: anchoPantalla }}>
+              <PaginaLugar
+                place={place}
+                prevision={previsionDe(place)}
+                esActiva={place.id === activeId}
+                cargando={cargando}
+                message={message}
+                styles={styles}
+                colorCarga={colores.acentoSuave}
+                onActualizar={() => actualizar(place)}
+                onAbrirDia={abrirDia}
+              />
+            </View>
+          ))}
+        </ScrollView>
+      ) : (
+        activePlace && (
+          <PaginaLugar
+            place={activePlace}
+            prevision={previsionDe(activePlace)}
+            esActiva
+            cargando={cargando}
+            message={message}
+            styles={styles}
+            colorCarga={colores.acentoSuave}
+            onActualizar={() => actualizar(activePlace)}
+            onAbrirDia={abrirDia}
+          />
+        )
       )}
-      <Text style={styles.statusNote}>{message}</Text>
 
       <DayDetailModal
         visible={detail !== undefined}
@@ -222,7 +351,7 @@ export default function HomeScreen() {
         showSummary={detail?.showSummary ?? true}
         onClose={() => setDetail(undefined)}
       />
-    </ScrollView>
+    </View>
   );
 }
 
@@ -234,10 +363,19 @@ const crearEstilos = (c: Paleta) =>
       flex: 1,
       backgroundColor: c.fondo,
     },
-    content: {
-      // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo: sin esto el
-      // titulo se metia debajo de la hora y los iconos de estado del sistema.
+    // paddingTop se calcula con la zona segura de iOS (useSafeAreaInsets), no fijo: sin esto el
+    // titulo se metia debajo de la hora y los iconos de estado del sistema.
+    cabecera: {
       paddingHorizontal: 16,
+      gap: 8,
+      backgroundColor: c.fondo,
+    },
+    pagina: {
+      flex: 1,
+    },
+    content: {
+      paddingHorizontal: 16,
+      paddingTop: 12,
       paddingBottom: 96,
       gap: 16,
     },
@@ -305,10 +443,10 @@ const crearEstilos = (c: Paleta) =>
       fontSize: 17,
       fontWeight: '600',
     },
-    // Boton secundario: mismo relleno que el primario para que se distinga del fondo (antes usaba un
-    // tono casi identico al fondo y era practicamente invisible). El borde lo mantiene reconocible
-    // como accion secundaria; va del color del TEXTO del boton, que contrasta con el relleno en las
-    // dos paletas (un borde de acento se volvia invisible en la clara, donde acento = primario).
+    // Boton secundario: mismo relleno que el primario para que se distinga del fondo (antes usaba
+    // un tono casi identico al fondo y era practicamente invisible). El borde lo mantiene
+    // reconocible como accion secundaria; va del color del TEXTO del boton, que contrasta con el
+    // relleno en las dos paletas (un borde de acento se volvia invisible en la clara).
     buttonSecondary: {
       borderRadius: 12,
       backgroundColor: c.primario,
