@@ -7,6 +7,8 @@ import { TabParamList } from '../navigation/types';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
+import VistaPreviaLugar from '../components/VistaPreviaLugar';
+import { Place } from '../types';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
 import SearchScreen from './SearchScreen';
 
@@ -29,6 +31,8 @@ export default function PlacesScreen() {
   // en render, que sería impuro); con 0 hasta entonces se tratan como frescas.
   const [ahora, setAhora] = useState(0);
   const [buscando, setBuscando] = useState(false);
+  // Lugar buscado que se esta consultando sin guardarlo (vista con salida propia).
+  const [previsualizando, setPrevisualizando] = useState<Place | undefined>(undefined);
 
   // Al abrir "Mis lugares" se refresca la temperatura de todos los lugares (una sola llamada).
   useFocusEffect(
@@ -167,8 +171,26 @@ export default function PlacesScreen() {
           style={styles.hoja}
           accessibilityViewIsModal
           onAccessibilityEscape={() => setBuscando(false)}>
-          <SearchScreen onClose={() => setBuscando(false)} />
+          <SearchScreen
+            onClose={() => setBuscando(false)}
+            onVerPrevision={(lugar) => setPrevisualizando(lugar)}
+          />
         </View>
+      </Modal>
+
+      {/* Previsión de un lugar buscado. Va aquí, y no dentro de la hoja de búsqueda, para no
+          anidar hojas modales: se muestra una u otra, nunca las dos. */}
+      <Modal
+        visible={previsualizando !== undefined}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setPrevisualizando(undefined)}>
+        {previsualizando && (
+          <VistaPreviaLugar
+            place={previsualizando}
+            onCerrar={() => setPrevisualizando(undefined)}
+          />
+        )}
       </Modal>
     </ScrollView>
   );

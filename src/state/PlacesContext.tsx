@@ -77,7 +77,11 @@ interface PlacesContextValue {
   /** Comprueba en silencio si el usuario ha cambiado de ubicación (no pide permiso). */
   detectCurrentLocation: () => Promise<void>;
   reloadForecast: (silent?: boolean) => void;
-  viewPlace: (place: Place) => void;
+  /**
+   * Carga la previsión de un lugar CUALQUIERA (por ejemplo uno recién buscado y sin guardar) y la
+   * deja en forecastByPlace, sin tocar el lugar activo ni la pantalla Hoy.
+   */
+  cargarPrevision: (place: Place) => Promise<void>;
   addPlace: (place: Place) => Promise<void>;
   removePlace: (id: string) => Promise<void>;
 }
@@ -87,8 +91,6 @@ const PlacesContext = createContext<PlacesContextValue | undefined>(undefined);
 export function PlacesProvider({ children }: { children: ReactNode }) {
   const [places, setPlaces] = useState<Place[]>([]);
   const [currentLocationPlace, setCurrentLocationPlace] = useState<Place | undefined>(undefined);
-  // Lugar buscado que se está consultando sin haberlo guardado en "Mis lugares".
-  const [previewPlace, setPreviewPlace] = useState<Place | undefined>(undefined);
   const [activeId, setActiveId] = useState<string>(CURRENT_LOCATION_ID);
   const [forecast, setForecast] = useState<Forecast | undefined>(undefined);
   const [forecastUpdatedAt, setForecastUpdatedAt] = useState<number | undefined>(undefined);
@@ -332,8 +334,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     const place =
       activeId === CURRENT_LOCATION_ID
         ? currentLocationPlace
-        : (places.find((p) => p.id === activeId) ??
-          (previewPlace?.id === activeId ? previewPlace : undefined));
+        : places.find((p) => p.id === activeId);
 
     if (!place) {
       // Limpia la prevision cuando no hay lugar activo; sync de estado, no cascada.
@@ -431,7 +432,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     // sí mostramos indicador aunque la recarga venga de un evento automático.
     const silent = silentRequested && forecastRef.current !== undefined;
     void loadForecast(force, silent);
-  }, [activeId, currentLocationPlace, previewPlace, places, forecastReloadTick]);
+  }, [activeId, currentLocationPlace, places, forecastReloadTick]);
 
   const refreshCurrentLocation = async () => {
     setLoadingLocation(true);
@@ -485,12 +486,41 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     setForecastReloadTick((v) => v + 1);
   }, []);
 
-  // Consulta la previsión de un lugar buscado sin necesidad de guardarlo antes.
-  const viewPlace = useCallback((place: Place) => {
-    setPreviewPlace(place);
-    setActiveId(place.id);
-    forceReloadRef.current = true;
-    setForecastReloadTick((v) => v + 1);
+  // Previsión de un lugar cualquiera (p. ej. uno buscado y aún sin guardar), SIN convertirlo en el
+  // lugar activo. Antes, consultar un lugar buscado lo metía como activo en "Hoy" y, al no estar en
+  // la lista, no había forma de volver: se quedaba uno encerrado en esa previsión.
+  const cargarPrevision = useCallback(async (place: Place) => {
+    const [cachedRaw, tsRaw] = await Promise.all([
+      AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${place.id}`),
+      AsyncStorage.getItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`),
+    ]);
+    const edad = tsRaw ? Date.now() - Number(tsRaw) : Infinity;
+    if (cachedRaw && edad < FORECAST_TTL_MS) {
+      try {
+        const guardada = JSON.parse(cachedRaw) as Forecast;
+        if (guardada?.days?.length > 0) {
+          setForecastByPlace((previo) => ({
+            ...previo,
+            [place.id]: { forecast: guardada, updatedAt: tsRaw ? Number(tsRaw) : undefined },
+          }));
+          return;
+        }
+      } catch {
+        // cache corrupta: se pide de nuevo
+      }
+    }
+
+    const data = await getForecast(place.lat, place.lon);
+    const ahora = Date.now();
+    setForecastByPlace((previo) => ({
+      ...previo,
+      [place.id]: { forecast: data, updatedAt: ahora },
+    }));
+    // Se guarda en disco igual que la del lugar activo: si luego se guarda el lugar, ya está lista.
+    await Promise.all([
+      AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${place.id}`, JSON.stringify(data)),
+      AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`, String(ahora)),
+    ]);
   }, []);
 
   // Al volver la app a primer plano se comprueba si el usuario se ha movido de ciudad
@@ -527,10 +557,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   };
 
   const activePlace =
-    activeId === CURRENT_LOCATION_ID
-      ? currentLocationPlace
-      : (places.find((p) => p.id === activeId) ??
-        (previewPlace?.id === activeId ? previewPlace : undefined));
+    activeId === CURRENT_LOCATION_ID ? currentLocationPlace : places.find((p) => p.id === activeId);
 
   const value: PlacesContextValue = {
     places,
@@ -549,7 +576,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     refreshCurrentLocation,
     detectCurrentLocation,
     reloadForecast,
-    viewPlace,
+    cargarPrevision,
     addPlace,
     removePlace,
   };

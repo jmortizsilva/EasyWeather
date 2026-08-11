@@ -1,4 +1,3 @@
-import { NavigationProp, useNavigation } from '@react-navigation/native';
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
@@ -11,7 +10,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabParamList } from '../navigation/types';
 import { searchPlaces } from '../services/openMeteo';
 import { usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
@@ -25,14 +23,15 @@ const SEARCH_DEBOUNCE_MS = 400;
 interface Props {
   /** Cierra la búsqueda. Se pasa cuando se abre como hoja desde "Mis lugares". */
   onClose: () => void;
+  /** Muestra la previsión de un lugar sin guardarlo, en una vista de la que SÍ se puede salir. */
+  onVerPrevision: (place: Place) => void;
 }
 
-export default function SearchScreen({ onClose }: Props) {
+export default function SearchScreen({ onClose, onVerPrevision }: Props) {
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
-  const navigation = useNavigation<NavigationProp<TabParamList>>();
-  const { places, addPlace, removePlace, viewPlace } = usePlaces();
+  const { places, addPlace, removePlace } = usePlaces();
   const [citySearch, setCitySearch] = useState('');
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
@@ -61,10 +60,11 @@ export default function SearchScreen({ onClose }: Props) {
     return () => clearTimeout(timer);
   }, [citySearch]);
 
+  // Consultar un lugar buscado NO lo convierte en el lugar de "Hoy": se abre una vista propia con
+  // botón de volver. Antes acababas viendo en Hoy un lugar sin guardar y sin forma de salir.
   const handleView = (place: Place) => {
-    viewPlace(place);
-    onClose();
-    navigation.navigate('Home');
+    Keyboard.dismiss();
+    onVerPrevision(place);
   };
 
   // Guardar es la razón de ser de esta pantalla: al hacerlo se cierra sola, que es lo que se

@@ -15,4 +15,5 @@ export const NOVEDADES: string[] = [
   'Arreglado de verdad: al cambiar de lugar en Hoy con VoiceOver, el resto de la pantalla ya es el del lugar elegido y no el del primero de la lista.',
   'Al buscar un lugar, el campo tiene ahora un botón Listo que cierra el teclado. Con el teclado abierto, iOS se come el primer toque sobre los resultados; cerrándolo antes, todo responde a la primera. Al guardar, la pantalla se cierra sola.',
   'Cuando la búsqueda devuelve varios sitios con el mismo nombre, cada uno indica ahora el dato que lo diferencia (provincia, comarca o país) en vez de repetirse.',
+  'Al consultar la previsión de un lugar buscado, ya no te lleva a Hoy sin salida: se abre en su propia pantalla, con botón Atrás y con la opción de guardarlo.',
 ];
