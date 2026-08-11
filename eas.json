@@ -20,7 +20,8 @@
       "channel": "preview",
       "ios": {
         "simulator": false
-      }
+      },
+      "environment": "production"
     },
     "production": {
       "autoIncrement": true,
