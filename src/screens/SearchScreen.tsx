@@ -38,9 +38,8 @@ export default function SearchScreen({ onClose }: Props) {
   const [searchLoading, setSearchLoading] = useState(false);
   const [focused, setFocused] = useState(false);
 
-  // "Cancelar" solo tiene sentido si hay algo que cancelar: el campo con foco (teclado abierto) o
-  // con texto escrito. Tras cancelar (sin foco y vacio) desaparece.
-  const showCancel = focused || citySearch.length > 0;
+  // "Borrar" solo tiene sentido si hay texto que borrar.
+  const puedeBorrar = citySearch.length > 0;
 
   useEffect(() => {
     const trimmed = citySearch.trim();
@@ -82,9 +81,12 @@ export default function SearchScreen({ onClose }: Props) {
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"
-      // "always", no "handled": con "handled" el primer toque sobre "Guardar" se gastaba en cerrar
-      // el teclado y había que pulsar dos veces para que guardase de verdad.
-      keyboardShouldPersistTaps="always">
+      // "always" evita que un toque en la lista cierre el teclado. NO basta con VoiceOver: ahí el
+      // primer toque se pierde igual porque quien retira el teclado es iOS, no React Native; para
+      // eso está el botón "Listo". Para quien usa la pantalla a la vista, arrastrar la lista
+      // también cierra el teclado, que es lo habitual en iOS.
+      keyboardShouldPersistTaps="always"
+      keyboardDismissMode="on-drag">
       {/* Cabecera con "Cerrar": al ser una hoja modal, tiene que haber una salida visible además
           del gesto de escape de VoiceOver que lleva el contenedor. */}
       <View style={styles.headerRow}>
@@ -100,8 +102,9 @@ export default function SearchScreen({ onClose }: Props) {
         </Pressable>
       </View>
 
-      {/* Campo y "Cancelar" en la misma fila para que el orden de VoiceOver sea campo -> cancelar.
-          Cancelar borra el texto y cierra el teclado (por si ya no se quiere buscar). */}
+      {/* Campo y sus botones en la misma fila, para que el orden de VoiceOver sea
+          campo -> Listo -> Borrar: lo primero que se encuentra tras escribir es cerrar el teclado,
+          que es lo que hay que hacer antes de recorrer los resultados. */}
       <View style={styles.searchRow}>
         <TextInput
           value={citySearch}
@@ -110,7 +113,7 @@ export default function SearchScreen({ onClose }: Props) {
           placeholderTextColor={colores.textoTenue}
           style={styles.input}
           accessibilityLabel="Buscar lugar"
-          accessibilityHint="Escribe el nombre de una ciudad o pueblo para ver su previsión"
+          accessibilityHint="Escribe el nombre de una ciudad o pueblo. Cuando termines, pulsa Listo o la tecla Buscar del teclado para cerrarlo y ver los resultados"
           // Tecla "Buscar" en el teclado (en vez de Intro); al pulsarla se cierra el teclado y
           // quedan a la vista los resultados que ya se cargan en vivo.
           returnKeyType="search"
@@ -119,7 +122,21 @@ export default function SearchScreen({ onClose }: Props) {
           onBlur={() => setFocused(false)}
           autoFocus
         />
-        {showCancel && (
+        {/* Cerrar el teclado tiene botón propio porque NO es un detalle estético: con el teclado
+            abierto, iOS se come el primer toque sobre cualquier resultado (se va en retirar el
+            teclado) y hay que pulsar dos veces. Cerrarlo antes deja la lista utilizable al primer
+            toque. La tecla "Buscar" del teclado hace lo mismo, pero no todo el mundo la conoce. */}
+        {focused && (
+          <Pressable
+            style={styles.cancelButton}
+            onPress={() => Keyboard.dismiss()}
+            accessibilityRole="button"
+            accessibilityLabel="Listo"
+            accessibilityHint="Cierra el teclado para poder recorrer los resultados">
+            <Text style={styles.cancelText}>Listo</Text>
+          </Pressable>
+        )}
+        {puedeBorrar && (
           <Pressable
             style={styles.cancelButton}
             onPress={() => {
@@ -127,9 +144,9 @@ export default function SearchScreen({ onClose }: Props) {
               Keyboard.dismiss();
             }}
             accessibilityRole="button"
-            accessibilityLabel="Cancelar búsqueda"
-            accessibilityHint="Borra el texto y cierra el teclado">
-            <Text style={styles.cancelText}>Cancelar</Text>
+            accessibilityLabel="Borrar la búsqueda"
+            accessibilityHint="Vacía el campo y cierra el teclado">
+            <Text style={styles.cancelText}>Borrar</Text>
           </Pressable>
         )}
       </View>
