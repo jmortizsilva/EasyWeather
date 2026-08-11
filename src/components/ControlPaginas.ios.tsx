@@ -46,6 +46,10 @@ export default function ControlPaginas({
       valueOnDecrement={valueOnDecrement}
       hint={CONTROL_PAGINAS_HINT}
       esBoton={false}
+      // Al cambiar de página hay que avisar a VoiceOver de que el contenido de alrededor es otro:
+      // sin esto seguía recorriendo los elementos de la página anterior. Vale el propio índice,
+      // porque lo único que importa es que el valor cambie.
+      refrescoAccesibilidad={actual}
       onAccessibilityIncrement={anterior}
       onAccessibilityDecrement={siguiente}
       // Tres dedos: izquierda avanza, derecha retrocede (como pasar hojas).

@@ -22,6 +22,11 @@ public class AdjustableButtonModule: Module {
         view.esBoton = esBoton ?? true
       }
 
+      // Basta con que cambie de valor; su contenido da igual (se usa el indice de pagina).
+      Prop("refrescoAccesibilidad") { (view: AdjustableButtonView, valor: Int?) in
+        view.refrescoAccesibilidad = valor ?? 0
+      }
+
       Prop("value") { (view: AdjustableButtonView, value: String) in
         view.accessibilityValue = value
       }

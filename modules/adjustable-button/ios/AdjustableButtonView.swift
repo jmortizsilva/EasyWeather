@@ -26,6 +26,29 @@ class AdjustableButtonView: ExpoView {
     didSet { actualizarRasgos() }
   }
 
+  // Cualquier valor que cambie obliga a VoiceOver a re-escanear la pantalla.
+  //
+  // Hace falta porque VoiceOver CACHEA los elementos: al cambiar de pagina con el flick, el
+  // contenido nuevo ya estaba puesto, pero el foco seguia recorriendo el arbol viejo y un flick a
+  // la derecha caia en la primera pagina. Con el gesto de tres dedos no pasaba (un scroll nativo
+  // invalida la cache el solo) ni con un doble toque (que tambien la fuerza), lo que confirmo que
+  // el estado en JS era correcto y lo caducado era la cache.
+  //
+  // React Native no expone esto: AccessibilityInfo.sendAccessibilityEvent solo admite 'focus' en
+  // iOS (comprobado en el fuente de la version instalada), y setAccessibilityFocus esta obsoleta.
+  var refrescoAccesibilidad = 0 {
+    didSet {
+      guard refrescoAccesibilidad != oldValue else { return }
+      // Se aplaza un ciclo: la notificacion tiene que salir cuando la pagina nueva YA esta
+      // colocada, o VoiceOver volveria a escanear el arbol anterior.
+      DispatchQueue.main.async {
+        // Sin argumento: se invalida el arbol pero el foco se queda donde esta (en el control de
+        // paginas), que es justo lo que se quiere para no dar saltos.
+        UIAccessibility.post(notification: .layoutChanged, argument: nil)
+      }
+    }
+  }
+
   required init(appContext: AppContext? = nil) {
     super.init(appContext: appContext)
     // La fila entera es un único elemento para VoiceOver; sus hijos quedan ocultos.

@@ -152,16 +152,22 @@ export default function SearchScreen({ onClose }: Props) {
                   onPress={() => handleView(place)}
                   accessibilityRole="button"
                   accessibilityLabel={`Ver previsión de ${place.name}${where}${saved ? ', guardado en mis lugares' : ''}`}
-                  // La acción del rotor se mantiene para quien ya la conocía, pero ya no es la
-                  // única vía: el botón de al lado hace lo mismo y sí se encuentra con un flick.
+                  // 'activate' declarado A PROPÓSITO: al declararlo, el doble toque de VoiceOver
+                  // llega por la vía de accesibilidad en vez de como un toque sintetizado. El
+                  // toque sintetizado se lo comía el cierre del teclado del ScrollView (había que
+                  // pulsar dos veces), y keyboardShouldPersistTaps no lo evitaba dentro de un
+                  // Modal. La acción del rotor se mantiene para quien ya la conocía.
                   accessibilityActions={[
+                    { name: 'activate' },
                     saved
                       ? { name: 'eliminar', label: 'Eliminar de mis lugares' }
                       : { name: 'guardar', label: 'Guardar en mis lugares' },
                   ]}
                   onAccessibilityAction={(event) => {
                     const action = event.nativeEvent.actionName;
-                    if (action === 'guardar') {
+                    if (action === 'activate') {
+                      handleView(place);
+                    } else if (action === 'guardar') {
                       void guardarYCerrar(place);
                     } else if (action === 'eliminar') {
                       void removePlace(place.id);
@@ -181,7 +187,19 @@ export default function SearchScreen({ onClose }: Props) {
                     saved
                       ? `Quitar ${place.name} de mis lugares`
                       : `Guardar ${place.name} en mis lugares`
-                  }>
+                  }
+                  // Ver arriba: sin declarar 'activate', el primer doble toque se gastaba en
+                  // cerrar el teclado y había que pulsar el botón dos veces para guardar.
+                  accessibilityActions={[{ name: 'activate' }]}
+                  onAccessibilityAction={(event) => {
+                    if (event.nativeEvent.actionName === 'activate') {
+                      if (saved) {
+                        void removePlace(place.id);
+                      } else {
+                        void guardarYCerrar(place);
+                      }
+                    }
+                  }}>
                   <Text style={styles.saveText}>{saved ? 'Quitar' : 'Guardar'}</Text>
                 </Pressable>
               </View>

@@ -19,6 +19,12 @@ export interface AdjustableButtonProps extends ViewProps {
    * El control de páginas lo pone a false: no hay nada que activar y anunciarlo confunde.
    */
   esBoton?: boolean;
+  /**
+   * Cambiar este número obliga a VoiceOver a re-escanear la pantalla. Necesario cuando el
+   * contenido de alrededor cambia sin que haya un scroll nativo de por medio: VoiceOver cachea
+   * los elementos y seguiría recorriendo los anteriores (ver el Swift del módulo).
+   */
+  refrescoAccesibilidad?: number;
   onAccessibilityIncrement?: () => void;
   onAccessibilityDecrement?: () => void;
   onAccessibilityActivate?: () => void;
