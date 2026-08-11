@@ -1,6 +1,5 @@
 import { DayForecast, Forecast, HourlyForecast, Place } from '../types';
 import { computeMoonInfo } from '../utils/moon';
-import { sinDuplicados } from '../utils/resultadosBusqueda';
 import { toNumber } from '../utils/text';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
@@ -39,7 +38,7 @@ export async function searchPlaces(query: string): Promise<Place[]> {
   const url = `${GEOCODING_URL}?name=${encodeURIComponent(trimmed)}&count=10&language=es`;
   const payload = await fetchJson<{ results?: any[] }>(url);
 
-  const lugares = (payload.results ?? [])
+  return (payload.results ?? [])
     .map((item): Place | undefined => {
       const lat = toNumber(item?.latitude);
       const lon = toNumber(item?.longitude);
@@ -48,19 +47,21 @@ export async function searchPlaces(query: string): Promise<Place[]> {
         return undefined;
       }
 
+      const texto = (valor: unknown) => String(valor ?? '').trim() || undefined;
       return {
         id: String(item?.id ?? `${lat},${lon}`),
         name,
-        admin1: String(item?.admin1 ?? '').trim() || undefined,
+        admin1: texto(item?.admin1),
+        // Niveles mas finos y pais: no se muestran siempre, solo cuando hacen falta para
+        // distinguir dos resultados que se llamarian igual (ver utils/resultadosBusqueda).
+        admin2: texto(item?.admin2),
+        admin3: texto(item?.admin3),
+        country: texto(item?.country),
         lat,
         lon,
       };
     })
     .filter((item): item is Place => Boolean(item));
-
-  // Open-Meteo devuelve entradas indistinguibles entre si para una misma ciudad (con "Londres"
-  // salian dos filas "Londres, Inglaterra"); se dejan fuera antes de que lleguen a la pantalla.
-  return sinDuplicados(lugares);
 }
 
 export async function getForecast(lat: number, lon: number): Promise<Forecast> {

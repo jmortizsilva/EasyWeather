@@ -1,7 +1,16 @@
 export interface Place {
   id: string;
   name: string;
+  /** Region (comunidad, estado, condado...). Es el dato que se muestra bajo el nombre. */
   admin1?: string;
+  /**
+   * Niveles administrativos mas finos y pais. Solo se usan para DISTINGUIR resultados de busqueda
+   * que se llamarian igual (ver utils/resultadosBusqueda). Son opcionales: los lugares guardados
+   * antes de que existieran estos campos siguen valiendo.
+   */
+  admin2?: string;
+  admin3?: string;
+  country?: string;
   lat: number;
   lon: number;
 }

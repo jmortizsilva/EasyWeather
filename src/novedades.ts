@@ -14,5 +14,5 @@ export const NOVEDADES: string[] = [
   'La app pide el permiso de ubicación al abrirla por primera vez, en vez de esperar a que busques algo o configures un aviso.',
   'Arreglado: al cambiar de lugar en Hoy, VoiceOver ya lee la previsión del lugar elegido y no la del primero de la lista.',
   'Al guardar un lugar basta con pulsar una vez y la pantalla de búsqueda se cierra sola.',
-  'La búsqueda ya no repite el mismo lugar varias veces en los resultados.',
+  'Cuando la búsqueda devuelve varios sitios con el mismo nombre, cada uno indica ahora el dato que lo diferencia (provincia, comarca o país) en vez de repetirse.',
 ];

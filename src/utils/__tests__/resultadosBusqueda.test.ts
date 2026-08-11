@@ -1,51 +1,81 @@
 import { Place } from '../../types';
-import { sinDuplicados } from '../resultadosBusqueda';
+import { describirResultados } from '../resultadosBusqueda';
 
-const p = (id: string, name: string, admin1?: string, lat = 0, lon = 0): Place => ({
+const p = (id: string, name: string, extra: Partial<Place> = {}): Place => ({
   id,
   name,
-  admin1,
-  lat,
-  lon,
+  lat: 0,
+  lon: 0,
+  ...extra,
 });
 
-describe('sinDuplicados', () => {
-  it('quita los resultados que se presentan igual (el caso real de "Londres")', () => {
-    // Open-Meteo devolvia dos entradas distintas que en pantalla se leian identicas.
-    const resultados = [
-      p('1', 'Londres', 'Inglaterra', 51.5, -0.12),
-      p('2', 'Londres', 'Inglaterra', 51.51, -0.09),
-      p('3', 'Londres', 'Ontario', 42.98, -81.24),
-    ];
-    const limpio = sinDuplicados(resultados);
-    expect(limpio.map((x) => x.id)).toEqual(['1', '3']);
+describe('describirResultados', () => {
+  it('con un solo resultado basta la region', () => {
+    const r = describirResultados([p('1', 'Vigo', { admin1: 'Galicia', admin2: 'Pontevedra' })]);
+    expect(r).toHaveLength(1);
+    expect(r[0].detalle).toBe('Galicia');
   });
 
-  it('conserva el primero de cada grupo (la API los da por relevancia)', () => {
-    const limpio = sinDuplicados([p('a', 'Madrid', 'Madrid'), p('b', 'Madrid', 'Madrid')]);
-    expect(limpio).toHaveLength(1);
-    expect(limpio[0].id).toBe('a');
-  });
-
-  it('no confunde lugares con el mismo nombre en regiones distintas', () => {
-    const limpio = sinDuplicados([
-      p('a', 'Santiago', 'Galicia'),
-      p('b', 'Santiago', 'Region Metropolitana'),
+  it('si dos se llaman igual en la misma region, los distingue con el siguiente dato', () => {
+    // El caso que se veia en pantalla: dos filas identicas para una ciudad grande.
+    const r = describirResultados([
+      p('1', 'Londres', { admin1: 'Inglaterra', admin2: 'Gran Londres', country: 'Reino Unido' }),
+      p('2', 'Londres', { admin1: 'Inglaterra', admin2: 'City of London', country: 'Reino Unido' }),
     ]);
-    expect(limpio).toHaveLength(2);
+    expect(r).toHaveLength(2);
+    expect(r[0].detalle).toBe('Inglaterra · Gran Londres');
+    expect(r[1].detalle).toBe('Inglaterra · City of London');
   });
 
-  it('ignora mayusculas y espacios sobrantes al comparar', () => {
-    const limpio = sinDuplicados([p('a', 'Vigo', 'Galicia'), p('b', ' vigo ', ' GALICIA ')]);
-    expect(limpio).toHaveLength(1);
+  it('no alarga los que ya se distinguen por la region', () => {
+    const r = describirResultados([
+      p('1', 'Santiago', { admin1: 'Galicia', admin2: 'A Coruna' }),
+      p('2', 'Santiago', { admin1: 'Region Metropolitana', admin2: 'Santiago' }),
+    ]);
+    expect(r.map((x) => x.detalle)).toEqual(['Galicia', 'Region Metropolitana']);
   });
 
-  it('trata igual la region ausente y la vacia', () => {
-    const limpio = sinDuplicados([p('a', 'Nowhere'), p('b', 'Nowhere', '')]);
-    expect(limpio).toHaveLength(1);
+  it('llega hasta el pais si hace falta para separarlos', () => {
+    const r = describirResultados([
+      p('1', 'Cordoba', { admin1: 'Andalucia', country: 'Espana' }),
+      p('2', 'Cordoba', { admin1: 'Andalucia', country: 'Argentina' }),
+    ]);
+    expect(r[0].detalle).toBe('Andalucia · Espana');
+    expect(r[1].detalle).toBe('Andalucia · Argentina');
+  });
+
+  it('no repite un dato que ya se dijo ni el propio nombre del lugar', () => {
+    // Open-Meteo repite el nombre en los niveles administrativos de las capitales de provincia.
+    const r = describirResultados([
+      p('1', 'Murcia', { admin1: 'Murcia', admin2: 'Murcia', country: 'Espana' }),
+    ]);
+    expect(r[0].detalle).toBe('Espana');
+  });
+
+  it('deja una sola fila si siguen siendo indistinguibles con todos los datos', () => {
+    const r = describirResultados([
+      p('1', 'Nowhere', { admin1: 'Nada' }),
+      p('2', 'Nowhere', { admin1: 'Nada' }),
+    ]);
+    expect(r).toHaveLength(1);
+    expect(r[0].place.id).toBe('1'); // se conserva el primero: la API los da por relevancia
+  });
+
+  it('aguanta un lugar sin ningun dato de region', () => {
+    const r = describirResultados([p('1', 'Isla')]);
+    expect(r[0].detalle).toBe('');
   });
 
   it('con una lista vacia devuelve vacia', () => {
-    expect(sinDuplicados([])).toEqual([]);
+    expect(describirResultados([])).toEqual([]);
+  });
+
+  it('mantiene el orden que trae la API', () => {
+    const r = describirResultados([
+      p('1', 'Uno', { admin1: 'A' }),
+      p('2', 'Dos', { admin1: 'B' }),
+      p('3', 'Tres', { admin1: 'C' }),
+    ]);
+    expect(r.map((x) => x.place.id)).toEqual(['1', '2', '3']);
   });
 });

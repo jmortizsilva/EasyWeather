@@ -18,6 +18,7 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 import { vibrarConfirmacion } from '../utils/haptica';
+import { describirResultados } from '../utils/resultadosBusqueda';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -138,13 +139,14 @@ export default function SearchScreen({ onClose }: Props) {
 
       {searchResults.length > 0 && (
         <View style={styles.card}>
-          {searchResults.map((place, index) => {
+          {describirResultados(searchResults).map(({ place, detalle }, index, lista) => {
             const saved = places.some((p) => p.id === place.id);
-            const where = place.admin1 ? `, ${place.admin1}` : '';
+            // El detalle ya viene calculado para que ESTA fila no suene igual que otra de la lista.
+            const where = detalle ? `, ${detalle}` : '';
             return (
               <View
                 key={place.id}
-                style={[styles.resultRow, index < searchResults.length - 1 && styles.rowDivider]}>
+                style={[styles.resultRow, index < lista.length - 1 && styles.rowDivider]}>
                 <Pressable
                   style={styles.resultSelect}
                   onPress={() => handleView(place)}
@@ -166,7 +168,7 @@ export default function SearchScreen({ onClose }: Props) {
                     }
                   }}>
                   <Text style={styles.rowTitle}>{place.name}</Text>
-                  <Text style={styles.rowMeta}>{place.admin1 ?? ''}</Text>
+                  <Text style={styles.rowMeta}>{detalle}</Text>
                 </Pressable>
                 {/* Botón de guardar. ANTES estaba oculto para VoiceOver, con la acción solo en el
                     rotor, y los usuarios no la encontraban: guardar un lugar es la razón de ser de
