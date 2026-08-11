@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
@@ -11,15 +11,21 @@ import { crearEstilos as crearEstilosPrevision, PaginaLugar } from './PrevisionL
 
 interface Props {
   place: Place;
+  /** Volver a la búsqueda, que sigue montada debajo con sus resultados. */
   onCerrar: () => void;
+  /** Guardado el lugar, ya no se busca nada: se cierra todo, igual que el botón de la lista. */
+  onGuardado: () => void;
 }
 
 /**
  * Previsión de un lugar buscado y todavía sin guardar. Existe porque antes esta consulta se hacía
  * metiendo el lugar como activo en "Hoy": al no estar en la lista de lugares, el carrusel
  * desaparecía y no había forma de volver a la previsión normal. Aquí siempre hay salida.
+ *
+ * Se monta como CAPA dentro de la hoja de búsqueda (ver PlacesScreen), no como hoja propia: su
+ * raíz se estira sobre el hueco del padre y tapa la búsqueda, que sigue viva debajo.
  */
-export default function VistaPreviaLugar({ place, onCerrar }: Props) {
+export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props) {
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -27,6 +33,7 @@ export default function VistaPreviaLugar({ place, onCerrar }: Props) {
   const { places, forecastByPlace, cargarPrevision, addPlace } = usePlaces();
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  const tituloRef = useRef<Text>(null);
   const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
     undefined,
   );
@@ -54,10 +61,27 @@ export default function VistaPreviaLugar({ place, onCerrar }: Props) {
     };
   }, [place, cargarPrevision]);
 
+  // Al no ser una hoja modal de iOS, nadie avisa a VoiceOver de que esto ha aparecido: el foco se
+  // quedaría en el resultado de la búsqueda que se acaba de ocultar. 'focus' es el único evento que
+  // iOS admite aquí y publica layoutChanged CON la vista, que es justo lo que hace falta: invalida
+  // el árbol y lleva el foco al título.
+  useEffect(() => {
+    // Aplazado a la siguiente pantalla pintada: en la arquitectura nueva el montaje va por el hilo
+    // principal y con un setTimeout(0) la vista puede no estar aún registrada.
+    const id = requestAnimationFrame(() => {
+      if (tituloRef.current) {
+        AccessibilityInfo.sendAccessibilityEvent(tituloRef.current, 'focus');
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [place]);
+
+  // Se vibra porque VoiceOver no anuncia nada al desaparecer la hoja, y sin confirmación no se
+  // sabe si se llegó a guardar (mismo motivo que en la lista de resultados).
   const guardar = async () => {
     await addPlace(place);
     vibrarConfirmacion();
-    onCerrar();
+    onGuardado();
   };
 
   return (
@@ -68,7 +92,7 @@ export default function VistaPreviaLugar({ place, onCerrar }: Props) {
       onAccessibilityEscape={onCerrar}>
       <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
         <View style={styles.filaCabecera}>
-          <Text style={styles.titulo} accessibilityRole="header">
+          <Text ref={tituloRef} style={styles.titulo} accessibilityRole="header">
             {place.name}
           </Text>
           <Pressable
@@ -121,8 +145,12 @@ export default function VistaPreviaLugar({ place, onCerrar }: Props) {
 
 const crearEstilos = (c: Paleta) =>
   StyleSheet.create({
+    // Ocupa todo el hueco del padre por encima de la búsqueda. El fondo opaco no es estético: sin
+    // él se transparentarían los resultados de debajo y se leerían los dos textos superpuestos.
     raiz: {
-      flex: 1,
+      // absoluteFill, no absoluteFillObject: en RN 0.86 ya no existe el segundo y el primero es
+      // el objeto plano, así que se puede esparcir.
+      ...StyleSheet.absoluteFill,
       backgroundColor: c.fondo,
     },
     cabecera: {

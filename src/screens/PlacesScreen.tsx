@@ -56,6 +56,22 @@ export default function PlacesScreen() {
     navigation.navigate('Home');
   };
 
+  // Cerrar la hoja se lleva por delante la previsión: si no, al volver a abrir la búsqueda
+  // aparecería encima la del lugar que se consultó la vez anterior.
+  const cerrarBusqueda = () => {
+    setBuscando(false);
+    setPrevisualizando(undefined);
+  };
+
+  // El gesto de escape y el botón Atrás del sistema cierran lo de más arriba, no todo de golpe.
+  const cerrarLoDeArriba = () => {
+    if (previsualizando) {
+      setPrevisualizando(undefined);
+    } else {
+      cerrarBusqueda();
+    }
+  };
+
   return (
     <ScrollView
       style={styles.screen}
@@ -166,31 +182,35 @@ export default function PlacesScreen() {
         visible={buscando}
         animationType="slide"
         presentationStyle="pageSheet"
-        onRequestClose={() => setBuscando(false)}>
-        <View
-          style={styles.hoja}
-          accessibilityViewIsModal
-          onAccessibilityEscape={() => setBuscando(false)}>
-          <SearchScreen
-            onClose={() => setBuscando(false)}
-            onVerPrevision={(lugar) => setPrevisualizando(lugar)}
-          />
-        </View>
-      </Modal>
+        onRequestClose={cerrarLoDeArriba}>
+        <View style={styles.hoja} accessibilityViewIsModal onAccessibilityEscape={cerrarLoDeArriba}>
+          {/* Se queda montada debajo de la previsión: así "Atrás" devuelve a la búsqueda con su
+              texto y sus resultados, y se puede mirar un lugar tras otro sin volver a escribir. */}
+          <View
+            style={styles.hoja}
+            accessibilityElementsHidden={previsualizando !== undefined}
+            importantForAccessibility={
+              previsualizando !== undefined ? 'no-hide-descendants' : 'auto'
+            }>
+            <SearchScreen
+              onClose={cerrarBusqueda}
+              onVerPrevision={(lugar) => setPrevisualizando(lugar)}
+            />
+          </View>
 
-      {/* Previsión de un lugar buscado. Va aquí, y no dentro de la hoja de búsqueda, para no
-          anidar hojas modales: se muestra una u otra, nunca las dos. */}
-      <Modal
-        visible={previsualizando !== undefined}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setPrevisualizando(undefined)}>
-        {previsualizando && (
-          <VistaPreviaLugar
-            place={previsualizando}
-            onCerrar={() => setPrevisualizando(undefined)}
-          />
-        )}
+          {/* La previsión es una CAPA dentro de esta hoja, no una segunda hoja modal. iOS no
+              presenta dos a la vez desde el mismo sitio: descarta la segunda en silencio pero
+              React Native se queda creyendo que está puesta (RCTModalHostViewComponentView.mm
+              marca _isPresented antes de presentar, sin comprobar nada), y la pantalla se quedaba
+              muerta hasta cerrar la app. */}
+          {previsualizando && (
+            <VistaPreviaLugar
+              place={previsualizando}
+              onCerrar={() => setPrevisualizando(undefined)}
+              onGuardado={cerrarBusqueda}
+            />
+          )}
+        </View>
       </Modal>
     </ScrollView>
   );
