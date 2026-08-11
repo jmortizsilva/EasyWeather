@@ -160,8 +160,6 @@ export default function HomeScreen() {
     currentLocationPlace,
     activeId,
     activePlace,
-    forecast,
-    forecastUpdatedAt,
     loadingForecast,
     loadingLocation,
     message,
@@ -266,12 +264,12 @@ export default function HomeScreen() {
     }
   };
 
-  // La previsión del lugar activo se toma del estado vivo (es el que refleja la carga en curso);
-  // el resto de páginas, del mapa por lugar.
-  const previsionDe = (place: Place): PrevisionGuardada | undefined =>
-    place.id === activeId && forecast
-      ? { forecast, updatedAt: forecastUpdatedAt }
-      : forecastByPlace[place.id];
+  // SIEMPRE del mapa por lugar, nunca del `forecast` vivo. Tomarlo del vivo cuando el lugar era el
+  // activo parecía razonable, pero era un fallo: al cambiar de página, `activeId` pasa al lugar
+  // nuevo de inmediato mientras `forecast` sigue teniendo los datos del ANTERIOR hasta que termina
+  // la carga, así que la página nueva se pintaba con la previsión del lugar viejo. El mapa se
+  // escribe a la vez que `forecast` (aplicarPrevision), así que no se pierde nada.
+  const previsionDe = (place: Place): PrevisionGuardada | undefined => forecastByPlace[place.id];
 
   const abrirDia = (day: DayForecast, showSummary: boolean) => setDetail({ day, showSummary });
   const cargando = loadingForecast || loadingLocation;

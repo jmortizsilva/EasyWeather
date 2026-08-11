@@ -284,8 +284,27 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Permiso de ubicación en la PRIMERA apertura. Antes no se pedía nunca al arrancar: la app
+    // solo lo solicitaba desde el botón "Actualizar mi ubicación", desde la búsqueda o al montar un
+    // aviso, así que quien entraba a mirar el tiempo se encontraba la pantalla vacía sin saber por
+    // qué. Solo se pide si iOS aún no ha preguntado ('undetermined'); si ya se denegó, insistir no
+    // muestra ningún diálogo y solo estorbaría (para eso está el botón, que lleva a Ajustes).
+    const pedirPermisoLaPrimeraVez = async () => {
+      try {
+        const actual = await Location.getForegroundPermissionsAsync();
+        if (actual.status === 'undetermined' && actual.canAskAgain) {
+          await Location.requestForegroundPermissionsAsync();
+        }
+      } catch {
+        // Si la consulta del permiso falla, se sigue igual: detectCurrentLocation ya no hace nada
+        // sin permiso concedido.
+      }
+    };
+
     // Al abrir la app se comprueba la ubicación por si el usuario ha viajado.
-    void loadStored().then(() => detectCurrentLocation());
+    void loadStored()
+      .then(pedirPermisoLaPrimeraVez)
+      .then(() => detectCurrentLocation());
   }, [detectCurrentLocation]);
 
   useEffect(() => {

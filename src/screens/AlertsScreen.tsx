@@ -17,8 +17,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { useNotifications } from '../state/NotificationsContext';
 import { Paleta } from '../theme/colores';
-import { ETIQUETA_PREFERENCIA, PreferenciaTema } from '../theme/preferencia';
-import { useColores, useTema } from '../theme/ThemeContext';
+import { useColores } from '../theme/ThemeContext';
 import { SummaryAlert } from '../types';
 import {
   createSummaryAlert,
@@ -92,43 +91,6 @@ function SwitchRow({
 }
 
 // Editor de un aviso de resumen. Mantiene su propio borrador; nada se guarda hasta pulsar Guardar.
-// Aspecto de la app. Se resuelve con tres opciones excluyentes en vez de un interruptor porque
-// "Automático" es un tercer estado real (seguir al iPhone), no el apagado de "Oscuro". VoiceOver
-// las anuncia como botones de opción, que es justo lo que son.
-function SelectorTema() {
-  const colores = useColores();
-  const styles = useMemo(() => crearEstilos(colores), [colores]);
-  const { preferencia, cambiarPreferencia } = useTema();
-  const opciones: PreferenciaTema[] = ['automatico', 'claro', 'oscuro'];
-
-  return (
-    <>
-      <Text style={styles.sectionHeader} accessibilityRole="header">
-        Aspecto
-      </Text>
-      <Text style={styles.note}>
-        Con Automático, la app sigue el modo claro u oscuro que tengas en el iPhone.
-      </Text>
-      <View style={styles.card}>
-        {opciones.map((opcion, index) => (
-          <Pressable
-            key={opcion}
-            style={[styles.row, index < opciones.length - 1 && styles.rowDivider]}
-            onPress={() => cambiarPreferencia(opcion)}
-            accessibilityRole="radio"
-            accessibilityState={{ checked: preferencia === opcion }}
-            accessibilityLabel={ETIQUETA_PREFERENCIA[opcion]}>
-            <Text style={styles.rowTitle}>
-              {preferencia === opcion ? '✓ ' : ''}
-              {ETIQUETA_PREFERENCIA[opcion]}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-    </>
-  );
-}
-
 function SummaryEditor({
   initial,
   options,
@@ -343,8 +305,6 @@ export default function AlertsScreen() {
         <Text style={styles.title} accessibilityRole="header">
           Avisos
         </Text>
-
-        <SelectorTema />
 
         <Text style={styles.sectionHeader} accessibilityRole="header">
           Avisos de resumen

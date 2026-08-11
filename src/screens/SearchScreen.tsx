@@ -138,11 +138,8 @@ export default function SearchScreen({ onClose }: Props) {
                   onPress={() => handleView(place)}
                   accessibilityRole="button"
                   accessibilityLabel={`Ver previsión de ${place.name}${where}${saved ? ', guardado en mis lugares' : ''}`}
-                  accessibilityHint={
-                    saved
-                      ? 'En el rotor de acciones puedes eliminarlo de mis lugares'
-                      : 'En el rotor de acciones puedes guardarlo en mis lugares'
-                  }
+                  // La acción del rotor se mantiene para quien ya la conocía, pero ya no es la
+                  // única vía: el botón de al lado hace lo mismo y sí se encuentra con un flick.
                   accessibilityActions={[
                     saved
                       ? { name: 'eliminar', label: 'Eliminar de mis lugares' }
@@ -159,13 +156,18 @@ export default function SearchScreen({ onClose }: Props) {
                   <Text style={styles.rowTitle}>{place.name}</Text>
                   <Text style={styles.rowMeta}>{place.admin1 ?? ''}</Text>
                 </Pressable>
-                {/* Botón visible para quien NO usa VoiceOver; se oculta del árbol de
-                    accesibilidad porque ahí la acción va por el rotor. */}
+                {/* Botón de guardar. ANTES estaba oculto para VoiceOver, con la acción solo en el
+                    rotor, y los usuarios no la encontraban: guardar un lugar es la razón de ser de
+                    esta pantalla, así que tiene que ser un botón que salga al hacer flick. */}
                 <Pressable
                   style={[styles.saveButton, saved && styles.savedButton]}
                   onPress={() => (saved ? void removePlace(place.id) : void addPlace(place))}
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants">
+                  accessibilityRole="button"
+                  accessibilityLabel={
+                    saved
+                      ? `Quitar ${place.name} de mis lugares`
+                      : `Guardar ${place.name} en mis lugares`
+                  }>
                   <Text style={styles.saveText}>{saved ? 'Quitar' : 'Guardar'}</Text>
                 </Pressable>
               </View>
