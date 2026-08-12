@@ -36,7 +36,9 @@ export function useActualizaciones(): void {
       if (idParaGuardar !== idGuardado) {
         await AsyncStorage.setItem(STORAGE_ULTIMO_UPDATE, idParaGuardar);
       }
-      if (avisar) {
+      // Lista vacia = el update no traia novedades que contar (o se acaba de estrenar una build
+      // y aun no se ha publicado nada encima): mejor callarse que abrir un Alert en blanco.
+      if (avisar && NOVEDADES.length > 0) {
         // El Alert lo lee VoiceOver solo al recibir el foco; no hace falta anuncio aparte.
         Alert.alert('Novedades', NOVEDADES.map((n) => `• ${n}`).join('\n'));
       }
