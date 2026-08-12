@@ -1,2 +1,0 @@
-# El servidor de Cloudflare no forma parte de la app; que EAS no lo suba en la build.
-server/

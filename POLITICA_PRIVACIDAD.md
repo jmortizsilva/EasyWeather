@@ -1,6 +1,6 @@
 # Política de privacidad de EasyWeather
 
-_Última actualización: 4 de agosto de 2026_
+_Última actualización: 12 de agosto de 2026_
 
 EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué datos usa
 la app y cómo los trata. En resumen: **EasyWeather no crea cuentas, no muestra publicidad y no
@@ -32,8 +32,9 @@ La app incluye dos tipos de aviso, ambos opcionales y desactivados por defecto:
   de una ciudad concreta.
 
 Como estos avisos deben llegarte **aunque no tengas la app abierta y estés donde estés**, los
-prepara y envía un servidor propio (alojado en Cloudflare). **Solo si activas algún aviso** se
-registran en ese servidor estos datos:
+prepara y envía un servidor propio, que funciona en un servidor privado virtual (VPS) alquilado
+para ello y al que la app se conecta en `https://api.jmortiz.es`. Los datos se guardan en ese
+servidor y no se ceden a nadie más. **Solo si activas algún aviso** se registran allí estos datos:
 
 - Un **identificador de notificaciones** de tu dispositivo (token de push), que no revela tu
   identidad.
@@ -57,8 +58,9 @@ ninguno de estos datos.
 - **Open-Meteo** (https://open-meteo.com): proporciona los datos meteorológicos y la búsqueda
   de lugares. Al pedir la previsión se le envían las coordenadas o el nombre del lugar
   consultado. Consulta su política en https://open-meteo.com/en/terms.
-- **Cloudflare**: aloja el servidor de los avisos, con los datos descritos en el apartado
-  anterior.
+- **El proveedor del servidor privado virtual (VPS)** donde funciona nuestro servidor de avisos:
+  aloja los datos descritos en el apartado anterior. No accede a ellos ni los usa para nada
+  propio; se limita a proporcionar la máquina.
 - **Expo y Apple**: entregan las notificaciones push de los avisos a tu iPhone.
 
 ## Lo que la app NO hace

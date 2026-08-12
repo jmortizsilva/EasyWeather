@@ -22,6 +22,9 @@
     strong { font-weight: 600; }
     ul { padding-left: 1.3em; }
     li { margin-bottom: 0.5em; }
+    /* Sin la correccion de tamano, el monoespaciado del navegador se ve mas pequeno que el
+       texto que lo rodea; el ajuste evita que la direccion del servidor quede ilegible. */
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 0.95em; }
     @media (prefers-color-scheme: dark) {
       body { color: #e6edf6; background: #0d1a2b; }
       .updated { color: #a9bcd6; }
@@ -32,54 +35,84 @@
 <body>
   <main>
     <h1>Política de privacidad de EasyWeather</h1>
-    <p class="updated">Última actualización: 24 de julio de 2026</p>
+    <p class="updated">Última actualización: 12 de agosto de 2026</p>
 
     <p>
       EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué
       datos usa la app y cómo los trata. En resumen: <strong>EasyWeather no crea cuentas,
       no muestra publicidad y no hace seguimiento de sus usuarios.</strong> La app funciona
-      sin enviar datos a servidores propios; la única excepción es el <strong>aviso de
-      temperatura</strong>, una función opcional que, si la activas, registra algunos datos
-      en nuestro servidor para poder avisarte (se explica más abajo).
+      sin enviar datos a servidores propios; la única excepción son los <strong>avisos</strong>
+      (el de temperatura y el de resumen), funciones opcionales que, si las activas, registran
+      algunos datos en nuestro servidor para poder avisarte del tiempo del sitio donde estés,
+      aunque no tengas la app abierta (se explica más abajo).
     </p>
 
     <h2>Datos que usa la app</h2>
     <ul>
       <li>
         <strong>Ubicación.</strong> Si concedes el permiso, la app usa las coordenadas de
-        tu dispositivo para mostrarte la previsión de tu zona. Esas coordenadas se envían
-        al servicio meteorológico Open-Meteo únicamente para obtener la previsión y no se
-        almacenan en ningún servidor gestionado por nosotros. Puedes usar la app sin
-        conceder el permiso de ubicación, buscando lugares por su nombre.
+        tu dispositivo para mostrarte la previsión de tu zona. Para ver la previsión, esas
+        coordenadas se envían al servicio meteorológico Open-Meteo únicamente para obtener
+        los datos y no se almacenan en ningún servidor gestionado por nosotros. Puedes usar
+        la app sin conceder el permiso de ubicación, buscando lugares por su nombre.
+        <strong>Si activas algún aviso</strong>, la ubicación también se envía a nuestro
+        servidor, como se describe en el apartado siguiente.
       </li>
       <li>
         <strong>Lugares guardados y preferencias.</strong> Los lugares que añades y la
         previsión reciente se guardan <strong>solo en tu dispositivo</strong>
-        (almacenamiento local de la app). No se suben a ningún sitio y se borran si
-        desinstalas la app.
+        (almacenamiento local de la app) y se borran si desinstalas la app. La configuración
+        de los avisos que actives se guarda además en nuestro servidor, porque es él quien
+        te los envía (ver más abajo).
       </li>
     </ul>
 
-    <h2>Aviso de temperatura (opcional)</h2>
+    <h2>Avisos (opcional)</h2>
+    <p>La app incluye dos tipos de aviso, ambos opcionales y desactivados por defecto:</p>
+    <ul>
+      <li>
+        <strong>Aviso de temperatura</strong>: te notifica cuando la temperatura de tu
+        ubicación sube o baja de los límites que elijas.
+      </li>
+      <li>
+        <strong>Aviso de resumen</strong>: te envía a la hora que elijas un resumen del
+        tiempo, de tu ubicación o de una ciudad concreta.
+      </li>
+    </ul>
     <p>
-      La app incluye un aviso opcional que te notifica cuando la temperatura de tu ubicación
-      sube o baja de los límites que tú elijas, incluso con la app cerrada. Para que esto
-      funcione sin que tengas que abrir la app, <strong>solo si activas este aviso</strong>
-      se registran en nuestro servidor (alojado en Cloudflare) estos datos:
+      Como estos avisos deben llegarte <strong>aunque no tengas la app abierta y estés donde
+      estés</strong>, los prepara y envía un servidor propio, que funciona en un servidor
+      privado virtual (VPS) alquilado para ello y al que la app se conecta en
+      <code>https://api.jmortiz.es</code>. Los datos se guardan en ese servidor y no se ceden
+      a nadie más. <strong>Solo si activas algún aviso</strong> se registran allí estos datos:
     </p>
     <ul>
       <li>
         Un <strong>identificador de notificaciones</strong> de tu dispositivo (token de
         push), que no revela tu identidad.
       </li>
-      <li>Las <strong>coordenadas</strong> de tu ubicación actual y el nombre del lugar.</li>
-      <li>Los <strong>límites de temperatura</strong> que has configurado.</li>
+      <li>
+        Las <strong>coordenadas</strong> y el <strong>nombre</strong> de tu ubicación actual
+        (por ejemplo, la ciudad) y tu <strong>zona horaria</strong> (para enviarte el aviso a
+        tu hora local, del sitio donde estás y pudiendo nombrarlo en la notificación). El
+        nombre lo resuelve tu propio iPhone a partir de las coordenadas. Para que los avisos
+        te sigan cuando te desplazas, la app puede actualizar esos datos <strong>en segundo
+        plano</strong> cuando cambias de zona; por eso, al activar un aviso, iOS te pedirá el
+        permiso de ubicación <strong>«Siempre»</strong>. Si no lo concedes, los avisos
+        seguirán funcionando pero usarán tu última ubicación conocida.
+      </li>
+      <li>
+        La <strong>configuración de cada aviso</strong>: los límites de temperatura, y para
+        cada resumen su hora, los datos que has elegido incluir y el lugar (tu ubicación o
+        una ciudad concreta).
+      </li>
     </ul>
     <p>
-      El servidor usa esos datos únicamente para consultar la temperatura y enviarte la
-      notificación. No se asocian a tu nombre ni a ningún dato personal, no se usan para
-      publicidad ni analítica, y <strong>se eliminan del servidor en cuanto desactivas el
-      aviso</strong>. Si no activas esta función, no se envía ninguno de estos datos.
+      El servidor usa esos datos <strong>únicamente</strong> para consultar el tiempo y
+      enviarte las notificaciones. No se asocian a tu nombre ni a ningún dato personal, no se
+      usan para publicidad ni analítica, y <strong>se eliminan del servidor en cuanto
+      desactivas los avisos</strong>. Si no activas ninguno, no se envía ninguno de estos
+      datos.
     </p>
 
     <h2>Servicios de terceros</h2>
@@ -91,12 +124,13 @@
         en <a href="https://open-meteo.com/en/terms">open-meteo.com/en/terms</a>.
       </li>
       <li>
-        <strong>Cloudflare</strong>: aloja el servidor del aviso de temperatura, con los
-        datos descritos en el apartado anterior.
+        <strong>El proveedor del servidor privado virtual (VPS)</strong> donde funciona
+        nuestro servidor de avisos: aloja los datos descritos en el apartado anterior. No
+        accede a ellos ni los usa para nada propio; se limita a proporcionar la máquina.
       </li>
       <li>
-        <strong>Expo y Apple</strong>: entregan las notificaciones push del aviso de
-        temperatura a tu iPhone.
+        <strong>Expo y Apple</strong>: entregan las notificaciones push de los avisos a tu
+        iPhone.
       </li>
     </ul>
 
@@ -105,6 +139,10 @@
       <li>No requiere registro ni cuenta de usuario.</li>
       <li>No incluye publicidad ni redes de seguimiento.</li>
       <li>No recopila identificadores para publicidad ni analítica.</li>
+      <li>
+        No guarda un historial de tus ubicaciones: en el servidor solo se conserva tu última
+        ubicación conocida mientras tengas algún aviso activo.
+      </li>
       <li>No comparte tus datos con terceros más allá de lo descrito en esta política.</li>
     </ul>
 
