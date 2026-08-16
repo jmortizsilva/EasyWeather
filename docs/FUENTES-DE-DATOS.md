@@ -66,16 +66,29 @@ tu calle por muy cerca que esté en el mapa.
 Los 25 km salen de medir la red real (849 estaciones emitiendo, agosto de 2026): todo sitio poblado
 que se probó tiene estación a menos de 5 km, y el más apartado, Las Hurdes, a 13,5 km.
 
-### El retraso de AEMET
+### El retraso de AEMET, y cómo se reduce
 
-AEMET publica el parte horario con unos **85 minutos de retraso**, de forma sistemática (medido
-sobre las 849 estaciones: la mediana coincide con el mínimo). Por eso la hora de la medición se
-enseña **siempre** y por eso el número grande sigue siendo el previsto: titular con un valor de hace
-hora y media sería presentar un dato viejo como actual.
+La medición se pide en **dos pasos**, y el motivo es el retraso:
 
-Existe un endpoint diezminutal que daría datos mucho más frescos, pero devuelve 429 con esta clave
-incluso tras diez minutos sin usarla: o tiene cuota propia o no está incluido. Queda pendiente de
-volver a probar.
+1. **Qué estación representa el punto** sale del fichero horario `/observacion/convencional/todas`.
+   Es el único que las trae todas (~850 estaciones, 3 MB), pero su dato llega con **49-85 minutos**
+   de retraso.
+2. **El dato fresco** sale de `/observacion/convencional/diezminutal/datos/estacion/{idema}`, ya
+   sabiendo qué estación es. Ese llega con unos **13 minutos**, y eso ya se puede llamar "ahora".
+
+Medido sobre las estaciones de doce capitales (2026-08-16), **diez de doce pasan de 53 a 13
+minutos**. Las otras dos —Barcelona Drassanes y Sevilla Tablada— no mejoran, pero no por falta de
+diezminutal: esas estaciones van atrasadas **en los dos ficheros** (Barcelona marcaba 113 minutos en
+ambos). Cuando el diezminutal no es más reciente que el horario, se usa el horario.
+
+**No existe una versión masiva utilizable del diezminutal.** `/diezminutal/todas` devuelve 429
+siempre, incluso tras diez minutos de reposo y muy por debajo del límite documentado de 50
+peticiones por minuto: ese recurso concreto tiene su propio límite. Por estación, en cambio,
+responde sin problemas y pesa unos 135 KB.
+
+Aun con 13 minutos, la hora de la medición se enseña **siempre**, y el número grande sigue siendo el
+previsto: la medición es de un punto concreto y de hace un rato; la previsión es de tu hora y de tu
+sitio. Son cosas distintas y las dos se dicen por su nombre.
 
 ## Atribución y licencias
 
@@ -89,6 +102,15 @@ volver a probar.
 - **Doble salto**: una petición a AEMET devuelve un sobre `{estado, datos, metadatos}` donde `datos`
   es una segunda URL, ya firmada, que se pide sin clave.
 - **El viento de AEMET viene en m/s**; el servidor lo convierte a km/h, que es lo que enseña la app.
+- **El horario y el diezminutal son formatos DISTINTOS**, no variantes. El horario usa minúsculas
+  (`ta`, `hr`, `fint`) y `lat`/`lon` sueltos; el diezminutal usa mayúsculas (`TA`, `HR`, `VV10m`),
+  llama `Fecha` a la hora y mete las coordenadas en un GeoJSON `LOC` con el orden `[lon, lat]`.
+- **Las unidades del diezminutal no están documentadas**: AEMET sirve para esa ruta los metadatos
+  del fichero horario, que describen otros campos. Se comprobaron cotejando las dos rutas para la
+  misma estación y los mismos trece instantes: temperatura, humedad, presión, viento medio,
+  dirección y punto de rocío coinciden valor a valor. Los únicos que no cuadran son los de ventana
+  distinta: `VMAX10m` es la racha de **10 minutos** y `vmax` la de **60**; igual con las mínimas y
+  máximas. El sufijo `10m` es la ventana, no otra unidad.
 - **Las fechas de AEMET traen el desfase pegado** (`+0000`, sin dos puntos). Es ISO 8601 válido pero
   no la forma que el estándar de JavaScript obliga a interpretar, y Hermes es más estricto que Node:
   se normaliza en `utils/observacionTexto.ts` antes de parsear.
