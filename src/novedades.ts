@@ -9,5 +9,5 @@
 // Se VACIA al lanzar una build: lo que va dentro del binario ya lo cuentan las notas de
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
-// Ultima vez que se vacio: build de produccion con runtimeVersion 1.3.0.
+// Ultima vez que se vacio: build de produccion con runtimeVersion 1.4.0.
 export const NOVEDADES: string[] = [];

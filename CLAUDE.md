@@ -28,9 +28,9 @@ móvil ni en Cloudflare: los envía un **servidor propio multi-app**.
 
 - Antes esto era un **Worker de Cloudflare** (carpeta `server/`, borrada en agosto de 2026 junto
   con su `.easignore`). Si hace falta consultarlo, está en el historial: `git show 97a7257`.
-  **Queda pendiente algo que no se puede hacer desde el repositorio**: comprobar en el panel de
-  Cloudflare si el Worker sigue desplegado y si la base D1 sigue existiendo. El commit `97a7257`
-  la vació y dejó `crons = []`, pero vaciar no es borrar (`npx wrangler delete` + borrar la D1).
+  **El Worker ya no envía nada**: confirmado el 2026-08-16 observando los avisos que llegan al
+  móvil, que es la única prueba que vale. Lo que pueda quedar desplegado o la D1 vacía son
+  restos que no molestan; borrarlos (`npx wrangler delete` + borrar la D1) es limpieza, no riesgo.
 - **Avisos duplicados**: para apagar el cron de un Worker de Cloudflare hay que desplegar
   `crons = []` **explícito**; comentar el bloque `[triggers]` NO borra los crons existentes.
   Verificarlo mirando los datos (`ultimo_envio`), no la salida del deploy.
