@@ -30,7 +30,7 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const estilosPrevision = useMemo(() => crearEstilosPrevision(colores), [colores]);
-  const { places, forecastByPlace, cargarPrevision, addPlace } = usePlaces();
+  const { places, forecastByPlace, observacionByPlace, cargarPrevision, addPlace } = usePlaces();
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
   const tituloRef = useRef<Text>(null);
@@ -126,6 +126,7 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
       <PaginaLugar
         place={place}
         prevision={forecastByPlace[place.id]}
+        observacion={observacionByPlace[place.id]}
         esActiva
         cargando={cargando}
         // El pie de estado es de la pantalla Hoy; aquí sobra.

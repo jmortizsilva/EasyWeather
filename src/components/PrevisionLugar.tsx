@@ -2,8 +2,9 @@ import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from
 import DayRow from './DayRow';
 import { CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
-import { DayForecast, Place } from '../types';
+import { CurrentObservation, DayForecast, Place } from '../types';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
+import { describirObservacion } from '../utils/observacionTexto';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 // La previsión de UN lugar. La usan la pantalla Hoy (una por página del carrusel) y la vista
@@ -14,6 +15,11 @@ type Estilos = ReturnType<typeof crearEstilos>;
 interface PaginaProps {
   place: Place;
   prevision: PrevisionGuardada | undefined;
+  /**
+   * Medición real de una estación, si hay alguna que represente este lugar. Falta a menudo (fuera
+   * de España siempre), y su ausencia no se anuncia: la página se queda con la previsión.
+   */
+  observacion?: CurrentObservation;
   esActiva: boolean;
   cargando: boolean;
   message: string;
@@ -31,6 +37,7 @@ interface PaginaProps {
 export function PaginaLugar({
   place,
   prevision,
+  observacion,
   esActiva,
   cargando,
   message,
@@ -47,6 +54,7 @@ export function PaginaLugar({
   const upcomingDays = forecast?.days.slice(1) ?? [];
   const updatedAt = formatUpdatedAt(prevision?.updatedAt);
   const esUbicacionActual = place.id === CURRENT_LOCATION_ID;
+  const medicion = describirObservacion(observacion);
 
   return (
     <ScrollView
@@ -55,14 +63,25 @@ export function PaginaLugar({
       accessibilityLabel={`Previsión de ${place.name}`}>
       {today && (
         <View style={styles.currentCard}>
+          {/* Antes ponía "Ahora", y era mentira: este número es lo que el modelo de Open-Meteo
+              PREVÉ para la hora en curso, no algo que nadie haya medido. El rótulo lo dice ahora,
+              y la medición de verdad —cuando la hay— va debajo, con su hora y su estación. */}
           <View
             accessible
-            accessibilityLabel={`Ahora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}>
+            accessibilityLabel={`Previsto para esta hora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}>
+            <Text style={styles.currentLabel}>Previsto para esta hora</Text>
             <Text style={styles.currentTemp}>{forecast?.current?.temperature ?? '-'}º</Text>
             <Text style={styles.currentSky}>
               {currentInfo.emoji} {currentInfo.label}
             </Text>
           </View>
+
+          {medicion && (
+            <View style={styles.medicionBloque} accessible accessibilityLabel={medicion.spoken}>
+              <Text style={styles.medicionPrincipal}>{medicion.principal}</Text>
+              <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
+            </View>
+          )}
 
           {updatedAt && (
             <Text
@@ -179,6 +198,16 @@ export const crearEstilos = (c: Paleta) =>
       padding: 20,
       gap: 12,
     },
+    // Rotulo del bloque previsto. Va en mayusculas de tamano pequeno como encabezado visual, pero
+    // el texto real lleva sus minusculas: VoiceOver deletrea las mayusculas sostenidas.
+    currentLabel: {
+      color: c.textoTenue,
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
     currentTemp: {
       color: c.textoFuerte,
       fontSize: 54,
@@ -188,6 +217,25 @@ export const crearEstilos = (c: Paleta) =>
     currentSky: {
       color: c.textoCampo,
       fontSize: 17,
+      textAlign: 'center',
+    },
+    // La medicion se separa del bloque previsto con una linea, no con un color: la informacion no
+    // puede depender del color (y ademas hay que verla en las dos paletas).
+    medicionBloque: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.borde,
+      paddingTop: 12,
+      gap: 2,
+    },
+    medicionPrincipal: {
+      color: c.texto,
+      fontSize: 17,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    medicionEstacion: {
+      color: c.textoTenue,
+      fontSize: 15,
       textAlign: 'center',
     },
     updatedLine: {

@@ -39,3 +39,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# Notas de trabajo sueltas en la carpeta del proyecto (encargos, borradores). Lo que de ellas
+# resulte ser una decision del proyecto acaba en docs/, ya contrastado; el borrador no se versiona
+# porque envejece mal y se lee luego como si siguiera vigente.
+/*.txt

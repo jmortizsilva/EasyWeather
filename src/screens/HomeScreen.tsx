@@ -31,6 +31,7 @@ export default function HomeScreen() {
     message,
     currentByPlace,
     forecastByPlace,
+    observacionByPlace,
     detectCurrentLocation,
     refreshCurrentLocation,
     refreshCurrentTemps,
@@ -190,6 +191,7 @@ export default function HomeScreen() {
               <PaginaLugar
                 place={place}
                 prevision={previsionDe(place)}
+                observacion={observacionByPlace[place.id]}
                 esActiva={place.id === activeId}
                 cargando={cargando}
                 message={message}
@@ -206,6 +208,7 @@ export default function HomeScreen() {
           <PaginaLugar
             place={activePlace}
             prevision={previsionDe(activePlace)}
+            observacion={observacionByPlace[activePlace.id]}
             esActiva
             cargando={cargando}
             message={message}
