@@ -124,6 +124,10 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
       weatherCode: toNumber(payload?.current?.weather_code),
     },
     days,
+    // Altitud del terreno que Open-Meteo usa para este punto. Viene de regalo en la respuesta y la
+    // necesita la observacion medida, para no aceptar una estacion que esta a otra cota.
+    // (La copia del servidor no lo lleva: alli no se usa.)
+    elevation: toNumber(payload?.elevation),
   };
 }
 

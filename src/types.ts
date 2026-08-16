@@ -49,14 +49,62 @@ export interface DayForecast {
   moonAlwaysDown?: boolean;
 }
 
+/**
+ * Condiciones de AHORA MISMO segun el MODELO de Open-Meteo. Ojo: es una prevision para la hora en
+ * curso, no una medicion. Se llama `Current` porque asi lo llama Open-Meteo, pero al enseñarlo hay
+ * que decir que es previsto; para el dato medido esta `CurrentObservation`.
+ */
 export interface CurrentConditions {
   temperature?: number;
   weatherCode?: number;
 }
 
+/**
+ * Dato MEDIDO por una estacion meteorologica real, con su procedencia a cuestas. Nunca se mezcla
+ * con la prevision: son cosas distintas y las dos son utiles.
+ *
+ * Llega del servidor propio, no de AEMET directamente: la clave de AEMET no puede viajar en el
+ * bundle de una app de repositorio publico (ver utils/servidorPropio).
+ */
+export interface CurrentObservation {
+  /** Grados Celsius. */
+  temperature?: number;
+  humidity?: number;
+  /** km/h (el servidor ya los convierte; AEMET los da en m/s). */
+  windSpeed?: number;
+  windGusts?: number;
+  windDirection?: number;
+  /** mm en la ultima hora. */
+  precipitation?: number;
+  /** hPa. */
+  pressure?: number;
+  /**
+   * Momento del final del periodo observado, en ISO. NO es "ahora": AEMET publica el parte horario
+   * con del orden de 85 minutos de retraso, asi que la hora hay que enseñarla SIEMPRE.
+   */
+  observedAt: string;
+  /** Quien lo midio. Hoy solo AEMET; el tipo deja sitio a otra red sin tocar a quien lo consume. */
+  source: 'aemet';
+  station: {
+    id: string;
+    name: string;
+    latitude: number;
+    longitude: number;
+    /** Metros sobre el nivel del mar. Explica una diferencia de temperatura con tu calle. */
+    altitude?: number;
+    /** Distancia desde el punto consultado. Se enseña para que el dato se juzgue solo. */
+    distanceKm: number;
+  };
+}
+
 export interface Forecast {
   current?: CurrentConditions;
   days: DayForecast[];
+  /**
+   * Altitud del terreno en el punto consultado, segun Open-Meteo. Sirve para descartar estaciones
+   * a otra cota al pedir la observacion: 300 m de desnivel ya son unos 2 grados de diferencia.
+   */
+  elevation?: number;
 }
 
 // Tipo 1: resumen que programa el usuario. Puede haber varios independientes.
