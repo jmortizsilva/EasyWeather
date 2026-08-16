@@ -1,4 +1,12 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import DayRow from './DayRow';
 import { CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
@@ -159,6 +167,23 @@ export function PaginaLugar({
 
       {!forecast && !cargando && <Text style={styles.note}>Todavía no hay datos disponibles.</Text>}
       {esActiva && <Text style={styles.statusNote}>{message}</Text>}
+
+      {/* Atribución que exige la licencia de Open-Meteo (CC BY 4.0): tiene que ir junto a los
+          datos, dentro de la app, no solo en la ficha del App Store. Va la última de la página a
+          propósito: es una parada más de VoiceOver y no debe estorbar a quien viene a consultar el
+          tiempo. Solo aparece una vez en el árbol de accesibilidad porque HomeScreen oculta las
+          páginas que no se ven. */}
+      <Pressable
+        style={styles.atribucion}
+        onPress={() => {
+          void Linking.openURL('https://open-meteo.com/');
+        }}
+        accessibilityRole="link"
+        // "punto com" a mano: VoiceOver lee ".com" de forma irregular según el contexto.
+        accessibilityLabel="Datos meteorológicos de Open-Meteo punto com"
+        accessibilityHint="Abre la web de Open-Meteo en el navegador">
+        <Text style={styles.atribucionTexto}>Datos meteorológicos de Open-Meteo.com</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -316,5 +341,19 @@ export const crearEstilos = (c: Paleta) =>
     statusNote: {
       color: c.textoMeta,
       fontSize: 13,
+    },
+    // 44 de alto porque es tocable, igual que los botones: un enlace de una línea de texto queda
+    // por debajo del tamaño mínimo de toque y falla a quien apunta con poca precisión.
+    atribucion: {
+      minHeight: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    // Subrayado, no solo color: un enlace que solo se distingue por ser azul depende del color
+    // para transmitir su significado, que es justo lo que no se hace en esta app.
+    atribucionTexto: {
+      color: c.acento,
+      fontSize: 13,
+      textDecorationLine: 'underline',
     },
   });
