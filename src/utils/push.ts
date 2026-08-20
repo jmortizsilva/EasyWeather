@@ -35,7 +35,9 @@ export interface ResumenServidor {
 // guardado para este token: es idempotente (mandar el estado entero evita descuadres).
 export interface SincronizacionAvisos {
   zonaHoraria: string;
-  ubicacion: { lat: number; lon: number; nombre: string } | null;
+  // `nombre` es opcional: cuando iOS no sabe geocodificar el punto se manda sin el, y el servidor
+  // titula con el generico "tu ubicacion". Vale mas eso que arrastrar el nombre de otra ciudad.
+  ubicacion: { lat: number; lon: number; nombre?: string } | null;
   umbral: { maxThreshold: number; minThreshold: number } | null;
   resumenes: ResumenServidor[];
 }

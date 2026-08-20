@@ -29,8 +29,10 @@ import {
 import {
   detenerSeguimientoUbicacion,
   iniciarSeguimientoUbicacion,
+  leerUbicacionActual,
   pedirPermisoUbicacionSiempre,
 } from '../utils/ubicacionFondo';
+import { ubicacionParaEnviar, UbicacionConNombre } from '../utils/ubicacionAvisos';
 import { vibrarConfirmacion, vibrarError } from '../utils/haptica';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
@@ -41,7 +43,7 @@ import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 function construirPayload(
   next: NotificationSettings,
   resolvePlace: (id: string) => Place | undefined,
-  ubicacionActual: Place | undefined,
+  ubicacionActual: UbicacionConNombre | null,
 ): SincronizacionAvisos {
   const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const resumenes: ResumenServidor[] = [];
@@ -66,9 +68,7 @@ function construirPayload(
   }
   return {
     zonaHoraria,
-    ubicacion: ubicacionActual
-      ? { lat: ubicacionActual.lat, lon: ubicacionActual.lon, nombre: ubicacionActual.name }
-      : null,
+    ubicacion: ubicacionActual,
     umbral: next.threshold.enabled
       ? { maxThreshold: next.threshold.maxThreshold, minThreshold: next.threshold.minThreshold }
       : null,
@@ -169,12 +169,27 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const sincronizarServidor = useCallback(
     async (next: NotificationSettings, announce = false) => {
       const anyEnabled = next.summaries.some((s) => s.enabled) || next.threshold.enabled;
-      const payload = construirPayload(next, resolvePlace, currentLocationRef.current);
+      // La ubicacion se lee AHORA, no se coge la cacheada de la pantalla Hoy. Esa se congela
+      // mientras estas viendo un lugar guardado (PlacesContext no re-detecta si el lugar activo no
+      // es "mi ubicacion"), y al subirla se pisaba en el servidor la ubicacion buena que habia
+      // dejado la geovalla: de ahi que el aviso de temperatura acabase nombrando la ciudad
+      // anterior. La misma lectura se reaprovecha para la geovalla, para no encender el GPS dos
+      // veces. Solo se lee si hay algun aviso: sin avisos no hay nada que ubicar.
+      const fresca = anyEnabled ? await leerUbicacionActual() : undefined;
+      const cacheada = currentLocationRef.current;
+      const payload = construirPayload(
+        next,
+        resolvePlace,
+        ubicacionParaEnviar(
+          fresca,
+          cacheada && { lat: cacheada.lat, lon: cacheada.lon, nombre: cacheada.name },
+        ),
+      );
       const ok = await sincronizarAvisos(payload);
 
       // Seguir la ubicacion (geovallas) mientras haya algun aviso; si no, dejar de seguirla.
       if (anyEnabled) {
-        await iniciarSeguimientoUbicacion();
+        await iniciarSeguimientoUbicacion(fresca);
       } else {
         await detenerSeguimientoUbicacion();
       }
