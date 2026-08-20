@@ -39,3 +39,7 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# notas de trabajo en la raiz: textos del App Store, borradores de correo, apuntes. No son
+# contenido del repositorio, que ademas es publico.
+/*.txt
