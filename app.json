@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "runtimeVersion": "1.4.0",
+    "runtimeVersion": "1.5.0",
     "updates": {
       "url": "https://u.expo.dev/bdc45482-63ad-4db7-b1cf-12e9a55b0479"
     },
