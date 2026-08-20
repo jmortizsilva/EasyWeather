@@ -25,7 +25,9 @@ export interface ResumenServidor {
 // guardado para este token: es idempotente (mandar el estado entero evita descuadres).
 export interface SincronizacionAvisos {
   zonaHoraria: string;
-  ubicacion: { lat: number; lon: number; nombre: string } | null;
+  // `nombre` es opcional: cuando iOS no sabe geocodificar el punto se manda sin el, y el servidor
+  // titula con el generico "tu ubicacion". Vale mas eso que arrastrar el nombre de otra ciudad.
+  ubicacion: { lat: number; lon: number; nombre?: string } | null;
   umbral: { maxThreshold: number; minThreshold: number } | null;
   resumenes: ResumenServidor[];
 }
@@ -80,7 +82,10 @@ export async function sendTestNotification(): Promise<boolean> {
 // Avisa al servidor de la ubicacion actual (y la zona horaria del telefono) para que los avisos
 // y el resumen se calculen desde donde esta el usuario. La llama la tarea de geovallas al moverse.
 // `nombre` es el sitio ya geocodificado en el movil; sirve para titular el resumen con la ciudad.
-// Si no se resolvio, se omite y el servidor conserva el nombre anterior (o el generico).
+// Si no se resolvio se omite, y entonces el servidor BORRA el que tuviera, porque un nombre solo
+// vale para las coordenadas en que se resolvio: arrastrarlo era lo que hacia que el aviso de
+// temperatura nombrase la ciudad de la que el usuario ya se habia ido. Sin nombre, el aviso cae en
+// el generico "en tu ubicacion".
 export async function reportarUbicacion(
   lat: number,
   lon: number,

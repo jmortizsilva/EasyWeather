@@ -13,6 +13,7 @@ import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getObservacion } from '../services/observacion';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { CurrentObservation, Forecast, Place } from '../types';
+import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
 import { TempGuardada } from '../utils/tempActual';
 
@@ -33,23 +34,12 @@ const TEMPS_RECHECK_MS = 3 * 60 * 1000;
 // cuando se cambia de pestaña; y solo se considera que el usuario se ha movido de sitio
 // si se ha desplazado más de 1,5 km (dentro de la misma ciudad la previsión es la misma).
 const LOCATION_RECHECK_MS = 2 * 60 * 1000;
-const LOCATION_CHANGED_METERS = 1500;
+const LOCATION_CHANGED_METERS = MISMO_SITIO_METROS;
 // La observacion medida no se vuelve a pedir mas de una vez cada 10 min por lugar: AEMET publica
 // el parte una vez por hora (y con ~85 min de retraso), asi que insistir mas no trae nada nuevo.
 const OBSERVACION_RECHECK_MS = 10 * 60 * 1000;
 
 export const CURRENT_LOCATION_ID = 'current';
-
-function distanceMeters(a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
-  const R = 6371000;
-  const toRad = (deg: number) => (deg * Math.PI) / 180;
-  const dLat = toRad(b.lat - a.lat);
-  const dLon = toRad(b.lon - a.lon);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.asin(Math.sqrt(h));
-}
 
 export interface PrevisionGuardada {
   forecast: Forecast;
@@ -162,7 +152,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       });
       const coords = { lat: position.coords.latitude, lon: position.coords.longitude };
       const previous = currentLocationRef.current;
-      const moved = !previous || distanceMeters(previous, coords) >= LOCATION_CHANGED_METERS;
+      const moved = !previous || distanciaMetros(previous, coords) >= LOCATION_CHANGED_METERS;
 
       // El nombre (barrio) se re-geocodifica SIEMPRE, no solo al moverse de ciudad: un barrio es más
       // pequeño que el umbral de 1,5 km, y el nombre guardado puede ser viejo (p. ej. justo tras

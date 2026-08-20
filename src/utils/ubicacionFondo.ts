@@ -27,6 +27,36 @@ async function nombreDeUbicacion(lat: number, lon: number): Promise<string | und
   }
 }
 
+/** Un sitio ya resuelto: coordenadas y, si iOS supo darlo, su nombre. */
+export interface UbicacionReportada {
+  lat: number;
+  lon: number;
+  nombre?: string;
+}
+
+/**
+ * Lee el GPS AHORA, con su nombre. Le basta el permiso "mientras usas la app", asi que funciona
+ * con la app abierta aunque no se haya concedido "Siempre".
+ *
+ * Nunca lanza: sin permiso, sin senal o con el GPS caido devuelve `undefined`, que para quien la
+ * llama significa "no se donde estas", no un error que haya que enseñar.
+ */
+export async function leerUbicacionActual(): Promise<UbicacionReportada | undefined> {
+  try {
+    const enUso = await Location.getForegroundPermissionsAsync();
+    if (enUso.status !== 'granted') {
+      return undefined;
+    }
+    const posicion = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    const { latitude, longitude } = posicion.coords;
+    return { lat: latitude, lon: longitude, nombre: await nombreDeUbicacion(latitude, longitude) };
+  } catch {
+    return undefined;
+  }
+}
+
 async function recentrarGeovalla(lat: number, lon: number): Promise<void> {
   // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
   await Location.startGeofencingAsync(TAREA_GEOVALLA, [
@@ -77,16 +107,21 @@ export async function pedirPermisoUbicacionSiempre(): Promise<boolean> {
 
 // Arranca el seguimiento: manda la ubicacion actual y pone la primera valla. No pide permiso (eso
 // se hace aparte, con explicacion); si no esta concedido "Siempre", no hace nada.
-export async function iniciarSeguimientoUbicacion(): Promise<void> {
+//
+// Se le puede pasar una lectura ya hecha para no volver a encender el GPS: quien sincroniza los
+// avisos ya necesita saber donde estas para mandarlo al servidor, y leerlo dos veces seguidas gasta
+// bateria para nada.
+export async function iniciarSeguimientoUbicacion(ubicacion?: UbicacionReportada): Promise<void> {
   const fondo = await Location.getBackgroundPermissionsAsync();
   if (fondo.status !== 'granted') {
     return;
   }
-  const posicion = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const { latitude, longitude } = posicion.coords;
-  const nombre = await nombreDeUbicacion(latitude, longitude);
-  await reportarUbicacion(latitude, longitude, nombre);
-  await recentrarGeovalla(latitude, longitude);
+  const donde = ubicacion ?? (await leerUbicacionActual());
+  if (!donde) {
+    return;
+  }
+  await reportarUbicacion(donde.lat, donde.lon, donde.nombre);
+  await recentrarGeovalla(donde.lat, donde.lon);
 }
 
 // Detiene el seguimiento (cuando el usuario desactiva todos los avisos).

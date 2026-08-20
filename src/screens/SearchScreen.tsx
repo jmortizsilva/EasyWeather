@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Keyboard,
@@ -37,6 +37,9 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
   const [searchResults, setSearchResults] = useState<Place[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [focused, setFocused] = useState(false);
+  // Referencia al campo para poder vaciarlo desde "Borrar": al no ser un campo controlado (ver el
+  // comentario del TextInput), cambiar el estado ya no basta para que se vacie en pantalla.
+  const campo = useRef<TextInput>(null);
 
   // "Borrar" solo tiene sentido si hay texto que borrar.
   const puedeBorrar = citySearch.length > 0;
@@ -116,8 +119,17 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           campo -> Listo -> Borrar: lo primero que se encuentra tras escribir es cerrar el teclado,
           que es lo que hay que hacer antes de recorrer los resultados. */}
       <View style={styles.searchRow}>
+        {/* Campo NO controlado (defaultValue, no value) a proposito: al dictar, el texto salia
+            duplicado. Reescribir el texto desde JavaScript mientras iOS inserta el resultado del
+            dictado lo duplica, y React Native solo protege de eso en la arquitectura vieja
+            (RCTBaseTextInputView.mm consulta `dictationRecognizing` desde iOS 16); la ruta de la
+            arquitectura nueva, que es la que usamos, no lo consulta y reescribe igual
+            (RCTTextInputComponentView.mm, `_textOf:equals:` -> `_setAttributedString`). Sin `value`
+            no hay reescritura y el dictado entra limpio. El estado sigue al dia por onChangeText,
+            que es lo unico que necesitan la busqueda y el boton "Borrar". */}
         <TextInput
-          value={citySearch}
+          ref={campo}
+          defaultValue=""
           onChangeText={setCitySearch}
           placeholder="Busca una ciudad o pueblo"
           placeholderTextColor={colores.textoTenue}
@@ -150,6 +162,9 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           <Pressable
             style={styles.cancelButton}
             onPress={() => {
+              // clear() usa el comando nativo setTextAndSelection, que no pasa por la reescritura
+              // del texto que rompe el dictado.
+              campo.current?.clear();
               setCitySearch('');
               Keyboard.dismiss();
             }}
