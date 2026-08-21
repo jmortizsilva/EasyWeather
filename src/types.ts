@@ -105,6 +105,69 @@ export interface CurrentObservation {
   };
 }
 
+/**
+ * Aviso OFICIAL de fenomenos adversos de AEMET. No tiene nada que ver con los avisos de
+ * temperatura que configura el usuario en la pestaña Avisos: aquello es una regla suya y esto es
+ * informacion oficial de riesgo. Nunca se presentan mezclados ni con el mismo nombre.
+ *
+ * **El texto viene ya redactado del servidor propio, y es deliberado.** Un aviso solo puede venir
+ * de alli (la clave de AEMET no puede viajar en el bundle), asi que duplicar aqui la redaccion no
+ * compraria nada y habria que mantener dos copias. A cambio, corregir como suena un aviso es
+ * redesplegar el servidor: ni build ni actualizacion por aire. Los campos estructurados viajan
+ * igual, para poder ordenar y colorear sin releer texto.
+ */
+export type NivelAviso = 'amarillo' | 'naranja' | 'rojo';
+
+export interface TextoAviso {
+  /** "Aviso naranja por lluvias". */
+  titulo: string;
+  /** "Hoy de las 18:00 a las 23:59". */
+  periodo: string;
+  /** Nombre de la zona de aviso de AEMET. */
+  zona: string;
+  /** El umbral, LITERAL de AEMET ("Precipitación acumulada en una hora: 20 mm."). */
+  umbral: string;
+  /** "Probabilidad 40%-70%". Vacio si AEMET no la da. */
+  probabilidad: string;
+  /** El consejo de AEMET, literal. Es texto de proteccion civil: no se reescribe. */
+  consejo: string;
+  /** Lo mismo con las unidades en palabras, para VoiceOver. */
+  spoken: string;
+}
+
+export interface AvisoOficial {
+  /** Identificador CAP, unico por emision. Sirve de clave de lista. */
+  id: string;
+  level: NivelAviso;
+  /** Codigo de fenomeno de AEMET: PR, TO, AT, BT, NE, NI, VI, CO... */
+  phenomenonCode: string;
+  phenomenon: string;
+  /** Comienzo del periodo, ISO con el desfase local del sitio. */
+  onset: string;
+  expires: string;
+  description?: string;
+  instruction?: string;
+  probability?: string;
+  zone: { code: string; name: string; coastal: boolean };
+  sent: string;
+  source: 'aemet';
+  texto: TextoAviso;
+}
+
+/** La linea del anuncio de la pantalla principal, decidida tambien en el servidor. */
+export interface ResumenAvisos {
+  titulo: string;
+  detalle: string;
+  spoken: string;
+  nivel: NivelAviso;
+}
+
+/** Lo que devuelve el servidor para un punto. Sin avisos, la lista va vacia y el resumen nulo. */
+export interface AvisosLugar {
+  avisos: AvisoOficial[];
+  resumen: ResumenAvisos | null;
+}
+
 export interface Forecast {
   current?: CurrentConditions;
   days: DayForecast[];

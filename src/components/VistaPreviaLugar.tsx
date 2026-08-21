@@ -6,6 +6,7 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
 import { vibrarConfirmacion } from '../utils/haptica';
+import AvisosModal from './AvisosModal';
 import DayDetailModal from './DayDetailModal';
 import { crearEstilos as crearEstilosPrevision, PaginaLugar } from './PrevisionLugar';
 
@@ -30,9 +31,11 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const estilosPrevision = useMemo(() => crearEstilosPrevision(colores), [colores]);
-  const { places, forecastByPlace, observacionByPlace, cargarPrevision, addPlace } = usePlaces();
+  const { places, forecastByPlace, observacionByPlace, avisosByPlace, cargarPrevision, addPlace } =
+    usePlaces();
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+  const [verAvisos, setVerAvisos] = useState(false);
   const tituloRef = useRef<Text>(null);
   const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
     undefined,
@@ -127,6 +130,7 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
         place={place}
         prevision={forecastByPlace[place.id]}
         observacion={observacionByPlace[place.id]}
+        avisos={avisosByPlace[place.id]}
         esActiva
         cargando={cargando}
         // El pie de estado es de la pantalla Hoy; aquí sobra.
@@ -136,7 +140,15 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
         // Refrescar a mano no aporta en una consulta de paso: los datos se acaban de pedir.
         onActualizar={() => {}}
         onAbrirDia={(day, showSummary) => setDetail({ day, showSummary })}
+        onAbrirAvisos={() => setVerAvisos(true)}
         ocultarActualizar
+      />
+
+      <AvisosModal
+        visible={verAvisos}
+        avisos={avisosByPlace[place.id]?.avisos ?? []}
+        lugar={place.name}
+        onClose={() => setVerAvisos(false)}
       />
 
       <DayDetailModal

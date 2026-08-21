@@ -19,6 +19,7 @@ uno actual.
 | Nombre de "mi ubicación" | iOS (`expo-location`) | — | En el propio teléfono |
 | Salida y puesta de la luna, fase | Cálculo local (`suncalc`) | Cálculo | En el propio teléfono |
 | **Temperatura, humedad, viento y lluvia medidos** | **AEMET** | **Observación** | Por el servidor propio |
+| **Avisos de fenómenos adversos** | **AEMET** | **Aviso oficial** | Por el servidor propio |
 
 ## Por qué Open-Meteo va directo y AEMET no
 
@@ -54,6 +55,53 @@ Open-Meteo para la hora en curso, no algo que nadie hubiera medido.
 **La sensación térmica está en el lado previsto a propósito.** AEMET no la publica, y calcularla a
 partir de su medición para colocarla bajo el rótulo "Medido" sería presentar una cuenta nuestra como
 si fuera una medición, que es justo lo que esta app no hace.
+
+## Avisos oficiales de AEMET
+
+Son la **tercera naturaleza** de dato que maneja la app, junto a lo previsto y lo medido, y la que
+no se puede confundir con nada: un aviso lo emite AEMET para toda una zona y dice que hay riesgo.
+
+**No son los avisos de la pestaña Avisos.** Aquello son reglas del usuario ("avísame si pasa de
+35º") aplicadas a su sitio. Nunca se presentan juntos, nunca comparten nombre, y el título de la
+notificación de AEMET empieza por "AEMET:" justo para eso. La propia pantalla de detalle lo dice por
+escrito, porque los dos llegan por la misma vía —una notificación— y sin decirlo se confundirían.
+
+### Dónde se ven
+
+Un **anuncio arriba del todo** de la pantalla del lugar, antes que la temperatura, que al pulsarlo
+abre el detalle completo. Va arriba porque un aviso rojo por lluvias no puede quedar por debajo del
+número grande ni a tres deslizamientos de VoiceOver; y solo resume, porque con cinco avisos habría
+que oírlos todos antes de llegar al tiempo, que es a lo que se entra normalmente.
+
+**Si no hay avisos no se pinta nada.** Ni un "no hay avisos activos": sería una parada más de
+VoiceOver todos los días para decir que no pasa nada, y además no sería del todo cierto (que la app
+no enseñe nada puede significar que el servidor no ha contestado).
+
+El nivel va **escrito con letras** en el título, no solo en el color: "Aviso naranja por lluvias".
+El color es de la escala oficial Meteoalerta, pero no informa de nada que no esté también en el
+texto.
+
+### Por qué el texto viene ya escrito del servidor
+
+Al revés que la previsión, que la app calcula sola. La diferencia es que **un aviso solo puede venir
+del servidor** (la clave de AEMET no puede ir en el bundle), así que duplicar aquí la redacción no
+compraría nada y habría que mantener dos copias sincronizadas. Vive en
+`servidor-notificaciones/src/apps/easyweather/avisosTexto.ts`, y **corregir cómo suena un aviso es
+redesplegar el VPS**: ni build ni actualización por aire.
+
+Los campos estructurados (nivel, fenómeno, horas, umbral) viajan igual, para poder ordenar y
+colorear sin releer texto. El umbral y el consejo se enseñan **literales**: son texto oficial de
+protección civil y reescribirlos sería inventarse un dato.
+
+### La distinción que sostiene todo esto
+
+`getAvisos` devuelve `undefined` si **no se ha podido preguntar**, y una lista vacía si AEMET dice
+que **no hay nada**. No es una sutileza: si se confundieran, un servidor caído borraría un aviso
+naranja de la pantalla, que es tanto como decirle a alguien que ya puede salir. Por eso, ante
+`undefined`, la app deja lo que hubiera y reintenta.
+
+Detalles de cómo publica AEMET los avisos, y por qué la zona de un punto de costa necesita un plan
+B, en el `README.md` del repositorio `servidor-notificaciones`.
 
 ## Cómo se escriben y cómo se leen los números
 
@@ -122,6 +170,8 @@ Dónde se cumple, que no es solo la ficha del App Store:
 1. **Al pie de la previsión** (`PrevisionLugar`): un enlace a Open-Meteo siempre, y otro a AEMET
    **solo cuando hay medición**. Citar una fuente que no se ha usado engaña tanto como no citar la
    que sí. El "· AEMET" de la línea de la estación no cuenta como atribución: es parte del dato.
+   En la pantalla de avisos (`AvisosModal`) va otro enlace a AEMET, y ahí es obligado sin
+   condiciones: todo lo que hay dentro lo ha emitido AEMET.
 2. **Dentro del texto que se comparte** (`utils/compartir.ts`). Compartir es redistribuir, y ahí
    fuera ya no hay rótulos que expliquen qué es previsto y qué medido: el texto tiene que decirlo.
 

@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ControlPaginas from '../components/ControlPaginas';
+import AvisosModal from '../components/AvisosModal';
 import DayDetailModal from '../components/DayDetailModal';
 import { crearEstilos, PaginaLugar } from '../components/PrevisionLugar';
 import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
@@ -32,6 +33,7 @@ export default function HomeScreen() {
     currentByPlace,
     forecastByPlace,
     observacionByPlace,
+    avisosByPlace,
     detectCurrentLocation,
     refreshCurrentLocation,
     refreshCurrentTemps,
@@ -41,6 +43,9 @@ export default function HomeScreen() {
   const [detail, setDetail] = useState<{ day: DayForecast; showSummary: boolean } | undefined>(
     undefined,
   );
+  // El lugar cuyos avisos se estan mirando. Se guarda el lugar, no un booleano, porque el carrusel
+  // puede tener varias paginas y hay que saber de cual salio el toque.
+  const [avisosDe, setAvisosDe] = useState<Place | undefined>(undefined);
   const scrollRef = useRef<ScrollView>(null);
 
   // Páginas del carrusel: la ubicación actual primero, luego los guardados.
@@ -192,6 +197,7 @@ export default function HomeScreen() {
                 place={place}
                 prevision={previsionDe(place)}
                 observacion={observacionByPlace[place.id]}
+                avisos={avisosByPlace[place.id]}
                 esActiva={place.id === activeId}
                 cargando={cargando}
                 message={message}
@@ -199,6 +205,7 @@ export default function HomeScreen() {
                 colorCarga={colores.acentoSuave}
                 onActualizar={() => actualizar(place)}
                 onAbrirDia={abrirDia}
+                onAbrirAvisos={() => setAvisosDe(place)}
               />
             </View>
           ))}
@@ -209,6 +216,7 @@ export default function HomeScreen() {
             place={activePlace}
             prevision={previsionDe(activePlace)}
             observacion={observacionByPlace[activePlace.id]}
+            avisos={avisosByPlace[activePlace.id]}
             esActiva
             cargando={cargando}
             message={message}
@@ -216,9 +224,17 @@ export default function HomeScreen() {
             colorCarga={colores.acentoSuave}
             onActualizar={() => actualizar(activePlace)}
             onAbrirDia={abrirDia}
+            onAbrirAvisos={() => setAvisosDe(activePlace)}
           />
         )
       )}
+
+      <AvisosModal
+        visible={avisosDe !== undefined}
+        avisos={avisosDe ? (avisosByPlace[avisosDe.id]?.avisos ?? []) : []}
+        lugar={avisosDe?.name ?? ''}
+        onClose={() => setAvisosDe(undefined)}
+      />
 
       <DayDetailModal
         visible={detail !== undefined}

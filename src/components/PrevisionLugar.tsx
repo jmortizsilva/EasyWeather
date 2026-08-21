@@ -8,10 +8,11 @@ import {
   Text,
   View,
 } from 'react-native';
+import AnuncioAvisos from './AnuncioAvisos';
 import DayRow from './DayRow';
 import { CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
-import { CurrentObservation, DayForecast, Place } from '../types';
+import { AvisosLugar, CurrentObservation, DayForecast, Place } from '../types';
 import { textoParaCompartir } from '../utils/compartir';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { describirObservacion } from '../utils/observacionTexto';
@@ -31,6 +32,11 @@ interface PaginaProps {
    * de España siempre), y su ausencia no se anuncia: la página se queda con la previsión.
    */
   observacion?: CurrentObservation;
+  /**
+   * Avisos OFICIALES de AEMET de este lugar. Que falte significa que aun no se han pedido, y que
+   * venga con la lista vacia, que no hay ninguno: en los dos casos no se pinta nada.
+   */
+  avisos?: AvisosLugar;
   esActiva: boolean;
   cargando: boolean;
   message: string;
@@ -38,6 +44,7 @@ interface PaginaProps {
   colorCarga: string;
   onActualizar: () => void;
   onAbrirDia: (day: DayForecast, showSummary: boolean) => void;
+  onAbrirAvisos: () => void;
   /** En una consulta de paso no se ofrece refrescar: los datos se acaban de pedir. */
   ocultarActualizar?: boolean;
 }
@@ -49,6 +56,7 @@ export function PaginaLugar({
   place,
   prevision,
   observacion,
+  avisos,
   esActiva,
   cargando,
   message,
@@ -56,6 +64,7 @@ export function PaginaLugar({
   colorCarga,
   onActualizar,
   onAbrirDia,
+  onAbrirAvisos,
   ocultarActualizar = false,
 }: PaginaProps) {
   const forecast = prevision?.forecast;
@@ -87,6 +96,11 @@ export function PaginaLugar({
       style={styles.pagina}
       contentContainerStyle={styles.content}
       accessibilityLabel={`Previsión de ${place.name}`}>
+      {/* Los avisos oficiales van ARRIBA DEL TODO, antes que la temperatura. Un aviso rojo por
+          lluvias no puede quedar por debajo del número grande ni a tres deslizamientos de
+          VoiceOver. Si no hay ninguno, esto no pinta nada y la pantalla queda como estaba. */}
+      <AnuncioAvisos avisos={avisos} onAbrir={onAbrirAvisos} />
+
       {today && (
         <View style={styles.currentCard}>
           {/* Antes ponía "Ahora", y era mentira: este número es lo que el modelo de Open-Meteo

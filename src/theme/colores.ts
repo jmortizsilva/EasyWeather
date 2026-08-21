@@ -56,6 +56,24 @@ export interface Paleta {
   exitoFondo: string;
   exitoBorde: string;
   exitoTexto: string;
+
+  /**
+   * Colores de los avisos OFICIALES de AEMET, uno por nivel. Son los de la escala Meteoalerta, no
+   * una eleccion estetica: quien ya conoce los avisos espera ese amarillo, ese naranja y ese rojo.
+   *
+   * El color NUNCA es lo unico que dice el nivel: el titulo lo escribe con letras ("Aviso naranja
+   * por lluvias"), porque si no, alguien que no distinga esos tonos —o que use VoiceOver— no
+   * sabria de que se le esta avisando.
+   */
+  aviso: Record<NivelDeAviso, ColoresAviso>;
+}
+
+export type NivelDeAviso = 'amarillo' | 'naranja' | 'rojo';
+
+export interface ColoresAviso {
+  fondo: string;
+  borde: string;
+  texto: string;
 }
 
 // Paleta oscura: la que la app ha tenido siempre, conservada tal cual para no cambiar de aspecto
@@ -91,6 +109,14 @@ export const OSCURO: Paleta = {
   exitoFondo: '#1c4a2e',
   exitoBorde: '#5fd08a',
   exitoTexto: '#eafff1',
+
+  // Contraste del texto sobre su fondo, medido: 10,1:1 el amarillo, 9,7:1 el naranja y 10,8:1 el
+  // rojo. Los bordes van sobre 5:1, muy por encima del 3:1 que pide WCAG para lo que no es texto.
+  aviso: {
+    amarillo: { fondo: '#4a3c10', borde: '#e6c34d', texto: '#fff7e0' },
+    naranja: { fondo: '#5a3512', borde: '#ff9f45', texto: '#fff1e2' },
+    rojo: { fondo: '#5c1f22', borde: '#ff7a7a', texto: '#ffe9e9' },
+  },
 };
 
 // Paleta clara. Los tonos se eligieron comprobando el contraste con su fondo (minimo 4,5:1 para
@@ -127,6 +153,13 @@ export const CLARO: Paleta = {
   exitoFondo: '#e3f5e9',
   exitoBorde: '#1e7a44',
   exitoTexto: '#0d3d22',
+
+  // Medido igual que en la paleta oscura: 10,0:1 el amarillo, 11,0:1 el naranja y 11,2:1 el rojo.
+  aviso: {
+    amarillo: { fondo: '#fdf3d0', borde: '#8a6d00', texto: '#4a3a00' },
+    naranja: { fondo: '#ffe8d4', borde: '#8f4a00', texto: '#4d2800' },
+    rojo: { fondo: '#fde3e3', borde: '#a4232b', texto: '#5c1114' },
+  },
 };
 
 export const PALETAS: Record<NombreTema, Paleta> = {

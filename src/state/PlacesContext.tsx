@@ -10,9 +10,10 @@ import {
   useState,
 } from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
+import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
-import { CurrentObservation, Forecast, Place } from '../types';
+import { AvisosLugar, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
 import { TempGuardada } from '../utils/tempActual';
@@ -38,6 +39,10 @@ const LOCATION_CHANGED_METERS = MISMO_SITIO_METROS;
 // La observacion medida no se vuelve a pedir mas de una vez cada 10 min por lugar: AEMET publica
 // el parte una vez por hora (y con ~85 min de retraso), asi que insistir mas no trae nada nuevo.
 const OBSERVACION_RECHECK_MS = 10 * 60 * 1000;
+// Los avisos oficiales tampoco se repiten mas de una vez cada 10 min por lugar. AEMET reelabora el
+// lote un par de veces al dia y lo actualiza cuando la situacion cambia; el servidor ya lo cachea
+// media hora, asi que pedirlo mas a menudo desde aqui solo gastaria bateria y datos.
+const AVISOS_RECHECK_MS = 10 * 60 * 1000;
 
 export const CURRENT_LOCATION_ID = 'current';
 
@@ -71,6 +76,12 @@ interface PlacesContextValue {
    * red es preferible enseñar solo la prevision a resucitar la de anteayer.
    */
   observacionByPlace: Record<string, CurrentObservation>;
+  /**
+   * Avisos OFICIALES de AEMET de cada lugar (por id). Que falte un lugar significa "todavia no se
+   * ha preguntado"; que este con la lista vacia significa "se pregunto y no hay ninguno". Tampoco
+   * se guardan en disco: un aviso caducado en pantalla seria peor que no enseñar nada.
+   */
+  avisosByPlace: Record<string, AvisosLugar>;
   /** Refresca en una sola llamada la temperatura actual de todos los lugares. Con throttle. */
   refreshCurrentTemps: (force?: boolean) => Promise<void>;
   setActiveId: (id: string) => void;
@@ -104,7 +115,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const [observacionByPlace, setObservacionByPlace] = useState<Record<string, CurrentObservation>>(
     {},
   );
+  const [avisosByPlace, setAvisosByPlace] = useState<Record<string, AvisosLugar>>({});
   const ultimaObservacionRef = useRef<Record<string, number>>({});
+  const ultimosAvisosRef = useRef<Record<string, number>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -281,6 +294,26 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // Pide los avisos OFICIALES de un lugar. Como la observacion, va y falla aparte de la prevision.
+  //
+  // `undefined` significa que no se ha podido preguntar, y entonces se deja lo que hubiera y se
+  // permite reintentar antes del throttle: quitar un aviso naranja de la pantalla porque se cayo la
+  // red seria decirle a alguien que ya no hay peligro. Una lista VACIA, en cambio, si se guarda:
+  // ahi AEMET ha contestado que no hay nada, y el aviso de ayer tiene que desaparecer.
+  const cargarAvisos = useCallback(async (id: string, lat: number, lon: number) => {
+    if (Date.now() - (ultimosAvisosRef.current[id] ?? 0) < AVISOS_RECHECK_MS) {
+      return;
+    }
+    ultimosAvisosRef.current[id] = Date.now();
+
+    const avisos = await getAvisos(lat, lon);
+    if (!avisos) {
+      ultimosAvisosRef.current[id] = 0;
+      return;
+    }
+    setAvisosByPlace((previo) => ({ ...previo, [id]: avisos }));
+  }, []);
+
   useEffect(() => {
     const loadStored = async () => {
       const [storedPlaces, storedLocation, storedTemps] = await Promise.all([
@@ -396,6 +429,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       // min, pero la observación tiene su propio ritmo. `elevation` viaja dentro de la previsión
       // (incluida la guardada), y sirve para descartar estaciones a otra cota.
       void cargarObservacion(activeId, place.lat, place.lon, data.elevation);
+      void cargarAvisos(activeId, place.lat, place.lon);
     };
 
     const loadForecast = async (force: boolean, silent: boolean) => {
@@ -477,7 +511,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     // sí mostramos indicador aunque la recarga venga de un evento automático.
     const silent = silentRequested && forecastRef.current !== undefined;
     void loadForecast(force, silent);
-  }, [activeId, currentLocationPlace, places, forecastReloadTick, cargarObservacion]);
+  }, [activeId, currentLocationPlace, places, forecastReloadTick, cargarObservacion, cargarAvisos]);
 
   const refreshCurrentLocation = async () => {
     setLoadingLocation(true);
@@ -552,6 +586,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
               [place.id]: { forecast: guardada, updatedAt: tsRaw ? Number(tsRaw) : undefined },
             }));
             void cargarObservacion(place.id, place.lat, place.lon, guardada.elevation);
+            void cargarAvisos(place.id, place.lat, place.lon);
             return;
           }
         } catch {
@@ -566,13 +601,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
         [place.id]: { forecast: data, updatedAt: ahora },
       }));
       void cargarObservacion(place.id, place.lat, place.lon, data.elevation);
+      void cargarAvisos(place.id, place.lat, place.lon);
       // Se guarda en disco igual que la del lugar activo: si luego se guarda el lugar, ya está lista.
       await Promise.all([
         AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${place.id}`, JSON.stringify(data)),
         AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`, String(ahora)),
       ]);
     },
-    [cargarObservacion],
+    [cargarObservacion, cargarAvisos],
   );
 
   // Al volver la app a primer plano se comprueba si el usuario se ha movido de ciudad
@@ -624,6 +660,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     currentByPlace,
     forecastByPlace,
     observacionByPlace,
+    avisosByPlace,
     refreshCurrentTemps,
     setActiveId,
     refreshCurrentLocation,
