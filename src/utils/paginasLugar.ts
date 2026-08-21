@@ -21,6 +21,11 @@ export interface ValoresControl {
 /**
  * Los valores vecinos se calculan por adelantado (igual que en las filas de día) para que la línea
  * braille se refresque dentro del gesto; ver modules/adjustable-button.
+ *
+ * El sentido de los gestos es el de la app Tiempo de iOS, que es contra la que se compara quien usa
+ * esto: flick ARRIBA lleva al lugar siguiente (2, 3, 4...). Ojo, es el contrario al de las filas de
+ * "Próximos días", y no es un descuido: allí el ajustable recorre los datos de un día, como se lee
+ * una lista hacia abajo, mientras que aquí se pasa de página. iOS también los distingue.
  */
 export function valoresControl(
   lugares: Place[],
@@ -39,7 +44,7 @@ export function valoresControl(
   return {
     label: 'Lugar',
     value: conPosicion(indice),
-    valueOnIncrement: conPosicion(indice - 1), // flick arriba = anterior
-    valueOnDecrement: conPosicion(indice + 1), // flick abajo = siguiente
+    valueOnIncrement: conPosicion(indice + 1), // flick arriba = siguiente
+    valueOnDecrement: conPosicion(indice - 1), // flick abajo = anterior
   };
 }

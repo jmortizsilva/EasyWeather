@@ -26,20 +26,22 @@ describe('valoresControl', () => {
     expect(value).toContain('2 de 3');
   });
 
-  it('los valores vecinos se adelantan para refrescar la braille en el gesto', () => {
+  // El sentido es el de la app Tiempo de iOS: arriba avanza. Antes era al revés, y por eso este
+  // test se reescribió: afirmaba el comportamiento equivocado como si fuera el bueno.
+  it('flick arriba lleva al lugar siguiente y flick abajo al anterior', () => {
     const v = valoresControl(LUGARES, 1, TEMPS, 0);
-    expect(v.valueOnIncrement).toContain('Madrid'); // flick arriba = anterior
-    expect(v.valueOnDecrement).toContain('Vigo'); // flick abajo = siguiente
+    expect(v.valueOnIncrement).toContain('Vigo'); // flick arriba = siguiente
+    expect(v.valueOnDecrement).toContain('Madrid'); // flick abajo = anterior
   });
 
   it('en los extremos el vecino se queda en el mismo lugar, no se sale de la lista', () => {
     const primero = valoresControl(LUGARES, 0, TEMPS, 0);
-    expect(primero.valueOnIncrement).toContain('Madrid');
-    expect(primero.valueOnIncrement).toContain('1 de 3');
+    expect(primero.valueOnDecrement).toContain('Madrid');
+    expect(primero.valueOnDecrement).toContain('1 de 3');
 
     const ultimo = valoresControl(LUGARES, 2, TEMPS, 0);
-    expect(ultimo.valueOnDecrement).toContain('Vigo');
-    expect(ultimo.valueOnDecrement).toContain('3 de 3');
+    expect(ultimo.valueOnIncrement).toContain('Vigo');
+    expect(ultimo.valueOnIncrement).toContain('3 de 3');
   });
 
   it('un indice fuera de rango no rompe: se recorta a la lista', () => {
