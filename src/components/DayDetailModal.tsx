@@ -12,7 +12,8 @@ import { getHourlyForecast } from '../services/openMeteo';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, HourlyForecast, Place } from '../types';
-import { buildDayDetails, formatFullDate, formatTime } from '../utils/dayDetails';
+import { buildDayDetails, formatFullDate } from '../utils/dayDetails';
+import { filaHora } from '../utils/horaTexto';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 interface Props {
@@ -117,28 +118,28 @@ export default function DayDetailModal({
             {!loading &&
               !error &&
               hours.map((item) => {
-                const info = describeWeatherCode(item.weatherCode);
-                const label = `${formatTime(item.time) ?? item.time}: ${item.temperature ?? 'sin dato'} grados, ${
-                  info.label
-                }, probabilidad de lluvia ${item.rainProbability ?? 0} por ciento, viento ${
-                  item.windSpeed ?? 'sin dato'
-                } kilómetros por hora`;
+                const fila = filaHora(item);
                 return (
                   <View
                     key={item.time}
                     style={styles.hourRow}
                     accessible
-                    accessibilityLabel={label}>
+                    accessibilityLabel={fila.spoken}>
                     <Text style={styles.hourTime} numberOfLines={1}>
-                      {formatTime(item.time) ?? item.time}
+                      {fila.hora}
                     </Text>
-                    <Text style={styles.hourIcon}>{info.emoji}</Text>
+                    <Text style={styles.hourIcon}>{fila.emoji}</Text>
                     <Text style={styles.hourTemp} numberOfLines={1}>
-                      {item.temperature ?? '-'}º
+                      {fila.temperatura}
                     </Text>
                     <View style={styles.hourMeta}>
-                      <Text style={styles.hourMetaText}>Lluvia {item.rainProbability ?? '-'}%</Text>
-                      <Text style={styles.hourMetaText}>Viento {item.windSpeed ?? '-'} km/h</Text>
+                      <Text style={styles.hourMetaText}>{fila.lluvia}</Text>
+                      <Text style={styles.hourMetaText}>{fila.viento}</Text>
+                      {/* El rumbo va en su propia línea: "Viento 12 km/h del noroeste" seguido no
+                          cabe en esta columna con los tamaños de letra grandes. */}
+                      {fila.direccion ? (
+                        <Text style={styles.hourMetaText}>{fila.direccion}</Text>
+                      ) : null}
                     </View>
                   </View>
                 );

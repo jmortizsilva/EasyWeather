@@ -57,6 +57,12 @@ export interface DayForecast {
 export interface CurrentConditions {
   temperature?: number;
   weatherCode?: number;
+  /**
+   * Sensación térmica. Es TAN prevista como la temperatura de al lado, y por eso vive aquí y no en
+   * `CurrentObservation`: AEMET no la publica, y calcularla a partir de la medición para enseñarla
+   * bajo el rótulo "Medido" sería presentar una cuenta nuestra como una medición.
+   */
+  apparent?: number;
 }
 
 /**
@@ -140,4 +146,6 @@ export interface HourlyForecast {
   weatherCode?: number;
   rainProbability?: number;
   windSpeed?: number;
+  /** Grados desde el norte, en sentido horario. Se convierte a rumbo en palabras al mostrarlo. */
+  windDirection?: number;
 }
