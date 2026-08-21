@@ -3,6 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast } from '../types';
 import { buildDayDetails, formatFullDate, valoresFilaDia } from '../utils/dayDetails';
+import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 export interface DayRowProps {
@@ -24,9 +25,11 @@ export function useDayRow(day: DayForecast) {
   // texto que cambia. La prevision, que antes vivia aqui, pasa a ser la primera opcion del
   // ajustable, y asi sale de la linea en cuanto se entra en los detalles.
   const label = formatFullDate(day.date);
-  const resumen = `mínima ${day.tMin ?? 'sin dato'} grados, máxima ${
-    day.tMax ?? 'sin dato'
-  } grados, ${info.label}, probabilidad de lluvia ${day.rainProbability ?? 0} por ciento`;
+  const grados = (valor: number | undefined) =>
+    valor !== undefined ? numeroEs(valor) : 'sin dato';
+  const resumen =
+    `mínima ${grados(day.tMin)} grados, máxima ${grados(day.tMax)} grados, ${info.label}, ` +
+    `probabilidad de lluvia ${numeroEs(day.rainProbability ?? 0)} por ciento`;
   const opciones = [resumen, ...details.map((linea) => `${linea.title}: ${linea.spoken}`)];
 
   // value y los valores vecinos se calculan por adelantado: la vista nativa de iOS los usa para
@@ -50,10 +53,11 @@ export function DayRowContent({ day, emoji }: { day: DayForecast; emoji: string 
       <View style={dayRowStyles.dayRight}>
         <Text style={dayRowStyles.daySky}>{emoji}</Text>
         <Text style={[dayRowStyles.dayTemp, { color: colores.textoFuerte }]}>
-          {day.tMin ?? '-'}º / {day.tMax ?? '-'}º
+          {day.tMin !== undefined ? numeroEs(day.tMin) : '-'}º /{' '}
+          {day.tMax !== undefined ? numeroEs(day.tMax) : '-'}º
         </Text>
         <Text style={[dayRowStyles.dayMeta, { color: colores.textoMeta }]}>
-          💧 {day.rainProbability ?? '-'}%
+          💧 {day.rainProbability !== undefined ? numeroEs(day.rainProbability) : '-'}%
         </Text>
       </View>
     </>

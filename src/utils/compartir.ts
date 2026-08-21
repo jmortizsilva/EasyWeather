@@ -55,9 +55,13 @@ export function textoParaCompartir({ nombre, forecast, observacion }: DatosParaC
 
   const hoy = forecast.days[0];
   if (hoy && (hoy.tMin !== undefined || hoy.tMax !== undefined)) {
+    const grado = (valor: number | undefined) =>
+      valor !== undefined ? `${numeroEs(valor)}º` : '-';
     const lluvia =
-      hoy.rainProbability !== undefined ? `, probabilidad de lluvia ${hoy.rainProbability}%` : '';
-    lineas.push(`Hoy: mínima ${hoy.tMin ?? '-'}º, máxima ${hoy.tMax ?? '-'}º${lluvia}.`);
+      hoy.rainProbability !== undefined
+        ? `, probabilidad de lluvia ${numeroEs(hoy.rainProbability)}%`
+        : '';
+    lineas.push(`Hoy: mínima ${grado(hoy.tMin)}, máxima ${grado(hoy.tMax)}${lluvia}.`);
   }
 
   lineas.push('');

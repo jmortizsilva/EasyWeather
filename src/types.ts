@@ -45,6 +45,8 @@ export interface DayForecast {
   moonPhase?: number;
   /** Fracción iluminada 0-1. */
   moonIllumination?: number;
+  /** Días desde este día hasta la próxima luna llena; 0 si este día ya es de luna llena. */
+  moonDaysToFull?: number;
   moonAlwaysUp?: boolean;
   moonAlwaysDown?: boolean;
 }

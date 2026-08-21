@@ -1,6 +1,7 @@
 import { DayForecast } from '../types';
 import { describeUvIndex, describeWindDirection } from './meteo';
 import { describeMoonPhase } from './moon';
+import { numeroEs } from './text';
 
 export function formatTime(timeISO: string | undefined): string | undefined {
   if (!timeISO) {
@@ -28,10 +29,39 @@ export function formatFullDate(dateISO: string): string {
 
 export interface DayDetailLine {
   title: string;
-  /** Texto visual (usa el símbolo º). */
+  /** Texto visual: con símbolos y abreviaturas (º, %, km/h). */
   value: string;
-  /** Texto para VoiceOver: dice "grados" en vez de º, que se leería como ordinal. */
+  /**
+   * Texto para VoiceOver, con TODAS las unidades escritas con letras. No es un capricho: º se lee
+   * como ordinal masculino, y las abreviaturas las expande según el contexto, así que dos filas de
+   * la misma pantalla acababan sonando de forma distinta. La regla de esta app es que todo lo que
+   * se oye diga la unidad igual, y que los decimales lleven coma (`numeroEs`).
+   */
   spoken: string;
+}
+
+/**
+ * Cuánto falta para la próxima luna llena, como coletilla de la línea de la luna. Vacío si ese día
+ * YA es de luna llena: la propia fase acaba de decirlo y repetirlo sobra.
+ */
+function textoProximaLunaLlena(dias: number | undefined): string {
+  if (dias === undefined || dias <= 0) {
+    return '';
+  }
+  if (dias === 1) {
+    return ', luna llena mañana';
+  }
+  return `, luna llena en ${dias} días`;
+}
+
+/** Número visible, con coma decimal; guion si no hay dato. */
+function visible(valor: number | undefined): string {
+  return valor !== undefined ? numeroEs(valor) : '-';
+}
+
+/** Número hablado, con coma decimal; "sin dato" si falta, que es lo que hay que oír. */
+function hablado(valor: number | undefined): string {
+  return valor !== undefined ? numeroEs(valor) : 'sin dato';
 }
 
 export function buildDayDetails(day: DayForecast): DayDetailLine[] {
@@ -40,42 +70,65 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   if (day.tMin !== undefined || day.tMax !== undefined) {
     lines.push({
       title: 'Temperatura',
-      value: `mínima ${day.tMin ?? '-'}º, máxima ${day.tMax ?? '-'}º`,
-      spoken: `mínima ${day.tMin ?? 'sin dato'} grados, máxima ${day.tMax ?? 'sin dato'} grados`,
+      value: `mínima ${visible(day.tMin)}º, máxima ${visible(day.tMax)}º`,
+      spoken: `mínima ${hablado(day.tMin)} grados, máxima ${hablado(day.tMax)} grados`,
     });
   }
 
   if (day.apparentMin !== undefined || day.apparentMax !== undefined) {
     lines.push({
       title: 'Sensación térmica',
-      value: `mínima ${day.apparentMin ?? '-'}º, máxima ${day.apparentMax ?? '-'}º`,
-      spoken: `mínima ${day.apparentMin ?? 'sin dato'} grados, máxima ${day.apparentMax ?? 'sin dato'} grados`,
+      value: `mínima ${visible(day.apparentMin)}º, máxima ${visible(day.apparentMax)}º`,
+      spoken: `mínima ${hablado(day.apparentMin)} grados, máxima ${hablado(day.apparentMax)} grados`,
     });
   }
 
   if (day.humidity !== undefined) {
-    const value = `${day.humidity}%`;
-    lines.push({ title: 'Humedad media', value, spoken: value });
+    lines.push({
+      title: 'Humedad media',
+      value: `${numeroEs(day.humidity)}%`,
+      spoken: `${numeroEs(day.humidity)} por ciento`,
+    });
   }
 
   if (day.windMax !== undefined) {
     const direction = describeWindDirection(day.windDirection);
-    const gusts = day.windGusts !== undefined ? `, rachas de ${day.windGusts} km/h` : '';
-    const value = `hasta ${day.windMax} km/h${direction ? ` del ${direction}` : ''}${gusts}`;
-    lines.push({ title: 'Viento', value, spoken: value });
+    const desde = direction ? ` del ${direction}` : '';
+    const gustsValue =
+      day.windGusts !== undefined ? `, rachas de ${numeroEs(day.windGusts)} km/h` : '';
+    const gustsSpoken =
+      day.windGusts !== undefined
+        ? `, rachas de ${numeroEs(day.windGusts)} kilómetros por hora`
+        : '';
+    lines.push({
+      title: 'Viento',
+      value: `hasta ${numeroEs(day.windMax)} km/h${desde}${gustsValue}`,
+      spoken: `hasta ${numeroEs(day.windMax)} kilómetros por hora${desde}${gustsSpoken}`,
+    });
   }
 
   if (day.uvMax !== undefined) {
     const qualifier = describeUvIndex(day.uvMax);
-    const value = `${day.uvMax}${qualifier ? ` (${qualifier})` : ''}`;
-    lines.push({ title: 'Índice UV máximo', value, spoken: value });
+    lines.push({
+      title: 'Índice UV máximo',
+      value: `${numeroEs(day.uvMax)}${qualifier ? ` (${qualifier})` : ''}`,
+      // Con coma en vez de paréntesis: VoiceOver los lee de forma irregular y a veces se los salta.
+      spoken: `${numeroEs(day.uvMax)}${qualifier ? `, ${qualifier}` : ''}`,
+    });
   }
 
   if (day.precipitationSum !== undefined) {
-    const probability =
-      day.rainProbability !== undefined ? `, probabilidad ${day.rainProbability}%` : '';
-    const value = `${day.precipitationSum} mm${probability}`;
-    lines.push({ title: 'Precipitación', value, spoken: value });
+    const probValue =
+      day.rainProbability !== undefined ? `, probabilidad ${numeroEs(day.rainProbability)}%` : '';
+    const probSpoken =
+      day.rainProbability !== undefined
+        ? `, probabilidad ${numeroEs(day.rainProbability)} por ciento`
+        : '';
+    lines.push({
+      title: 'Precipitación',
+      value: `${numeroEs(day.precipitationSum)} mm${probValue}`,
+      spoken: `${numeroEs(day.precipitationSum)} milímetros${probSpoken}`,
+    });
   }
 
   const sunrise = formatTime(day.sunrise);
@@ -91,10 +144,11 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
       day.moonIllumination !== undefined ? Math.round(day.moonIllumination * 100) : undefined;
     const illumValue = illum !== undefined ? `, ${illum}% iluminada` : '';
     const illumSpoken = illum !== undefined ? `, ${illum} por ciento iluminada` : '';
+    const llena = textoProximaLunaLlena(day.moonDaysToFull);
     lines.push({
       title: 'Luna',
-      value: `${emoji} ${name}${illumValue}`,
-      spoken: `${name}${illumSpoken}`,
+      value: `${emoji} ${name}${illumValue}${llena}`,
+      spoken: `${name}${illumSpoken}${llena}`,
     });
   }
 

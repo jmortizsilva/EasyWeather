@@ -6,6 +6,12 @@ const FORECAST: Forecast = {
   days: [{ date: '2026-08-21', tMin: 18, tMax: 34, rainProbability: 10 }],
 };
 
+// Con decimales por todas partes: el texto compartido mezclaba coma en unas lineas y punto en otras.
+const FORECAST_CON_DECIMALES: Forecast = {
+  current: { temperature: 30.5, apparent: 31.6, weatherCode: 0 },
+  days: [{ date: '2026-08-21', tMin: 24.6, tMax: 31.4, rainProbability: 0 }],
+};
+
 const OBSERVACION: CurrentObservation = {
   temperature: 28.5,
   observedAt: '2026-08-21T11:00:00+0000',
@@ -64,6 +70,19 @@ describe('textoParaCompartir', () => {
     });
     expect(sinMedicion).toContain('Previsión de Open-Meteo.com.');
     expect(sinMedicion).not.toContain('AEMET');
+  });
+
+  it('todos los decimales llevan coma, tambien los de la linea de hoy', () => {
+    const texto = textoParaCompartir({
+      nombre: 'Miramar',
+      forecast: FORECAST_CON_DECIMALES,
+      observacion: OBSERVACION,
+    });
+    expect(texto).toContain('Previsto para esta hora: 30,5º');
+    expect(texto).toContain('Sensación térmica: 31,6º.');
+    expect(texto).toContain('Hoy: mínima 24,6º, máxima 31,4º');
+    // Ni un solo punto decimal en todo el texto; el de "Open-Meteo.com" no cuenta.
+    expect(texto).not.toMatch(/\d\.\d/);
   });
 
   it('una observación sin temperatura no se comparte: no es una medición', () => {

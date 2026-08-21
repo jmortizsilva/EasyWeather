@@ -55,9 +55,22 @@ Open-Meteo para la hora en curso, no algo que nadie hubiera medido.
 partir de su medición para colocarla bajo el rótulo "Medido" sería presentar una cuenta nuestra como
 si fuera una medición, que es justo lo que esta app no hace.
 
-Los decimales van con **coma**, que es como se escriben en español (`utils/text.ts`, `numeroEs`).
-Pendiente: la lista de días y la de horas todavía los escriben con punto, porque arreglarlo ahí
-cambia también los textos de las notificaciones, que el servidor copia.
+## Cómo se escriben y cómo se leen los números
+
+Dos reglas, y las dos salieron de fallos reales que se vieron probando:
+
+1. **Los decimales llevan coma** (`utils/text.ts`, `numeroEs`), en toda la app y en el servidor.
+   Antes convivían las dos formas sin que se notara: la medición de AEMET escribía "28,5º" y la
+   previsión de la línea de encima, "28.9º".
+2. **Lo que se lee en voz alta no lleva símbolos ni abreviaturas.** Cada línea trae `value` (con º,
+   %, km/h) y `spoken` (con "grados", "por ciento", "kilómetros por hora"). El símbolo º se lee como
+   ordinal masculino y las abreviaturas se expanden de forma distinta según el contexto, así que dos
+   filas de la misma pantalla acababan sonando diferente. Esto vale también para el **cuerpo de las
+   notificaciones**, que se arma con `spoken`.
+
+Los textos de `buildDayDetails` los **copia el servidor** (`dominio/dayDetails.ts`) para redactar los
+avisos, y su test de paridad los fija. Cualquier cambio aquí se refleja allí **en el mismo commit**,
+y no llega a los avisos hasta que el VPS se vuelve a desplegar.
 
 **La medición falta a menudo, y es normal.** Fuera de España no hay red de AEMET; dentro, puede que
 no haya estación lo bastante cerca o que la que hay esté a otra altura. Cuando falta, la tarjeta se

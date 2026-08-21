@@ -1,6 +1,7 @@
 import { HourlyForecast } from '../types';
 import { formatTime } from './dayDetails';
 import { describeWindDirection } from './meteo';
+import { numeroEs } from './text';
 import { describeWeatherCode } from './weatherCodes';
 
 // Textos de una fila de la previsión por horas. Vive aparte del componente y sin un solo import de
@@ -28,22 +29,25 @@ export function filaHora(item: HourlyForecast): FilaHora {
 
   // La dirección solo se dice si además hay velocidad: un rumbo suelto, sin saber si sopla o no,
   // no informa de nada. Open-Meteo devuelve un rumbo aunque el viento sea de 0 km/h.
-  const hayViento = item.windSpeed !== undefined;
-  const direccion = hayViento && rumbo ? `del ${rumbo}` : '';
+  const velocidad = item.windSpeed !== undefined ? numeroEs(item.windSpeed) : undefined;
+  const direccion = velocidad !== undefined && rumbo ? `del ${rumbo}` : '';
 
-  const vientoHablado = hayViento
-    ? `viento ${item.windSpeed} kilómetros por hora${direccion ? ` ${direccion}` : ''}`
-    : 'viento sin dato';
+  const vientoHablado =
+    velocidad !== undefined
+      ? `viento ${velocidad} kilómetros por hora${direccion ? ` ${direccion}` : ''}`
+      : 'viento sin dato';
+  const temperatura = item.temperature !== undefined ? numeroEs(item.temperature) : undefined;
+  const lluvia = item.rainProbability !== undefined ? numeroEs(item.rainProbability) : undefined;
 
   return {
     hora,
     emoji: cielo.emoji,
-    temperatura: `${item.temperature ?? '-'}º`,
-    lluvia: `Lluvia ${item.rainProbability ?? '-'}%`,
-    viento: `Viento ${item.windSpeed ?? '-'} km/h`,
+    temperatura: `${temperatura ?? '-'}º`,
+    lluvia: `Lluvia ${lluvia ?? '-'}%`,
+    viento: `Viento ${velocidad ?? '-'} km/h`,
     direccion,
     spoken:
-      `${hora}: ${item.temperature ?? 'sin dato'} grados, ${cielo.label}, ` +
-      `probabilidad de lluvia ${item.rainProbability ?? 0} por ciento, ${vientoHablado}`,
+      `${hora}: ${temperatura ?? 'sin dato'} grados, ${cielo.label}, ` +
+      `probabilidad de lluvia ${lluvia ?? '0'} por ciento, ${vientoHablado}`,
   };
 }
