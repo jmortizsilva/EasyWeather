@@ -13,7 +13,7 @@ uno actual.
 | Dato | Fuente | Naturaleza | Cómo se pide |
 |---|---|---|---|
 | Previsión diaria y horaria | Open-Meteo | Previsión | Directo desde el móvil |
-| Temperatura y cielo "de ahora" | Open-Meteo | **Previsión** para la hora en curso | Directo desde el móvil |
+| Temperatura, cielo y **sensación térmica** "de ahora" | Open-Meteo | **Previsión** para la hora en curso | Directo desde el móvil |
 | Altitud del terreno (`elevation`) | Open-Meteo | Dato fijo | Viene dentro de la previsión |
 | Búsqueda de lugares | Open-Meteo (geocoding) | — | Directo desde el móvil |
 | Nombre de "mi ubicación" | iOS (`expo-location`) | — | En el propio teléfono |
@@ -42,6 +42,7 @@ Configuración de la clave: en el `.env` del repo `servidor-notificaciones`, var
 PREVISTO PARA ESTA HORA          <- Open-Meteo. Es modelo, y el rótulo lo dice.
         28º
    Cielo despejado
+ Sensación térmica 26,4º         <- También previsión: por eso va ARRIBA de la línea.
 ------------------------------
 Medido: 28,5º a las 13:00        <- AEMET. Con hora, porque no es "ahora".
 Estación Madrid-Retiro, a 2,3 km
@@ -49,6 +50,14 @@ Estación Madrid-Retiro, a 2,3 km
 
 Antes ese bloque se titulaba **"Ahora"**, y era falso: el número siempre ha sido una previsión de
 Open-Meteo para la hora en curso, no algo que nadie hubiera medido.
+
+**La sensación térmica está en el lado previsto a propósito.** AEMET no la publica, y calcularla a
+partir de su medición para colocarla bajo el rótulo "Medido" sería presentar una cuenta nuestra como
+si fuera una medición, que es justo lo que esta app no hace.
+
+Los decimales van con **coma**, que es como se escriben en español (`utils/text.ts`, `numeroEs`).
+Pendiente: la lista de días y la de horas todavía los escriben con punto, porque arreglarlo ahí
+cambia también los textos de las notificaciones, que el servidor copia.
 
 **La medición falta a menudo, y es normal.** Fuera de España no hay red de AEMET; dentro, puede que
 no haya estación lo bastante cerca o que la que hay esté a otra altura. Cuando falta, la tarjeta se
@@ -94,6 +103,14 @@ sitio. Son cosas distintas y las dos se dicen por su nombre.
 
 - **AEMET**: autoriza el uso y la reproducción **citando a AEMET como autora** de la información.
 - **Open-Meteo**: gratuito para uso no comercial, con atribución.
+
+Dónde se cumple, que no es solo la ficha del App Store:
+
+1. **Al pie de la previsión** (`PrevisionLugar`): un enlace a Open-Meteo siempre, y otro a AEMET
+   **solo cuando hay medición**. Citar una fuente que no se ha usado engaña tanto como no citar la
+   que sí. El "· AEMET" de la línea de la estación no cuenta como atribución: es parte del dato.
+2. **Dentro del texto que se comparte** (`utils/compartir.ts`). Compartir es redistribuir, y ahí
+   fuera ya no hay rótulos que expliquen qué es previsto y qué medido: el texto tiene que decirlo.
 
 ## Detalles técnicos que muerden
 

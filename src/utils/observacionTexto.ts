@@ -1,15 +1,11 @@
 import { CurrentObservation } from '../types';
+import { numeroEs } from './text';
 
 // Texto de la observacion MEDIDA. Puro: se decide aqui y se prueba con Jest, sin dispositivo.
 //
 // De que va todo esto: una medicion tiene que poder contestar sola a "cuanto", "quien lo midio",
 // "donde" y "cuando". Si falta cualquiera de las cuatro, deja de ser una medicion y pasa a ser un
 // numero suelto, que es justo lo que la app no quiere enseñar.
-
-/** Numero con coma decimal, que es como se escribe en español. */
-function numeroEs(valor: number): string {
-  return String(Math.round(valor * 10) / 10).replace('.', ',');
-}
 
 /**
  * AEMET fecha en ISO pero con el desfase pegado y sin dos puntos ("2026-08-16T11:00:00+0000").
