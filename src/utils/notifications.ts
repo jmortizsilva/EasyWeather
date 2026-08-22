@@ -1,58 +1,12 @@
 import * as Notifications from 'expo-notifications';
 import { Alert } from 'react-native';
 import { getForecast } from '../services/openMeteo';
-import { DayForecast, NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
+import { DayForecast, NotificationSettings, Place, SummaryAlert } from '../types';
 import { buildDayDetails } from './dayDetails';
 import { describeWeatherCode } from './weatherCodes';
 
-// Títulos tal y como los genera buildDayDetails; el usuario elige cuáles quiere en el resumen.
-export const DAILY_FIELD_OPTIONS = [
-  'Temperatura',
-  'Sensación térmica',
-  'Humedad media',
-  'Viento',
-  'Índice UV máximo',
-  'Precipitación',
-  'Sol',
-  'Luna',
-  'Salida y puesta de la luna',
-];
-
 // iOS solo mantiene 64 notificaciones pendientes; se limita el resumen para no pasarse.
 const MAX_SUMMARY_DAYS = 7;
-
-export const DEFAULT_THRESHOLD: ThresholdAlert = {
-  enabled: false,
-  maxThreshold: 30,
-  minThreshold: 3,
-};
-
-export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
-  summaries: [],
-  threshold: DEFAULT_THRESHOLD,
-};
-
-export function createSummaryAlert(placeId: string): SummaryAlert {
-  return {
-    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
-    placeId,
-    hour: 8,
-    minute: 0,
-    fields: ['Temperatura', 'Precipitación'],
-    enabled: true,
-  };
-}
-
-export function formatTime(hour: number, minute: number): string {
-  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
-}
-
-export function isValidSettings(value: unknown): value is NotificationSettings {
-  const v = value as NotificationSettings;
-  return (
-    !!v && Array.isArray(v.summaries) && typeof v.threshold === 'object' && v.threshold !== null
-  );
-}
 
 // Las notificaciones se leen en voz alta, así que se usa el texto "hablado" de cada dato
 // (dice "grados" en vez de º, que VoiceOver leería como ordinal).

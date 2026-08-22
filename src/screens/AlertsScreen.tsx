@@ -18,18 +18,31 @@ import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { useNotifications } from '../state/NotificationsContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
-import { SummaryAlert } from '../types';
+import { NivelAviso, SummaryAlert } from '../types';
 import {
   createSummaryAlert,
   DAILY_FIELD_OPTIONS,
   DEFAULT_THRESHOLD,
   formatTime,
-} from '../utils/notifications';
+} from '../utils/ajustesAvisos';
 
 // Id de la barra "Listo" que se ancla sobre el teclado numerico (solo iOS): sin ella, el teclado
 // tapa el boton "Guardar aviso" y no habia forma clara de cerrarlo. Los teclados numericos no traen
 // tecla de retorno visible, asi que la barra es la unica salida accesible.
 const TECLADO_GRADOS_ID = 'avisoTemperaturaTeclado';
+
+// Los tres niveles de AEMET, de menos a mas grave. Cada uno lleva escrito de que avisa, y no por
+// adorno: el nivel es una palabra de color, y quien no vea colores necesita saber que significa
+// "naranja" sin haber visto nunca un mapa de avisos.
+const NIVELES: { valor: NivelAviso; etiqueta: string; pista: string }[] = [
+  {
+    valor: 'amarillo',
+    etiqueta: 'Amarillo y superiores',
+    pista: 'Riesgo para actividades concretas',
+  },
+  { valor: 'naranja', etiqueta: 'Naranja y rojo', pista: 'Riesgo importante' },
+  { valor: 'rojo', etiqueta: 'Solo rojo', pista: 'Riesgo extremo' },
+];
 
 interface PlaceOption {
   id: string;
@@ -238,8 +251,15 @@ export default function AlertsScreen() {
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const { currentLocationPlace } = usePlaces();
   const options = usePlaceOptions();
-  const { settings, saveSummary, deleteSummary, saveThreshold, testNotification, notice } =
-    useNotifications();
+  const {
+    settings,
+    saveSummary,
+    deleteSummary,
+    saveThreshold,
+    saveAvisosOficiales,
+    testNotification,
+    notice,
+  } = useNotifications();
 
   const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(
     undefined,
@@ -281,6 +301,19 @@ export default function AlertsScreen() {
       maxThreshold: Number.isFinite(max) ? max : DEFAULT_THRESHOLD.maxThreshold,
       minThreshold: Number.isFinite(min) ? min : DEFAULT_THRESHOLD.minThreshold,
     };
+  };
+
+  const oficiales = settings.avisosOficiales;
+
+  // Aqui no hay boton Guardar, al contrario que en el aviso de temperatura: alli hay campos de
+  // texto que hay que poder corregir antes de confirmar, y esto es una eleccion entre tres, sin
+  // nada que escribir. Se guarda al tocarla.
+  const onToggleOficiales = (value: boolean) => {
+    void saveAvisosOficiales({ ...oficiales, enabled: value });
+  };
+
+  const onElegirNivel = (nivelMinimo: NivelAviso) => {
+    void saveAvisosOficiales({ ...oficiales, nivelMinimo });
   };
 
   const onSaveThreshold = () => {
@@ -444,6 +477,54 @@ export default function AlertsScreen() {
                 </View>
               </InputAccessoryView>
             )}
+          </>
+        )}
+
+        <Text style={styles.sectionHeader} accessibilityRole="header">
+          Avisos oficiales de AEMET
+        </Text>
+        {/* Lo primero que dice esta nota es lo que NO son. Los tres tipos de aviso de esta pantalla
+            llegan por la misma via —una notificacion— y sin decirlo se confundirian: los dos de
+            arriba son reglas que escribes tú; este es informacion oficial de riesgo. */}
+        <Text style={styles.note}>
+          No son reglas tuyas: son los avisos que emite AEMET por lluvias, tormentas, viento, calor,
+          nieve y otros fenómenos. Te llegan si tu ubicación está en la zona avisada. Solo hay
+          avisos en España.
+        </Text>
+
+        <View style={styles.card}>
+          <SwitchRow
+            label="Avisos oficiales de AEMET"
+            value={oficiales.enabled}
+            onValueChange={onToggleOficiales}
+          />
+        </View>
+
+        {oficiales.enabled && (
+          <>
+            <Text style={styles.note}>
+              A partir de qué nivel quieres que te avise. El amarillo es muy frecuente: en un día
+              normal de verano puede haber decenas en España.
+            </Text>
+
+            <View style={styles.card} accessibilityRole="radiogroup">
+              {NIVELES.map((nivel, index) => (
+                <Pressable
+                  key={nivel.valor}
+                  style={[styles.row, index < NIVELES.length - 1 && styles.rowDivider]}
+                  onPress={() => onElegirNivel(nivel.valor)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: oficiales.nivelMinimo === nivel.valor }}
+                  accessibilityLabel={nivel.etiqueta}
+                  accessibilityHint={nivel.pista}>
+                  <Text style={styles.rowTitle}>
+                    {oficiales.nivelMinimo === nivel.valor ? '✓ ' : '   '}
+                    {nivel.etiqueta}
+                  </Text>
+                  <Text style={styles.rowMeta}>{nivel.pista}</Text>
+                </Pressable>
+              ))}
+            </View>
           </>
         )}
 

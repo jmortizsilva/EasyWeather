@@ -200,9 +200,19 @@ export interface ThresholdAlert {
   minThreshold: number;
 }
 
+// Tipo 3: avisos OFICIALES de AEMET. Se parece a los anteriores en la pantalla, pero no es lo
+// mismo y no puede presentarse como si lo fuera: los otros dos son reglas que escribe el usuario;
+// este solo decide si quiere enterarse de lo que AEMET ya ha decidido, y a partir de que nivel.
+export interface AvisosOficialesAlert {
+  enabled: boolean;
+  /** No se notifica nada por debajo de este nivel. El amarillo es muy frecuente. */
+  nivelMinimo: NivelAviso;
+}
+
 export interface NotificationSettings {
   summaries: SummaryAlert[];
   threshold: ThresholdAlert;
+  avisosOficiales: AvisosOficialesAlert;
 }
 
 export interface HourlyForecast {

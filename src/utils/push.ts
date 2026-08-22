@@ -30,6 +30,12 @@ export interface SincronizacionAvisos {
   ubicacion: { lat: number; lon: number; nombre?: string } | null;
   umbral: { maxThreshold: number; minThreshold: number } | null;
   resumenes: ResumenServidor[];
+  /**
+   * Avisos OFICIALES de AEMET. `null` = apagados. Va aparte del `umbral` a proposito: el umbral es
+   * una regla del usuario y esto es informacion oficial, y el servidor los trata por separado para
+   * que nunca se mezclen en la misma notificacion.
+   */
+  avisosOficiales: { nivelMinimo: string } | null;
 }
 
 // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona

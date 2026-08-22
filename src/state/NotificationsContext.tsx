@@ -10,14 +10,23 @@ import {
   useState,
 } from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
-import { NotificationSettings, Place, SummaryAlert, ThresholdAlert } from '../types';
+import {
+  AvisosOficialesAlert,
+  NotificationSettings,
+  Place,
+  SummaryAlert,
+  ThresholdAlert,
+} from '../types';
+import {
+  completarAjustes,
+  DEFAULT_NOTIFICATION_SETTINGS,
+  isValidSettings,
+} from '../utils/ajustesAvisos';
 import {
   canAskForNotificationPermission,
   cancelAllNotifications,
-  DEFAULT_NOTIFICATION_SETTINGS,
   explainNotificationsBeforeAsking,
   hasNotificationPermission,
-  isValidSettings,
   requestNotificationPermission,
 } from '../utils/notifications';
 import {
@@ -73,6 +82,9 @@ function construirPayload(
       ? { maxThreshold: next.threshold.maxThreshold, minThreshold: next.threshold.minThreshold }
       : null,
     resumenes,
+    avisosOficiales: next.avisosOficiales?.enabled
+      ? { nivelMinimo: next.avisosOficiales.nivelMinimo }
+      : null,
   };
 }
 
@@ -93,6 +105,7 @@ interface NotificationsContextValue {
   saveSummary: (summary: SummaryAlert) => Promise<void>;
   deleteSummary: (id: string) => Promise<void>;
   saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
+  saveAvisosOficiales: (avisos: AvisosOficialesAlert) => Promise<void>;
   testNotification: () => Promise<void>;
   // Ultima confirmacion para mostrar tambien en pantalla (no solo VoiceOver). El `id` cambia en
   // cada aviso para que la pantalla lo detecte aunque el texto se repita.
@@ -144,7 +157,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
         try {
           const parsed = JSON.parse(stored);
           if (isValidSettings(parsed)) {
-            setSettings(parsed);
+            // completarAjustes rellena lo que se anadio despues (los avisos oficiales): quien ya
+            // tenia la app guardo sus ajustes sin ese campo.
+            setSettings(completarAjustes(parsed));
           }
         } catch {
           // ajustes corruptos: se quedan los valores por defecto
@@ -168,7 +183,12 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   // accion del usuario (guardar), para confirmarlo por voz.
   const sincronizarServidor = useCallback(
     async (next: NotificationSettings, announce = false) => {
-      const anyEnabled = next.summaries.some((s) => s.enabled) || next.threshold.enabled;
+      // Los avisos oficiales CUENTAN para esto: el servidor necesita saber donde estas para saber
+      // que zona te toca, asi que si estan encendidos hay que seguir la ubicacion igual.
+      const anyEnabled =
+        next.summaries.some((s) => s.enabled) ||
+        next.threshold.enabled ||
+        next.avisosOficiales.enabled;
       // La ubicacion se lee AHORA, no se coge la cacheada de la pantalla Hoy. Esa se congela
       // mientras estas viendo un lugar guardado (PlacesContext no re-detecta si el lugar activo no
       // es "mi ubicacion"), y al subirla se pisaba en el servidor la ubicacion buena que habia
@@ -308,6 +328,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [ensurePermissionForActivation, persist],
   );
 
+  const saveAvisosOficiales = useCallback(
+    async (avisos: AvisosOficialesAlert) => {
+      const enabled = avisos.enabled && (await ensurePermissionForActivation(avisos.enabled));
+      const current = settingsRef.current;
+      await persist({ ...current, avisosOficiales: { ...avisos, enabled } });
+    },
+    [ensurePermissionForActivation, persist],
+  );
+
   const testNotification = useCallback(async () => {
     const ok = await sendTestNotification();
     if (ok) {
@@ -325,6 +354,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   const value: NotificationsContextValue = {
     settings,
+    saveAvisosOficiales,
     saveSummary,
     deleteSummary,
     saveThreshold,

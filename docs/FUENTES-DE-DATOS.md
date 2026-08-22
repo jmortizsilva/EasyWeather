@@ -81,6 +81,26 @@ El nivel va **escrito con letras** en el título, no solo en el color: "Aviso na
 El color es de la escala oficial Meteoalerta, pero no informa de nada que no esté también en el
 texto.
 
+### Cuándo llega una notificación
+
+Van **apagadas de fábrica** y se encienden en la pestaña Avisos, eligiendo **desde qué nivel**:
+amarillo y superiores, naranja y rojo, o solo rojo. Se elige porque el amarillo es muy frecuente
+—en un lote cualquiera de AEMET hay decenas— y encenderlo por defecto habría enseñado a la gente a
+ignorar las notificaciones de esta app, incluidas las rojas. Por defecto viene marcado el naranja,
+que es el primer nivel que AEMET describe como riesgo importante.
+
+Vigila el **servidor**, no el móvil: tienen que llegar con la app cerrada, y quien tiene la clave de
+AEMET es el servidor. El móvil solo sube su preferencia (`avisosOficiales`) en la misma
+sincronización que el umbral y los resúmenes; apagarla borra del servidor tanto la preferencia como
+la memoria de lo ya enviado.
+
+**Solo se notifica lo que cambia.** AEMET reemite el mismo aviso varias veces al día y cada emisión
+trae un identificador nuevo, así que fiarse de él habría repetido la notificación sin que hubiera
+pasado nada. La clave que se recuerda es **zona + fenómeno + nivel + hora de inicio**: subir de
+amarillo a naranja avisa otra vez, alargar el aviso una hora no. El servidor **envía primero y
+apunta después**, porque para un aviso de riesgo repetirse molesta y perderse es lo que no puede
+pasar. La memoria se olvida a los siete días.
+
 ### Por qué el texto viene ya escrito del servidor
 
 Al revés que la previsión, que la app calcula sola. La diferencia es que **un aviso solo puede venir
