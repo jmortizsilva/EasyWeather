@@ -9,8 +9,10 @@ Los avisos (temperatura y resumen) que deben llegar **con la app cerrada** no se
 móvil ni en Cloudflare: los envía un **servidor propio multi-app**.
 
 - **Servidor**: repo `servidor-notificaciones` (github.com/jmortizsilva/servidor-notificaciones),
-  Node + Fastify + SQLite + Docker, tras Caddy en `https://api.jmortiz.es`. EasyWeather cuelga de
-  `/apps/easyweather/…`.
+  Node + Fastify + SQLite en contenedor, tras Caddy en `https://api.jmortiz.es`. EasyWeather cuelga
+  de `/apps/easyweather/…`. **El VPS va con Podman sin root, no con Docker**, y el compose vive en
+  una carpeta aparte del clon de git: el README de ese repo lo explica (sección «El despliegue
+  real»).
 - **Cliente**: `src/utils/push.ts`. POST a `/apps/easyweather/{sincronizar,ubicacion,test}` con la
   cabecera `X-App-Key`. El push sale por Expo (funciona desde cualquier servidor).
 - **La clave `X-App-Key` NO está en el código** (el repo es público): va por la variable de EAS
