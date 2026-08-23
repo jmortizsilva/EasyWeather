@@ -11,8 +11,8 @@
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build de produccion con runtimeVersion 1.4.0.
 export const NOVEDADES: string[] = [
-  'Avisos oficiales de AEMET. Si hay un aviso de fenómenos adversos donde estás, se anuncia arriba del todo, antes que la temperatura, y el detalle queda a un toque.',
-  'Esos avisos también pueden llegarte con la app cerrada. Vienen apagados: se encienden en la pestaña Avisos, y ahí eliges desde qué nivel quieres que te avisemos.',
-  'Los números suenan igual en toda la app. Coma decimal y unidades escritas con letras, para que la humedad y el viento se lean como se lee la temperatura.',
-  'La luna dice cuánto falta para la llena.',
+  'La pestaña Avisos está ahora en dos niveles: una lista con las tres cosas y una pantalla para cada una, con su estado escrito en la propia fila.',
+  'En los avisos oficiales puedes elegir de qué fenómenos quieres que te avisemos. Vienen todos encendidos y se apagan uno a uno.',
+  'Apagar un fenómeno solo silencia la notificación: si AEMET avisa de él, lo sigues viendo en la pantalla del lugar.',
+  'Los niveles de aviso ya se leen bien: antes VoiceOver decía "radio button" en inglés.',
 ];

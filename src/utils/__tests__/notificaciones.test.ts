@@ -40,11 +40,28 @@ describe('completarAjustes', () => {
   it('no pisa unos avisos oficiales ya configurados', () => {
     const guardados: NotificationSettings = {
       ...DEFAULT_NOTIFICATION_SETTINGS,
-      avisosOficiales: { enabled: true, nivelMinimo: 'amarillo' },
+      avisosOficiales: { enabled: true, nivelMinimo: 'amarillo', fenomenosSilenciados: ['PR'] },
     };
     expect(completarAjustes(guardados).avisosOficiales).toEqual({
       enabled: true,
       nivelMinimo: 'amarillo',
+      fenomenosSilenciados: ['PR'],
+    });
+  });
+
+  // Segunda migración, la misma historia que la anterior: los fenómenos silenciados llegaron
+  // después, así que hay ajustes guardados con avisos oficiales pero sin ese campo. Sin esto la
+  // pantalla leería `undefined.length` al pintar la lista.
+  it('a unos avisos oficiales sin fenómenos silenciados les pone la lista vacía', () => {
+    const guardados = {
+      ...DEFAULT_NOTIFICATION_SETTINGS,
+      avisosOficiales: { enabled: true, nivelMinimo: 'rojo' },
+    } as unknown as NotificationSettings;
+
+    expect(completarAjustes(guardados).avisosOficiales).toEqual({
+      enabled: true,
+      nivelMinimo: 'rojo',
+      fenomenosSilenciados: [],
     });
   });
 

@@ -3,7 +3,7 @@ import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import AlertsScreen from './src/screens/AlertsScreen';
+import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { NotificationsProvider } from './src/state/NotificationsContext';
@@ -68,7 +68,7 @@ function Navegacion() {
           />
           <Tab.Screen
             name="Alerts"
-            component={AlertsScreen}
+            component={AvisosIndexScreen}
             options={{
               tabBarLabel: 'Avisos',
               tabBarIcon: ({ color, size }) => (

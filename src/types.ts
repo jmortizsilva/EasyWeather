@@ -207,6 +207,26 @@ export interface AvisosOficialesAlert {
   enabled: boolean;
   /** No se notifica nada por debajo de este nivel. El amarillo es muy frecuente. */
   nivelMinimo: NivelAviso;
+  /**
+   * Codigos de fenomeno de los que NO se quiere notificacion (`PR`, `TO`, `CO`…). Vacio de
+   * fabrica: se silencia a mano, uno a uno.
+   *
+   * Es una lista de EXCLUSION y no de inclusion a proposito. Con un "avisame de estos" bastaria no
+   * haber marcado un fenomeno —uno en el que no se penso— para perderse un aviso rojo.
+   *
+   * Silenciar apaga SOLO la notificacion. El aviso sigue saliendo en la pantalla del lugar y en el
+   * anuncio de arriba: ocultar un aviso naranja vigente porque no quieres que suene el telefono
+   * seria mentir sobre lo que esta pasando.
+   */
+  fenomenosSilenciados: string[];
+}
+
+/** Un fenomeno del catalogo que sirve el servidor, para poder elegir cuales se silencian. */
+export interface FenomenoAviso {
+  /** Codigo de AEMET: `PR`, `TO`, `CO`… Es lo que se guarda al silenciar. */
+  codigo: string;
+  /** Como se enseña: "Lluvias", "Rissagas". Lo escribe AEMET, no nosotros. */
+  nombre: string;
 }
 
 export interface NotificationSettings {

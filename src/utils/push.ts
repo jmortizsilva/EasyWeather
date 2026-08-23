@@ -35,7 +35,7 @@ export interface SincronizacionAvisos {
    * una regla del usuario y esto es informacion oficial, y el servidor los trata por separado para
    * que nunca se mezclen en la misma notificacion.
    */
-  avisosOficiales: { nivelMinimo: string } | null;
+  avisosOficiales: { nivelMinimo: string; fenomenosSilenciados: string[] } | null;
 }
 
 // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona

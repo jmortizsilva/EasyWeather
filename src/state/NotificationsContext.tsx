@@ -83,7 +83,10 @@ function construirPayload(
       : null,
     resumenes,
     avisosOficiales: next.avisosOficiales?.enabled
-      ? { nivelMinimo: next.avisosOficiales.nivelMinimo }
+      ? {
+          nivelMinimo: next.avisosOficiales.nivelMinimo,
+          fenomenosSilenciados: next.avisosOficiales.fenomenosSilenciados ?? [],
+        }
       : null,
   };
 }

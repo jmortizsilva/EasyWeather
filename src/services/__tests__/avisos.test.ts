@@ -1,4 +1,5 @@
-import { getAvisos } from '../avisos';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getAvisos, getFenomenos } from '../avisos';
 
 // Lo único que hay que probar aquí es la distinción entre "no hay avisos" y "no se ha podido
 // preguntar". No es una sutileza: si se confundieran, un servidor caído borraría de la pantalla un
@@ -54,5 +55,71 @@ describe('getAvisos', () => {
 
     await getAvisos(41.1189, 1.2445);
     expect(String(espia.mock.calls[0][0])).toContain('lat=41.1189&lon=1.2445');
+  });
+});
+
+// El catálogo se guarda en el teléfono porque cambia una vez cada muchos meses y la pantalla de
+// ajustes tiene que funcionar sin red. Lo que se prueba aquí es que la copia guardada se use
+// cuando toca y NO se estropee con una respuesta rara.
+describe('getFenomenos', () => {
+  const fetchOriginal = globalThis.fetch;
+
+  beforeEach(async () => {
+    await AsyncStorage.clear();
+  });
+
+  afterEach(() => {
+    globalThis.fetch = fetchOriginal;
+  });
+
+  const lista = [
+    { codigo: 'PR', nombre: 'Lluvias' },
+    { codigo: 'RI', nombre: 'Rissagas' },
+  ];
+
+  it('devuelve lo que manda el servidor', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ fenomenos: lista }));
+
+    expect(await getFenomenos()).toEqual(lista);
+  });
+
+  it('si luego no hay red, sirve la copia guardada', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ fenomenos: lista }));
+    await getFenomenos();
+
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error('sin red'));
+    expect(await getFenomenos()).toEqual(lista);
+  });
+
+  // Sin lista y sin copia, la pantalla tiene que poder DECIRLO. Una lista vacía sin explicación
+  // aparentaría que AEMET no avisa de nada.
+  it('sin respuesta y sin copia devuelve undefined', async () => {
+    globalThis.fetch = jest.fn().mockRejectedValue(new Error('sin red'));
+
+    expect(await getFenomenos()).toBeUndefined();
+  });
+
+  it('una lista vacía del servidor no pisa la copia buena', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ fenomenos: lista }));
+    await getFenomenos();
+
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ fenomenos: [] }));
+    expect(await getFenomenos()).toEqual(lista);
+  });
+
+  it('descarta las entradas que no traen código y nombre', async () => {
+    globalThis.fetch = jest
+      .fn()
+      .mockResolvedValue(respuesta({ fenomenos: [...lista, { codigo: 'X' }, null] }));
+
+    expect(await getFenomenos()).toEqual(lista);
+  });
+
+  it('un 404 (servidor sin desplegar) no borra lo que ya se sabía', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ fenomenos: lista }));
+    await getFenomenos();
+
+    globalThis.fetch = jest.fn().mockResolvedValue(respuesta({ error: 'no existe' }, false));
+    expect(await getFenomenos()).toEqual(lista);
   });
 });

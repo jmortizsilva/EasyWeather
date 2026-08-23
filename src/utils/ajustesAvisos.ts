@@ -34,6 +34,7 @@ export const DEFAULT_THRESHOLD: ThresholdAlert = {
 export const DEFAULT_AVISOS_OFICIALES: AvisosOficialesAlert = {
   enabled: false,
   nivelMinimo: 'naranja',
+  fenomenosSilenciados: [],
 };
 
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
@@ -71,8 +72,14 @@ export function isValidSettings(value: unknown): value is NotificationSettings {
  * proposito: eso borraria los avisos que la gente ya tiene configurados.
  */
 export function completarAjustes(settings: NotificationSettings): NotificationSettings {
+  const oficiales = settings.avisosOficiales ?? DEFAULT_AVISOS_OFICIALES;
   return {
     ...settings,
-    avisosOficiales: settings.avisosOficiales ?? DEFAULT_AVISOS_OFICIALES,
+    avisosOficiales: {
+      ...oficiales,
+      // Se anadio despues que el resto de `avisosOficiales`, asi que hay ajustes guardados sin
+      // ella. Lista vacia = no hay nada silenciado, que es lo que esa gente tenia hasta ahora.
+      fenomenosSilenciados: oficiales.fenomenosSilenciados ?? [],
+    },
   };
 }

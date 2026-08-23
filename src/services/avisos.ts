@@ -1,4 +1,5 @@
-import { AvisosLugar } from '../types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AvisosLugar, FenomenoAviso } from '../types';
 import { cabeceras, endpoint } from '../utils/servidorPropio';
 
 // Avisos OFICIALES de AEMET, pedidos al servidor propio. Como la observacion, no se habla con
@@ -43,5 +44,65 @@ export async function getAvisos(lat: number, lon: number): Promise<AvisosLugar |
     return undefined;
   } finally {
     clearTimeout(temporizador);
+  }
+}
+
+// --- Catalogo de fenomenos ---------------------------------------------------------------------
+
+const CACHE_FENOMENOS = 'tiempo.fenomenos.v1';
+
+/**
+ * Los fenomenos que se pueden silenciar, tal y como los sirve el servidor (lista base mas lo que
+ * AEMET haya usado de verdad). No se escribe aqui a mano por dos motivos: un lote real trajo
+ * "Rissagas", que no habria estado en ninguna lista inventada, y un codigo inventado seria un
+ * interruptor que no apaga nada.
+ *
+ * Se guarda en el telefono porque cambia una vez cada muchos meses y la pantalla de ajustes tiene
+ * que funcionar sin red. Devuelve `undefined` solo cuando no hay ni respuesta ni copia guardada:
+ * entonces la pantalla lo dice con palabras, que es mejor que una lista vacia sin explicacion.
+ */
+export async function getFenomenos(): Promise<FenomenoAviso[] | undefined> {
+  const guardados = await leerCatalogoGuardado();
+  const control = new AbortController();
+  const temporizador = setTimeout(() => control.abort(), TIEMPO_ESPERA_MS);
+  try {
+    const respuesta = await fetch(endpoint('fenomenos'), {
+      headers: cabeceras(),
+      signal: control.signal,
+    });
+    if (!respuesta.ok) {
+      return guardados;
+    }
+    const datos = (await respuesta.json()) as { fenomenos?: unknown } | null;
+    const fenomenos = Array.isArray(datos?.fenomenos)
+      ? datos.fenomenos.filter(
+          (f): f is FenomenoAviso =>
+            !!f && typeof f.codigo === 'string' && typeof f.nombre === 'string',
+        )
+      : [];
+    // Una lista vacia del servidor no se guarda encima de una buena: seria empeorar la pantalla
+    // por una respuesta rara.
+    if (fenomenos.length === 0) {
+      return guardados;
+    }
+    await AsyncStorage.setItem(CACHE_FENOMENOS, JSON.stringify(fenomenos));
+    return fenomenos;
+  } catch {
+    return guardados;
+  } finally {
+    clearTimeout(temporizador);
+  }
+}
+
+async function leerCatalogoGuardado(): Promise<FenomenoAviso[] | undefined> {
+  try {
+    const guardado = await AsyncStorage.getItem(CACHE_FENOMENOS);
+    if (!guardado) {
+      return undefined;
+    }
+    const lista = JSON.parse(guardado);
+    return Array.isArray(lista) && lista.length > 0 ? lista : undefined;
+  } catch {
+    return undefined;
   }
 }

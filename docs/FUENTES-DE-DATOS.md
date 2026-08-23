@@ -101,6 +101,46 @@ amarillo a naranja avisa otra vez, alargar el aviso una hora no. El servidor **e
 apunta después**, porque para un aviso de riesgo repetirse molesta y perderse es lo que no puede
 pasar. La memoria se olvida a los siete días.
 
+### De qué fenómenos, y qué significa apagar uno
+
+Aparte del nivel se elige el **tipo**: en *Avisos oficiales → Qué fenómenos* hay un interruptor por
+cada uno, todos encendidos de fábrica. Quien vive en Madrid no necesita que le suene el teléfono por
+fenómenos costeros.
+
+**Apagar un fenómeno calla la notificación, no el aviso.** Si AEMET emite un aviso naranja por
+lluvias y las lluvias están apagadas, el teléfono no suena, pero el aviso sigue apareciendo en la
+pantalla del lugar y en el anuncio de arriba. Ocultarlo sería mentir sobre lo que está pasando ahí
+fuera. Por eso el filtro se aplica solo en el empuje del servidor, nunca en la ruta que alimenta la
+pantalla.
+
+Los interruptores están en **positivo** ("avisarme de esto") aunque por dentro se guarde la lista de
+los apagados: un conmutador que hay que apagar para que ocurra algo se lee al revés de como suena. Y
+se guarda en negativo por una razón concreta: **lo que nadie toca sigue avisando**. Con una lista de
+"avísame de estos", bastaría no haber marcado un fenómeno —uno en el que no se pensó— para perderse
+un aviso rojo.
+
+**La lista no está escrita en la app.** La sirve el servidor y crece sola: al escribirla se consultó
+un lote real y traía `RI, Rissagas`, que no habría estado en ninguna lista inventada. El servidor
+apunta cada fenómeno que ve en un lote de AEMET y lo suma a una base de habituales, para que en
+agosto se puedan apagar las nevadas aunque no haya ninguna. Lo que no esté en la lista **siempre
+avisa**. Si el servidor no responde y no hay copia guardada en el teléfono, la pantalla lo dice con
+palabras en vez de enseñar una lista vacía.
+
+### Cómo está organizada la pestaña Avisos
+
+Son **dos niveles**: un índice con las tres cosas —aviso de temperatura, avisos de resumen y avisos
+oficiales— y una pantalla para cada una. Cada fila del índice lleva su estado escrito debajo
+(*"Encendido · máx 32°, mín 5°"*), para no tener que entrar solo a mirarlo.
+
+Antes era una sola pantalla con las tres seguidas, y con VoiceOver llegar a los avisos oficiales
+eran muchos deslizamientos por delante de cosas que no buscabas. Es lo que recomienda la guía de
+accesibilidad para contenido jerárquico, y lo que hacen las apps de Apple.
+
+Todo lo que se abre desde ahí es **una sola hoja modal**, y lo que va un nivel más hondo (el editor
+de un resumen, la lista de fenómenos) es una **capa dentro** de esa hoja, no otra hoja: iOS no
+presenta dos a la vez desde el mismo sitio, descarta la segunda en silencio y la pantalla se queda
+muerta hasta cerrar la app.
+
 ### Por qué el texto viene ya escrito del servidor
 
 Al revés que la previsión, que la app calcula sola. La diferencia es que **un aviso solo puede venir
