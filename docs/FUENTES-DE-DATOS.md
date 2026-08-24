@@ -8,6 +8,9 @@ dónde viene, si es medido o previsto, a qué hora corresponde y para qué sitio
 un modelo como una medición, ni una regla del usuario como un aviso oficial, ni un dato viejo como
 uno actual.
 
+Aquí solo está lo que **ya funciona**. Lo que se quiere y todavía no existe —el widget, avisar de
+que empieza a llover— está en [PENDIENTE.md](PENDIENTE.md).
+
 ## Quién da qué
 
 | Dato | Fuente | Naturaleza | Cómo se pide |
