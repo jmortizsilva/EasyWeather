@@ -47,7 +47,7 @@ export default function AvisosOficiales({ onCerrar }: { onCerrar: () => void }) 
         accessibilityLabel="Avisos oficiales de AEMET"
         accessibilityElementsHidden={eligiendoFenomenos}
         importantForAccessibility={eligiendoFenomenos ? 'no-hide-descendants' : 'auto'}>
-        <Cabecera titulo="Avisos oficiales" onCerrar={onCerrar} />
+        <Cabecera titulo="Avisos oficiales" destino="Avisos" onVolver={onCerrar} />
 
         {/* Lo primero que dice esta nota es lo que NO son. Los tres tipos de aviso de esta pestaña
             llegan por la misma via —una notificacion— y sin decirlo se confundirian: los otros dos
@@ -81,7 +81,9 @@ export default function AvisosOficiales({ onCerrar }: { onCerrar: () => void }) 
                 literales salen de RCTLocalizedString dentro de React Native y su es.lproj no los
                 traduce (comprobado en RCTViewComponentView.mm de la 0.86.2). Se usa el estado
                 selected, que si es un trait de iOS y se dice en español, y el circulo relleno para
-                quien mira. */}
+                quien mira.
+                La etiqueta NO lleva ", seleccionado" escrito a mano: el trait ya lo dice, y
+                ponerlo tambien en el texto lo hacia sonar dos veces. */}
             <View style={styles.card}>
               {NIVELES.map((nivel, index) => {
                 const elegido = oficiales.nivelMinimo === nivel.valor;
@@ -92,7 +94,7 @@ export default function AvisosOficiales({ onCerrar }: { onCerrar: () => void }) 
                     onPress={() => guardar({ nivelMinimo: nivel.valor })}
                     accessibilityRole="button"
                     accessibilityState={{ selected: elegido }}
-                    accessibilityLabel={`${nivel.etiqueta}${elegido ? ', seleccionado' : ''}`}
+                    accessibilityLabel={nivel.etiqueta}
                     accessibilityHint={nivel.pista}>
                     <Text style={styles.rowTitle}>
                       {elegido ? '● ' : '○ '}
@@ -143,5 +145,5 @@ function resumenFenomenos(silenciados: number): string {
   if (silenciados === 0) {
     return 'Te avisamos de todos';
   }
-  return silenciados === 1 ? '1 fenómeno apagado' : `${silenciados} fenómenos apagados`;
+  return silenciados === 1 ? '1 fenómeno desactivado' : `${silenciados} fenómenos desactivados`;
 }

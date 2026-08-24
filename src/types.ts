@@ -1,3 +1,11 @@
+/**
+ * Id del lugar "donde estoy ahora", el que sigue al GPS. Vive aqui y no en PlacesContext (que es
+ * quien lo gestiona) porque tambien lo necesita logica pura como utils\paginasLugar, y ese fichero
+ * no puede importar nada que arrastre React Native sin dejar de probarse sin dispositivo.
+ * PlacesContext lo reexporta, asi que sigue valiendo importarlo de alli.
+ */
+export const CURRENT_LOCATION_ID = 'current';
+
 export interface Place {
   id: string;
   name: string;

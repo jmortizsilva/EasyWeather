@@ -54,11 +54,11 @@ export default function Fenomenos({
         style={styles.hoja}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel="Fenómenos de los que avisar">
-        <Cabecera titulo="Qué fenómenos" onCerrar={onCerrar} />
+        <Cabecera titulo="Qué fenómenos" destino="Avisos oficiales" onVolver={onCerrar} />
 
         <Text style={styles.note}>
-          Apaga los que no quieras que te suenen. Aunque apagues uno, si AEMET avisa de él seguirás
-          viéndolo en la pantalla del lugar: esto solo decide cuándo suena el teléfono.
+          Desactiva los que no quieras que te suenen. Aunque desactives uno, si AEMET avisa de él
+          seguirás viéndolo en la pantalla del lugar: esto solo decide cuándo suena el teléfono.
         </Text>
 
         {catalogo === undefined && <Text style={styles.aviso}>Cargando la lista…</Text>}

@@ -14,9 +14,16 @@ const TEMPS: Record<string, TempGuardada> = {
 };
 
 describe('valoresControl', () => {
-  it('la etiqueta es corta y estable (en braille es un prefijo permanente)', () => {
-    expect(valoresControl(LUGARES, 0, TEMPS, 0).label).toBe('Lugar');
-    expect(valoresControl(LUGARES, 2, TEMPS, 0).label).toBe('Lugar');
+  it('la etiqueta es estable: no depende del lugar en el que estes', () => {
+    expect(valoresControl(LUGARES, 0, TEMPS, 0).label).toBe('Selector de ubicación');
+    expect(valoresControl(LUGARES, 2, TEMPS, 0).label).toBe('Selector de ubicación');
+  });
+
+  // Es la unica pagina que cambia sola al moverte; su nombre geocodificado no la distingue de un
+  // lugar guardado que se llame igual.
+  it('la ubicacion actual se anuncia como "Mi ubicación", los lugares guardados no', () => {
+    expect(valoresControl(LUGARES, 0, TEMPS, 0).value).toContain('Mi ubicación, Madrid');
+    expect(valoresControl(LUGARES, 1, TEMPS, 0).value).not.toContain('Mi ubicación');
   });
 
   it('el valor lleva lugar, grados y la posicion en el carrusel', () => {
@@ -51,6 +58,6 @@ describe('valoresControl', () => {
 
   it('sin temperatura guardada dice solo el lugar y su posicion', () => {
     const { value } = valoresControl(LUGARES, 0, {}, 0);
-    expect(value).toBe('Madrid. 1 de 3');
+    expect(value).toBe('Mi ubicación, Madrid. 1 de 3');
   });
 });

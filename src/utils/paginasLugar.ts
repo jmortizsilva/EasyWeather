@@ -1,4 +1,4 @@
-import { Place } from '../types';
+import { CURRENT_LOCATION_ID, Place } from '../types';
 import { TempGuardada, textoLugar } from './tempActual';
 
 // Textos del control de páginas de "Hoy". Vive aparte del componente y sin un solo import de React
@@ -8,8 +8,10 @@ import { TempGuardada, textoLugar } from './tempActual';
 export const CONTROL_PAGINAS_HINT =
   'Desliza arriba o abajo para cambiar de lugar, o usa tres dedos a izquierda y derecha';
 
+export const ETIQUETA_CONTROL = 'Selector de ubicación';
+
 export interface ValoresControl {
-  /** Etiqueta CORTA y estable ("Lugar"); en braille es un prefijo permanente. */
+  /** Etiqueta estable del control; en braille es un prefijo permanente delante de cada valor. */
   label: string;
   /** Valor actual (ciudad, grados y posición), lo que cambia al pasar de página. */
   value: string;
@@ -39,10 +41,14 @@ export function valoresControl(
     const j = Math.min(Math.max(i, 0), lugares.length - 1);
     const p = lugares[j];
     const hablado = textoLugar(p.name, currentByPlace[p.id], ahora).hablado;
-    return `${hablado}. ${j + 1} de ${lugares.length}`;
+    // La ubicación actual se dice como tal, y no solo por su nombre geocodificado: "Salou" a secas
+    // no distingue el sitio donde estás de un lugar guardado que se llame igual, y esa página es la
+    // única que cambia sola cuando te mueves.
+    const conNombre = p.id === CURRENT_LOCATION_ID ? `Mi ubicación, ${hablado}` : hablado;
+    return `${conNombre}. ${j + 1} de ${lugares.length}`;
   };
   return {
-    label: 'Lugar',
+    label: ETIQUETA_CONTROL,
     value: conPosicion(indice),
     valueOnIncrement: conPosicion(indice + 1), // flick arriba = siguiente
     valueOnDecrement: conPosicion(indice - 1), // flick abajo = anterior

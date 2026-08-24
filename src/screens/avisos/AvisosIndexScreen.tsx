@@ -45,14 +45,17 @@ export default function AvisosIndexScreen() {
     return () => clearTimeout(timer);
   }, [notice]);
 
+  // "Activado / Desactivado" en toda la pestaña, y no "encendido / apagado": es la palabra que usa
+  // iOS para el estado de un conmutador, y la que VoiceOver dice al leerlos. Mezclar las dos hace
+  // dudar de si el resumen de la fila habla de lo mismo que el interruptor de dentro.
   const estados: Record<Seccion, string> = {
     temperatura: settings.threshold.enabled
-      ? `Encendido · máx ${settings.threshold.maxThreshold}°, mín ${settings.threshold.minThreshold}°`
-      : 'Apagado',
+      ? `Activado · máx ${settings.threshold.maxThreshold}°, mín ${settings.threshold.minThreshold}°`
+      : 'Desactivado',
     resumenes: resumenDeResumenes(settings.summaries),
     oficiales: settings.avisosOficiales.enabled
       ? `Desde el ${settings.avisosOficiales.nivelMinimo}`
-      : 'Apagados',
+      : 'Desactivados',
   };
 
   const cerrar = () => setAbierta(undefined);
@@ -153,8 +156,9 @@ function resumenDeResumenes(
   if (activos.length === 0) {
     return summaries.length === 0 ? 'Ninguno' : 'Ninguno activado';
   }
+  // "1 activado" y no "1 programado": es el mismo estado que dice el conmutador de dentro.
   if (activos.length === 1) {
-    return `1 programado · ${formatTime(activos[0].hour, activos[0].minute)}`;
+    return `1 activado · ${formatTime(activos[0].hour, activos[0].minute)}`;
   }
-  return `${activos.length} programados`;
+  return `${activos.length} activados`;
 }

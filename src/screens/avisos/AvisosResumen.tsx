@@ -56,11 +56,17 @@ function SummaryEditor({
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel={isNew ? 'Nuevo aviso de resumen' : 'Editar aviso de resumen'}
         style={styles.hoja}>
-        <Cabecera titulo={isNew ? 'Nuevo aviso' : 'Editar aviso'} onCerrar={onClose} />
+        <Cabecera
+          titulo={isNew ? 'Nuevo aviso' : 'Editar aviso'}
+          destino="Avisos de resumen"
+          onVolver={onClose}
+        />
 
         <Text style={styles.sectionHeader} accessibilityRole="header">
           Lugar
         </Text>
+        {/* Misma eleccion que en los niveles de AEMET: rol de boton con el estado `selected`, que
+            iOS ya anuncia en español. La etiqueta no lo repite a mano o sonaria dos veces. */}
         <View style={styles.card}>
           {options.map((option, index) => {
             const selected = draft.placeId === option.id;
@@ -71,7 +77,7 @@ function SummaryEditor({
                 onPress={() => setDraft((d) => ({ ...d, placeId: option.id }))}
                 accessibilityRole="button"
                 accessibilityState={{ selected }}
-                accessibilityLabel={`${option.name}${selected ? ', seleccionado' : ''}`}>
+                accessibilityLabel={option.name}>
                 <Text style={styles.rowTitle}>
                   {selected ? '● ' : '○ '}
                   {option.name}
@@ -175,7 +181,7 @@ export default function AvisosResumen({ onCerrar }: { onCerrar: () => void }) {
         // Mientras el editor esta encima, lo de debajo sale del recorrido de VoiceOver.
         accessibilityElementsHidden={editing !== undefined}
         importantForAccessibility={editing !== undefined ? 'no-hide-descendants' : 'auto'}>
-        <Cabecera titulo="Avisos de resumen" onCerrar={onCerrar} />
+        <Cabecera titulo="Avisos de resumen" destino="Avisos" onVolver={onCerrar} />
 
         <Text style={styles.note}>
           Cada aviso te llega a la hora que elijas, con los datos que quieras, de tu ubicación o de

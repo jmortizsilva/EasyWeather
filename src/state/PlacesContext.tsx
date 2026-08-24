@@ -13,7 +13,7 @@ import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
-import { AvisosLugar, CurrentObservation, Forecast, Place } from '../types';
+import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
 import { TempGuardada } from '../utils/tempActual';
@@ -44,7 +44,9 @@ const OBSERVACION_RECHECK_MS = 10 * 60 * 1000;
 // media hora, asi que pedirlo mas a menudo desde aqui solo gastaria bateria y datos.
 const AVISOS_RECHECK_MS = 10 * 60 * 1000;
 
-export const CURRENT_LOCATION_ID = 'current';
+// Definido en types.ts para que pueda usarlo la logica pura; se reexporta para no tocar los imports
+// de media app, que lo piden aqui desde siempre.
+export { CURRENT_LOCATION_ID } from '../types';
 
 export interface PrevisionGuardada {
   forecast: Forecast;

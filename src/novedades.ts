@@ -11,8 +11,8 @@
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build de produccion con runtimeVersion 1.4.0.
 export const NOVEDADES: string[] = [
-  'La pestaña Avisos está ahora en dos niveles: una lista con las tres cosas y una pantalla para cada una, con su estado escrito en la propia fila.',
-  'En los avisos oficiales puedes elegir de qué fenómenos quieres que te avisemos. Vienen todos encendidos y se apagan uno a uno.',
-  'Apagar un fenómeno solo silencia la notificación: si AEMET avisa de él, lo sigues viendo en la pantalla del lugar.',
-  'Los niveles de aviso ya se leen bien: antes VoiceOver decía "radio button" en inglés.',
+  'Las pantallas de Avisos llevan ahora el botón "Atrás" arriba a la izquierda, el primero de todos, en vez del "Listo" de la derecha. También funciona el gesto de rascar con dos dedos.',
+  'El selector de lugares de la pantalla Hoy se llama "Selector de ubicación", y la página de la ubicación actual se anuncia como "Mi ubicación" antes del nombre del sitio.',
+  'En Avisos ya se dice "Activado" y "Desactivado", las mismas palabras que usan los interruptores, en vez de "encendido" y "apagado".',
+  'Al elegir nivel de aviso o lugar, VoiceOver ya no repite "seleccionado" dos veces.',
 ];

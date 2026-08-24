@@ -67,7 +67,7 @@ export default function AvisoTemperatura({ onCerrar }: { onCerrar: () => void })
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Aviso de temperatura">
-      <Cabecera titulo="Aviso de temperatura" onCerrar={onCerrar} />
+      <Cabecera titulo="Aviso de temperatura" destino="Avisos" onVolver={onCerrar} />
 
       <Text style={styles.note}>
         La app vigila tu ubicación actual y te avisa cuando la temperatura sube de tu máximo o baja

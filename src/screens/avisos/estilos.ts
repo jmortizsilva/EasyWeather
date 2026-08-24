@@ -200,11 +200,22 @@ export const crearEstilos = (c: Paleta) =>
       ...StyleSheet.absoluteFill,
       backgroundColor: c.fondo,
     },
+    // En columna: el boton de volver arriba y el titulo debajo, como una pantalla de iOS con
+    // titulo grande. Asi el boton es ademas lo primero que recorre VoiceOver.
     cabecera: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: 12,
+      alignItems: 'flex-start',
+      gap: 4,
+    },
+    // Sin relleno ni borde, solo texto de acento: es como se ve un "Atrás" en iOS, y aqui no
+    // compite con el boton de guardar, que si va relleno.
+    botonVolver: {
+      minHeight: 44,
+      justifyContent: 'center',
+      paddingRight: 12,
+    },
+    botonVolverTexto: {
+      color: c.acento,
+      fontSize: 17,
     },
     aviso: {
       color: c.textoTenue,
