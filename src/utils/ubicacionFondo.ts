@@ -57,17 +57,27 @@ export async function leerUbicacionActual(): Promise<UbicacionReportada | undefi
   }
 }
 
+// Nunca lanza. expo-location se niega a vigilar zonas si el Info.plist no declara el modo de fondo
+// "location", y ese modo lo quitamos a proposito: Apple rechazo la build 17 porque declararlo sin
+// hacer seguimiento continuo incumple la directriz 2.5.4. Quien levanta esa negativa es
+// plugins/geovallas-sin-modo-de-fondo.js, pero si algun dia dejara de aplicarse, sin este catch
+// quedaria una promesa rechazada en medio de sincronizar los avisos. Quedarse sin geovalla degrada
+// la ubicacion a la ultima reportada al abrir la app; tumbar la sincronizacion apagaria los avisos.
 async function recentrarGeovalla(lat: number, lon: number): Promise<void> {
-  // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
-  await Location.startGeofencingAsync(TAREA_GEOVALLA, [
-    {
-      latitude: lat,
-      longitude: lon,
-      radius: RADIO_METROS,
-      notifyOnEnter: false,
-      notifyOnExit: true,
-    },
-  ]);
+  try {
+    // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
+    await Location.startGeofencingAsync(TAREA_GEOVALLA, [
+      {
+        latitude: lat,
+        longitude: lon,
+        radius: RADIO_METROS,
+        notifyOnEnter: false,
+        notifyOnExit: true,
+      },
+    ]);
+  } catch {
+    // Sin geovalla: los avisos usaran la ultima ubicacion que la app reporto al abrirse.
+  }
 }
 
 // La tarea se define a nivel de modulo para que quede registrada al cargar la app (requisito de
