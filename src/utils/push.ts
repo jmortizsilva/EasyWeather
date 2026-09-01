@@ -15,6 +15,12 @@ function endpoint(ruta: string): string {
   return `${SERVER_URL}/apps/${APP_ID}/${ruta}`;
 }
 
+// Lo que necesita el modulo nativo de seguimiento para reportar por su cuenta, con la app cerrada
+// y sin JavaScript. Se le pasa desde aqui para que no haya dos sitios con la URL y la clave.
+export function destinoDeUbicacion(): { url: string; appKey: string } {
+  return { url: endpoint('ubicacion'), appKey: APP_KEY };
+}
+
 function cabeceras(): Record<string, string> {
   return { 'content-type': 'application/json', 'x-app-key': APP_KEY };
 }
