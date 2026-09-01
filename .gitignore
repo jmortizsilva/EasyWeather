@@ -45,3 +45,6 @@ yarn-error.*
 # no se versiona porque envejece mal y se lee luego como si siguiera vigente. Ademas, este
 # repositorio es publico.
 /*.txt
+
+# Informes de fallo del iPhone: llevan datos del aparato y el repositorio es publico.
+*.ips

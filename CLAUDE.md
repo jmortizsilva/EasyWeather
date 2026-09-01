@@ -50,15 +50,29 @@ declarar `UIBackgroundModes = ["location"]` en el `Info.plist` sin tener ninguna
 necesite ubicación persistente. En su propia respuesta proponen *region monitoring*, que es lo que
 la app ya hacía. Tenían razón, y contestar explicándolo no habría servido de nada.
 
-**La trampa**: iOS no necesita ese modo para despertar a la app al salir de una zona vigilada, pero
-**expo-location sí lo exige** (`ios/LocationModule.swift`, el `guard` de `startGeofencingAsync`),
-porque su consumidor de geovallas enciende `allowsBackgroundLocationUpdates`, que sin el modo lanza.
-Las geovallas no lo necesitan para nada. Comprobado también en la 57.0.14, la última publicada: no
-se arregla actualizando.
+**Y esto lo confirma Apple**: en el hilo 818370 de sus foros, un ingeniero suyo dice que la clave
+`location` es específica de `startUpdatingLocation()` y **no hace falta para las APIs de bajo
+consumo, ni region monitoring ni cambios significativos**. El diseño era correcto.
 
-Por eso hay un plugin propio, `plugins/geovallas-sin-modo-de-fondo.js`, que le quita esa exigencia
-al compilar. **Si actualizas expo-location, la prueba de `plugins/__tests__/` falla** antes de que
-lo haga EAS: es a propósito. Si falla, mira si el `guard` sigue ahí antes de tocar nada.
+**La trampa está en expo-location**, que sí lo exige (`ios/LocationModule.swift`, el `guard` de
+`startGeofencingAsync`), porque su consumidor de geovallas enciende
+`allowsBackgroundLocationUpdates`, que sin el modo **lanza**. Las geovallas no lo necesitan para
+nada. Sigue igual en la 57.0.14: no se arregla actualizando.
+
+**Se intentó parchear la librería con un config plugin, y salió mal.** El parche no llegó a la
+compilación de EAS —no se supo por qué—, y como el modo ya estaba retirado, la app **se cerraba al
+arrancar en todos los teléfonos**: iOS restaura las tareas registradas durante
+`didFinishLaunchingWithOptions`, eso recrea el consumidor de geovallas y CoreLocation lanza.
+Informe de fallo del 2026-09-01, `Abort trap: 6`. La lección: **un arreglo que puede no aplicarse
+sin avisar, y cuyo fallo deja la app sin abrir, no es un arreglo**. El plugin se retiró.
+
+**Cuidado al quitar el modo de fondo en una build nueva**: la geovalla queda registrada en el
+teléfono y sobrevive a actualizar la app. Hay que desregistrarla **antes**, por aire, desde una
+versión que todavía arranque (`limpiarGeovallaAntigua` en `ubicacionFondo.ts`).
 
 Queda declarado `UIBackgroundModes = ["fetch"]`, que lo mete `expo-task-manager` por su cuenta.
 Apple no lo ha mencionado.
+
+**Lo que viene**: un módulo nativo propio en `modules/` con el **servicio de cambios significativos**
+(`startMonitoringSignificantLocationChanges`), que no necesita el modo, no hay que re-armarlo —al
+revés que una geovalla— y no enciende el GPS.

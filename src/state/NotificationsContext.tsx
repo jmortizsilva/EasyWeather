@@ -211,9 +211,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       );
       const ok = await sincronizarAvisos(payload);
 
-      // Seguir la ubicacion (geovallas) mientras haya algun aviso; si no, dejar de seguirla.
+      // Seguir la ubicacion mientras haya algun aviso; si no, dejar de seguirla. Ahora mismo esto
+      // solo desregistra la geovalla que dejaron las versiones anteriores (ver ubicacionFondo): el
+      // seguimiento en segundo plano volvera por un modulo nativo propio.
       if (anyEnabled) {
-        await iniciarSeguimientoUbicacion(fresca);
+        await iniciarSeguimientoUbicacion();
       } else {
         await detenerSeguimientoUbicacion();
       }
