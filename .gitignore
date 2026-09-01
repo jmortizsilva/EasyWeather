@@ -43,3 +43,6 @@ yarn-error.*
 # notas de trabajo en la raiz: textos del App Store, borradores de correo, apuntes. No son
 # contenido del repositorio, que ademas es publico.
 /*.txt
+
+# Informes de fallo del iPhone: llevan datos del aparato y el repositorio es publico.
+*.ips
