@@ -12,6 +12,16 @@ import ExpoModulesCore
  Es barato: si el usuario no tenia el seguimiento encendido, no hace nada.
  */
 public class UbicacionSignificativaAppDelegate: ExpoAppDelegateSubscriber {
+  /**
+   Se ejecuta en el `init` del AppDelegate, ANTES de `didFinishLaunchingWithOptions`, que es donde
+   expo-task-manager restaura las tareas guardadas. Ese orden es justo lo que hace falta: la
+   restauracion de una geovalla vieja mata la app, asi que hay que haberla borrado antes.
+   */
+  @MainActor
+  public func appDelegateWillBeginInitialization() {
+    LimpiezaDeGeovallas.ejecutar()
+  }
+
   public func application(
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
