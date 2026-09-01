@@ -10,4 +10,7 @@
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build de preview del 2026-09-01 (arreglo de la geovalla).
-export const NOVEDADES: string[] = [];
+export const NOVEDADES: string[] = [
+  'Se ha retirado el seguimiento de ubicación en segundo plano, que hacía que la app no abriera. Los avisos siguen llegando, y usan la ubicación de la última vez que abriste la app.',
+  'El seguimiento volverá pronto, con un sistema que gasta menos batería y no depende del GPS.',
+];
