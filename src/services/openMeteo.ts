@@ -1,6 +1,7 @@
 import { DayForecast, Forecast, HourlyForecast, Place } from '../types';
 import { computeMoonInfo } from '../utils/moon';
 import { toNumber } from '../utils/text';
+import { esLugarBuscable } from '../utils/tiposDeLugar';
 
 const FORECAST_URL = 'https://api.open-meteo.com/v1/forecast';
 const GEOCODING_URL = 'https://geocoding-api.open-meteo.com/v1/search';
@@ -38,31 +39,36 @@ export async function searchPlaces(query: string): Promise<Place[]> {
   const url = `${GEOCODING_URL}?name=${encodeURIComponent(trimmed)}&count=10&language=es`;
   const payload = await fetchJson<{ results?: any[] }>(url);
 
-  return (payload.results ?? [])
-    .map((item): Place | undefined => {
-      const lat = toNumber(item?.latitude);
-      const lon = toNumber(item?.longitude);
-      const name = String(item?.name ?? '').trim();
-      if (lat === undefined || lon === undefined || !name) {
-        return undefined;
-      }
+  return (
+    (payload.results ?? [])
+      // Fuera los barrios (y los aeropuertos, y las montanas): quien busca en una app del tiempo
+      // espera poblaciones y paises. Ver utils/tiposDeLugar, que explica los codigos.
+      .filter((item) => esLugarBuscable(item?.feature_code))
+      .map((item): Place | undefined => {
+        const lat = toNumber(item?.latitude);
+        const lon = toNumber(item?.longitude);
+        const name = String(item?.name ?? '').trim();
+        if (lat === undefined || lon === undefined || !name) {
+          return undefined;
+        }
 
-      const texto = (valor: unknown) => String(valor ?? '').trim() || undefined;
-      return {
-        id: String(item?.id ?? `${lat},${lon}`),
-        name,
-        admin1: texto(item?.admin1),
-        // Niveles mas finos y pais: no se muestran siempre, solo cuando hacen falta para
-        // distinguir dos resultados que se llamarian igual (ver utils/resultadosBusqueda).
-        admin2: texto(item?.admin2),
-        admin3: texto(item?.admin3),
-        country: texto(item?.country),
-        countryCode: texto(item?.country_code),
-        lat,
-        lon,
-      };
-    })
-    .filter((item): item is Place => Boolean(item));
+        const texto = (valor: unknown) => String(valor ?? '').trim() || undefined;
+        return {
+          id: String(item?.id ?? `${lat},${lon}`),
+          name,
+          admin1: texto(item?.admin1),
+          // Niveles mas finos y pais: no se muestran siempre, solo cuando hacen falta para
+          // distinguir dos resultados que se llamarian igual (ver utils/resultadosBusqueda).
+          admin2: texto(item?.admin2),
+          admin3: texto(item?.admin3),
+          country: texto(item?.country),
+          countryCode: texto(item?.country_code),
+          lat,
+          lon,
+        };
+      })
+      .filter((item): item is Place => Boolean(item))
+  );
 }
 
 export async function getForecast(lat: number, lon: number): Promise<Forecast> {
