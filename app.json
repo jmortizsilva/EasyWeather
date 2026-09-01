@@ -47,10 +47,10 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona.",
-          "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta.",
-          "isIosBackgroundLocationEnabled": true
+          "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta."
         }
-      ]
+      ],
+      "./plugins/geovallas-sin-modo-de-fondo"
     ],
     "extra": {
       "eas": {

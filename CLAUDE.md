@@ -39,3 +39,26 @@ móvil ni en Cloudflare: los envía un **servidor propio multi-app**.
 - En una migración de servidor, **un solo cron activo a la vez** o llegan avisos por duplicado. La
   app resincroniza su estado al volver a primer plano (`AppState` → `active`), así que **cambiar la
   URL basta para migrar los dispositivos**: se re-registran solos al abrir la app.
+
+## Geovallas sin el modo de fondo `location` (rechazo 2.5.4 de Apple)
+
+La app sigue la ubicación con **geovallas** (`src/utils/ubicacionFondo.ts`): una zona de 3 km y solo
+al salir. No hace seguimiento continuo.
+
+Apple **rechazó la build 17** el 2026-08-29 por la directriz 2.5.4, y no por el permiso: por
+declarar `UIBackgroundModes = ["location"]` en el `Info.plist` sin tener ninguna función que
+necesite ubicación persistente. En su propia respuesta proponen *region monitoring*, que es lo que
+la app ya hacía. Tenían razón, y contestar explicándolo no habría servido de nada.
+
+**La trampa**: iOS no necesita ese modo para despertar a la app al salir de una zona vigilada, pero
+**expo-location sí lo exige** (`ios/LocationModule.swift`, el `guard` de `startGeofencingAsync`),
+porque su consumidor de geovallas enciende `allowsBackgroundLocationUpdates`, que sin el modo lanza.
+Las geovallas no lo necesitan para nada. Comprobado también en la 57.0.14, la última publicada: no
+se arregla actualizando.
+
+Por eso hay un plugin propio, `plugins/geovallas-sin-modo-de-fondo.js`, que le quita esa exigencia
+al compilar. **Si actualizas expo-location, la prueba de `plugins/__tests__/` falla** antes de que
+lo haga EAS: es a propósito. Si falla, mira si el `guard` sigue ahí antes de tocar nada.
+
+Queda declarado `UIBackgroundModes = ["fetch"]`, que lo mete `expo-task-manager` por su cuenta.
+Apple no lo ha mencionado.

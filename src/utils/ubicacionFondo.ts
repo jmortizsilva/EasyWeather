@@ -57,38 +57,82 @@ export async function leerUbicacionActual(): Promise<UbicacionReportada | undefi
   }
 }
 
+// Nunca lanza. expo-location se niega a vigilar zonas si el Info.plist no declara el modo de fondo
+// "location", y ese modo lo quitamos a proposito: Apple rechazo la build 17 porque declararlo sin
+// hacer seguimiento continuo incumple la directriz 2.5.4. Quien levanta esa negativa es
+// plugins/geovallas-sin-modo-de-fondo.js, pero si algun dia dejara de aplicarse, sin este catch
+// quedaria una promesa rechazada en medio de sincronizar los avisos. Quedarse sin geovalla degrada
+// la ubicacion a la ultima reportada al abrir la app; tumbar la sincronizacion apagaria los avisos.
 async function recentrarGeovalla(lat: number, lon: number): Promise<void> {
-  // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
-  await Location.startGeofencingAsync(TAREA_GEOVALLA, [
-    {
-      latitude: lat,
-      longitude: lon,
-      radius: RADIO_METROS,
-      notifyOnEnter: false,
-      notifyOnExit: true,
-    },
-  ]);
+  try {
+    // startGeofencingAsync REEMPLAZA las regiones vigiladas, asi que sirve para re-centrar.
+    await Location.startGeofencingAsync(TAREA_GEOVALLA, [
+      {
+        latitude: lat,
+        longitude: lon,
+        radius: RADIO_METROS,
+        notifyOnEnter: false,
+        notifyOnExit: true,
+      },
+    ]);
+  } catch {
+    // Sin geovalla: los avisos usaran la ultima ubicacion que la app reporto al abrirse.
+  }
+}
+
+// Antiguedad maxima de la lectura de respaldo. Si acabas de salir de una zona de 3 km, un punto de
+// hace cinco minutos es ya el sitio nuevo. Uno mas viejo podria ser el sitio del que vienes, y
+// re-centrar la zona ahi seria peor que no hacer nada: estarias fuera de ella al instante, iOS
+// volveria a despertar a la app, y otra vez, en bucle.
+const RESPALDO_MAX_MS = 5 * 60 * 1000;
+
+/**
+ * Donde estas, para la tarea de fondo. Primero el GPS; si no contesta —al despertar en frio pasa—,
+ * la ultima posicion que iOS tenga guardada, que es instantanea y suele existir precisamente porque
+ * acaba de calcularla para disparar la geovalla.
+ *
+ * `undefined` = no se sabe. Nunca lanza.
+ */
+async function posicionDeLaTarea(): Promise<{ lat: number; lon: number } | undefined> {
+  try {
+    const posicion = await Location.getCurrentPositionAsync({
+      accuracy: Location.Accuracy.Balanced,
+    });
+    return { lat: posicion.coords.latitude, lon: posicion.coords.longitude };
+  } catch {
+    // Sigue por el respaldo.
+  }
+  try {
+    const ultima = await Location.getLastKnownPositionAsync({ maxAge: RESPALDO_MAX_MS });
+    return ultima ? { lat: ultima.coords.latitude, lon: ultima.coords.longitude } : undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 // La tarea se define a nivel de modulo para que quede registrada al cargar la app (requisito de
 // TaskManager). Solo actua al SALIR de la zona.
+//
+// EL ORDEN IMPORTA, y es lo que fallaba: se re-centra la geovalla ANTES de avisar al servidor.
+// iOS da una ventana corta al despertar a la app, y geocodificar y enviar dependen de la red. Si la
+// ventana se agotaba antes de re-centrar, la zona se quedaba donde estaba; y como ya estabas fuera,
+// iOS no volvia a lanzar ninguna salida NUNCA. El seguimiento moria en silencio hasta que abrieras
+// la app. Perder un reporte solo cuesta esa actualizacion; perder el re-centrado los cuesta todos.
+// Comprobado el 2026-09-01: el servidor seguia situando el telefono en el pueblo donde se durmio.
 TaskManager.defineTask<{ eventType: Location.LocationGeofencingEventType }>(
   TAREA_GEOVALLA,
   async ({ data, error }) => {
     if (error || !data || data.eventType !== Location.LocationGeofencingEventType.Exit) {
       return;
     }
-    try {
-      const posicion = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-      const { latitude, longitude } = posicion.coords;
-      const nombre = await nombreDeUbicacion(latitude, longitude);
-      await reportarUbicacion(latitude, longitude, nombre);
-      await recentrarGeovalla(latitude, longitude);
-    } catch {
-      // Sin ubicacion o sin red: se reintenta en el proximo cambio de zona.
+    const donde = await posicionDeLaTarea();
+    if (!donde) {
+      // Sin saber donde estas no hay zona que poner. Se recupera al abrir la app: al registrarse de
+      // nuevo la tarea, iOS comprueba el estado de la zona y vuelve a lanzar la salida.
+      return;
     }
+    await recentrarGeovalla(donde.lat, donde.lon);
+    await reportarUbicacion(donde.lat, donde.lon, await nombreDeUbicacion(donde.lat, donde.lon));
   },
 );
 
