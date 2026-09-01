@@ -20,14 +20,19 @@ export interface UbicacionConNombre {
  * nombre de otra ciudad a unas coordenadas nuevas es peor que no dar nombre: el servidor cae
  * entonces en "en tu ubicacion", que es impreciso pero cierto.
  *
- * Sin lectura fresca (sin permiso, o el GPS falla) se manda la cacheada, que es lo unico que hay.
+ * Sin lectura fresca NO se manda ubicacion, y esto es lo importante: el servidor conserva entonces
+ * la que tenga, que viene de la geovalla o de una sincronizacion anterior. Antes se mandaba la
+ * cacheada, y cuando iOS despertaba a la app en segundo plano por la propia geovalla, la app
+ * arrancaba con la ubicacion vieja restaurada del disco y —si el GPS no contestaba a tiempo— subia
+ * esa, pisando la buena que la geovalla acababa de dejar. Una foto vieja nunca es mejor que lo que
+ * el servidor ya sabe.
  */
 export function ubicacionParaEnviar(
   fresca: UbicacionConNombre | undefined,
   cacheada: UbicacionConNombre | undefined,
 ): UbicacionConNombre | null {
   if (!fresca) {
-    return cacheada ?? null;
+    return null;
   }
   if (fresca.nombre) {
     return fresca;

@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
 
 // Servidor de avisos propio (Node/Fastify, multi-app). Vigila la temperatura y envia los push.
@@ -61,10 +62,46 @@ export async function sincronizarAvisos(datos: SincronizacionAvisos): Promise<bo
   }
 }
 
-// Identificador de push de este iPhone. Requiere permiso concedido y un dispositivo real.
+const CLAVE_TOKEN = 'tiempo.push.token.v1';
+// Copia en memoria, para no ir al disco en cada llamada dentro de la misma ejecucion.
+let tokenEnMemoria: string | undefined;
+
+/**
+ * Identificador de push de este iPhone. Requiere permiso concedido y un dispositivo real.
+ *
+ * Se guarda en disco porque pedirselo a Expo es una llamada de RED, y esto lo llama la tarea de
+ * geovallas cuando iOS despierta a la app con una ventana de tiempo corta y, muchas veces, con mala
+ * cobertura. Una llamada de red que no hace falta ahi puede costar el reporte entero.
+ *
+ * El token solo cambia al reinstalar o restaurar el telefono, y para eso esta `refrescarPushToken`,
+ * que corre con la app abierta.
+ */
 export async function getPushToken(): Promise<string | undefined> {
+  if (tokenEnMemoria) {
+    return tokenEnMemoria;
+  }
+  const guardado = await AsyncStorage.getItem(CLAVE_TOKEN);
+  if (guardado) {
+    tokenEnMemoria = guardado;
+    return guardado;
+  }
+  return pedirTokenAExpo();
+}
+
+/**
+ * Vuelve a preguntarle el token a Expo y actualiza la copia guardada. Se llama con la app en primer
+ * plano, donde una llamada de red no cuesta nada: es lo que detecta que el token ha cambiado tras
+ * reinstalar o restaurar el telefono. Devuelve el token vigente, o el guardado si Expo no contesta.
+ */
+export async function refrescarPushToken(): Promise<string | undefined> {
+  return (await pedirTokenAExpo()) ?? getPushToken();
+}
+
+async function pedirTokenAExpo(): Promise<string | undefined> {
   try {
     const { data } = await Notifications.getExpoPushTokenAsync({ projectId: PROJECT_ID });
+    tokenEnMemoria = data;
+    await AsyncStorage.setItem(CLAVE_TOKEN, data);
     return data;
   } catch {
     return undefined;

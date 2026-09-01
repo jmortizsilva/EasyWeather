@@ -21,6 +21,7 @@ import {
   requestNotificationPermission,
 } from '../utils/notifications';
 import {
+  refrescarPushToken,
   ResumenServidor,
   SincronizacionAvisos,
   sincronizarAvisos,
@@ -218,10 +219,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   }, [loaded, places, currentLocationPlace, sincronizarServidor]);
 
   // Al volver a primer plano se reenvía la ubicación actual al servidor.
+  //
+  // Y es aquí, y solo aquí, donde se le vuelve a preguntar el token de push a Expo: es una llamada
+  // de red, y en primer plano no cuesta nada. El token guardado solo deja de valer al reinstalar o
+  // restaurar el teléfono, así que basta con comprobarlo cuando el usuario tiene la app delante.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active' && loaded) {
-        void sincronizarServidor(settingsRef.current);
+        void refrescarPushToken().then(() => sincronizarServidor(settingsRef.current));
       }
     });
     return () => sub.remove();

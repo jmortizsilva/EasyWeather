@@ -12,8 +12,11 @@ describe('ubicacionParaEnviar', () => {
     expect(ubicacionParaEnviar(fresca, MADRID)).toEqual(fresca);
   });
 
-  it('sin lectura fresca se manda la cacheada, que es lo unico que hay', () => {
-    expect(ubicacionParaEnviar(undefined, MADRID)).toEqual(MADRID);
+  // El fallo que dejaba los resumenes hablando del pueblo del que ya te habias ido: al despertar la
+  // app en segundo plano, la cacheada es la que se restauro del disco, y subirla pisaba en el
+  // servidor la que la geovalla acababa de dejar.
+  it('sin lectura fresca NO se manda nada, ni siquiera la cacheada', () => {
+    expect(ubicacionParaEnviar(undefined, MADRID)).toBeNull();
   });
 
   it('sin lectura fresca y sin cacheada no se manda ubicacion', () => {
