@@ -38,11 +38,23 @@ describe('textoSeguimiento', () => {
     expect(texto).toContain('«Siempre»');
   });
 
-  it('sin el modulo compilado, avisa de que la ubicacion sera la del ultimo arranque', () => {
-    expect(textoSeguimiento({ ...TODO_BIEN, hayModulo: false })).toContain('última vez que abras');
+  // Los dos casos que antes se decian igual. Que se lean distinto es el motivo de esta prueba: con
+  // el mismo texto no habia forma de saber si a un telefono le faltaba la version nueva o si el
+  // seguimiento no habia arrancado, y son problemas distintos.
+  it('sin el modulo compilado, dice que hace falta la version mas reciente', () => {
+    const texto = textoSeguimiento({ ...TODO_BIEN, hayModulo: false });
+    expect(texto).toContain('versión más reciente');
   });
 
-  it('con el modulo pero sin arrancar, dice lo mismo: lo que importa es el efecto', () => {
-    expect(textoSeguimiento({ ...TODO_BIEN, activo: false })).toContain('última vez que abras');
+  it('con el modulo pero sin arrancar, dice que no ha arrancado y que hacer', () => {
+    const texto = textoSeguimiento({ ...TODO_BIEN, activo: false });
+    expect(texto).toContain('no ha arrancado');
+    expect(texto).toContain('vuelve a abrirla');
+  });
+
+  it('los dos casos NO se leen igual', () => {
+    const sinModulo = textoSeguimiento({ ...TODO_BIEN, hayModulo: false });
+    const sinArrancar = textoSeguimiento({ ...TODO_BIEN, activo: false });
+    expect(sinModulo).not.toBe(sinArrancar);
   });
 });
