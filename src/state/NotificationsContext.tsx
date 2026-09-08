@@ -98,6 +98,12 @@ interface NotificationsContextValue {
   // Ultima confirmacion para mostrar tambien en pantalla (no solo VoiceOver). El `id` cambia en
   // cada aviso para que la pantalla lo detecte aunque el texto se repita.
   notice?: { id: number; text: string };
+  /**
+   * Sube cada vez que TERMINA una sincronizacion con el servidor. Sirve para que lo que dependa de
+   * lo que hace la sincronizacion —si el seguimiento de ubicacion quedo encendido— se entere cuando
+   * ya ha pasado, y no antes. Sincronizar tarda segundos: lee el GPS y llama al servidor.
+   */
+  sincronizaciones: number;
 }
 
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
@@ -108,6 +114,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const [loaded, setLoaded] = useState(false);
   const [notice, setNotice] = useState<{ id: number; text: string } | undefined>(undefined);
   const noticeSeq = useRef(0);
+  const [sincronizaciones, setSincronizaciones] = useState(0);
 
   // Confirma una accion del usuario por TRES canales a la vez: VoiceOver (announceForAccessibility),
   // un aviso visible en pantalla y una vibracion. La vibracion es el canal mas fiable: el anuncio de
@@ -188,14 +195,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       );
       const ok = await sincronizarAvisos(payload);
 
-      // Seguir la ubicacion mientras haya algun aviso; si no, dejar de seguirla. Ahora mismo esto
-      // solo desregistra la geovalla que dejaron las versiones anteriores (ver ubicacionFondo): el
-      // seguimiento en segundo plano volvera por un modulo nativo propio.
+      // Seguir la ubicacion mientras haya algun aviso; si no, dejar de seguirla.
+      //
+      // Va DESPUES de sincronizar, y no antes aunque sea instantaneo: el servidor no crea la fila
+      // del dispositivo desde /ubicacion, solo desde /sincronizar. Arrancando antes, un reporte del
+      // modulo en un movil recien instalado no tendria fila donde caer y se perderia.
       if (anyEnabled) {
         await iniciarSeguimientoUbicacion();
       } else {
         await detenerSeguimientoUbicacion();
       }
+
+      // Se avisa de que esto ya ha terminado. Sin esto, la linea que dice si se esta siguiendo la
+      // ubicacion se calculaba en cuanto se activaba un aviso —inmediato— mientras el arranque del
+      // seguimiento venia detras del GPS y de la llamada al servidor: leia "apagado" y se quedaba
+      // asi hasta que la app iba al fondo y volvia. En un movil recien instalado eso hacia parecer
+      // que el seguimiento no funcionaba.
+      setSincronizaciones((n) => n + 1);
 
       if (announce) {
         if (!anyEnabled) {
@@ -337,6 +353,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     saveThreshold,
     testNotification,
     notice,
+    sincronizaciones,
   };
 
   return <NotificationsContext.Provider value={value}>{children}</NotificationsContext.Provider>;

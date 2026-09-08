@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import EstadoUbicacion from '../components/EstadoUbicacion';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { useNotifications } from '../state/NotificationsContext';
 import { Paleta } from '../theme/colores';
@@ -241,6 +242,9 @@ export default function AlertsScreen() {
   const { settings, saveSummary, deleteSummary, saveThreshold, testNotification, notice } =
     useNotifications();
 
+  // Sin ningun aviso encendido la ubicacion no se usa, y el estado del seguimiento sobra.
+  const algunAvisoActivo = settings.threshold.enabled || settings.summaries.some((s) => s.enabled);
+
   const [editing, setEditing] = useState<{ summary: SummaryAlert; isNew: boolean } | undefined>(
     undefined,
   );
@@ -446,6 +450,11 @@ export default function AlertsScreen() {
             )}
           </>
         )}
+
+        {/* Dice si los avisos van a saber dónde estás, y si no, por qué. Sin esto, las tres causas
+            posibles —falta el permiso, la app no lleva el módulo, el seguimiento no arrancó— se
+            leen igual desde fuera: el aviso llega con la ciudad de ayer. */}
+        <EstadoUbicacion algunAvisoActivo={algunAvisoActivo} style={styles.note} />
 
         <Text style={styles.note}>
           Los avisos los envía un servidor con tu ubicación y tu configuración, para poder avisarte
