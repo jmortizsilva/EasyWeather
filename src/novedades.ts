@@ -12,4 +12,5 @@
 // Ultima vez que se vacio: build de preview del 2026-09-01 (arreglo de la geovalla).
 export const NOVEDADES: string[] = [
   'El buscador ya solo ofrece poblaciones y países. Antes, al buscar "Bilbao", salía también el barrio de Bilbao de Madrid. El nombre de tu ubicación actual sigue diciendo el barrio, como hasta ahora.',
+  'La pantalla de Avisos dice ahora si se está siguiendo tu ubicación, o por qué no: así se sabe de un vistazo si un aviso puede llegar con el sitio equivocado.',
 ];

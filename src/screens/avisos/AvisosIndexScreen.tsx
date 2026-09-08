@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import EstadoUbicacion from '../../components/EstadoUbicacion';
 import { useNotifications } from '../../state/NotificationsContext';
 import { useColores } from '../../theme/ThemeContext';
 import { formatTime } from '../../utils/ajustesAvisos';
@@ -60,6 +61,12 @@ export default function AvisosIndexScreen() {
 
   const cerrar = () => setAbierta(undefined);
 
+  // Sin ningun aviso encendido la ubicacion no se usa, y el estado del seguimiento sobra.
+  const algunAvisoActivo =
+    settings.threshold.enabled ||
+    settings.summaries.some((s) => s.enabled) ||
+    settings.avisosOficiales.enabled;
+
   return (
     <>
       <ScrollView
@@ -102,6 +109,10 @@ export default function AvisosIndexScreen() {
           accessibilityHint="Envía una notificación de prueba a este teléfono para comprobar que los avisos llegan">
           <Text style={styles.buttonSecondaryText}>Probar notificación</Text>
         </Pressable>
+
+        {/* Va justo debajo del botón de probar y encima de la explicación: es lo que contesta a
+            "¿por qué el aviso habla de la ciudad de ayer?" sin tener que preguntarle a nadie. */}
+        <EstadoUbicacion algunAvisoActivo={algunAvisoActivo} style={styles.note} />
 
         <Text style={styles.note}>
           Los avisos los envía un servidor con tu ubicación y tu configuración, para poder avisarte
