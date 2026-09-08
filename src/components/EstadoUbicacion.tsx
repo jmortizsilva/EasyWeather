@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 import { AppState, Text, TextStyle, StyleProp } from 'react-native';
 import { hayModuloDeUbicacion, seguimientoActivo } from '../../modules/ubicacion-significativa';
+import { useNotifications } from '../state/NotificationsContext';
 import { textoSeguimiento } from '../utils/estadoSeguimiento';
 
 // Dice si los avisos van a saber donde estas. El texto lo decide `utils/estadoSeguimiento`, que es
@@ -19,6 +20,11 @@ export default function EstadoUbicacion({
   style?: StyleProp<TextStyle>;
 }) {
   const [texto, setTexto] = useState<string | undefined>(undefined);
+  // Se vuelve a mirar cuando TERMINA una sincronizacion, que es cuando el seguimiento acaba de
+  // arrancar. Sin esto se leia "apagado" en el hueco entre activar un aviso y que el arranque
+  // llegase —detras del GPS y de la llamada al servidor— y se quedaba mintiendo hasta que la app
+  // iba al fondo y volvia.
+  const { sincronizaciones } = useNotifications();
 
   useEffect(() => {
     let vivo = true;
@@ -53,7 +59,7 @@ export default function EstadoUbicacion({
       vivo = false;
       sub.remove();
     };
-  }, [algunAvisoActivo]);
+  }, [algunAvisoActivo, sincronizaciones]);
 
   if (!texto) {
     return null;

@@ -133,7 +133,13 @@ export async function iniciarSeguimientoUbicacion(): Promise<void> {
     return; // Sin token no hay a quien avisar; se reintenta en la proxima sincronizacion.
   }
   const { url, appKey } = destinoDeUbicacion();
-  await empezarSeguimiento(url, appKey, token);
+  try {
+    await empezarSeguimiento(url, appKey, token);
+  } catch {
+    // El modulo nativo no puede tumbar la sincronizacion de avisos: quedarse sin seguimiento
+    // degrada la ubicacion a la del ultimo arranque, pero un fallo aqui sin capturar dejaria una
+    // promesa rechazada en medio de guardar los avisos. Se reintenta en la proxima sincronizacion.
+  }
 }
 
 /** Detiene el seguimiento (cuando el usuario desactiva todos los avisos). */

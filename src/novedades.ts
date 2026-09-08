@@ -13,4 +13,5 @@
 export const NOVEDADES: string[] = [
   'El buscador ya solo ofrece poblaciones y países. Antes, al buscar "Bilbao", salía también el barrio de Bilbao de Madrid. El nombre de tu ubicación actual sigue diciendo el barrio, como hasta ahora.',
   'La pantalla de Avisos dice ahora si se está siguiendo tu ubicación, o por qué no: si falta el permiso, si esta versión de la app no puede hacerlo, o si el seguimiento no ha arrancado.',
+  'Esa línea se equivocaba justo después de crear un aviso: decía que el seguimiento no había arrancado cuando en realidad estaba arrancando. Ya se actualiza cuando termina.',
 ];
