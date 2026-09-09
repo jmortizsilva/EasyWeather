@@ -35,28 +35,35 @@
 <body>
   <main>
     <h1>Política de privacidad de EasyWeather</h1>
-    <p class="updated">Última actualización: 12 de agosto de 2026</p>
+    <p class="updated">Última actualización: 9 de septiembre de 2026</p>
 
     <p>
       EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué
       datos usa la app y cómo los trata. En resumen: <strong>EasyWeather no crea cuentas,
-      no muestra publicidad y no hace seguimiento de sus usuarios.</strong> La app funciona
-      sin enviar datos a servidores propios; la única excepción son los <strong>avisos</strong>
-      (el de temperatura y el de resumen), funciones opcionales que, si las activas, registran
-      algunos datos en nuestro servidor para poder avisarte del tiempo del sitio donde estés,
-      aunque no tengas la app abierta (se explica más abajo).
+      no muestra publicidad y no hace seguimiento de sus usuarios.</strong>
+    </p>
+    <p>
+      Para enseñarte el tiempo, la app consulta el servicio Open-Meteo y un servidor propio, al
+      que pide la medición de la estación más cercana y los avisos oficiales de AEMET. En esas
+      consultas viajan las coordenadas del lugar que estás mirando, pero <strong>no se
+      guardan</strong>: se usan para responder y se descartan. Solo si activas algún
+      <strong>aviso</strong> —funciones opcionales y desactivadas de fábrica— se registran
+      datos en ese servidor, para poder avisarte del tiempo del sitio donde estés aunque no
+      tengas la app abierta (se explica más abajo).
     </p>
 
     <h2>Datos que usa la app</h2>
     <ul>
       <li>
         <strong>Ubicación.</strong> Si concedes el permiso, la app usa las coordenadas de
-        tu dispositivo para mostrarte la previsión de tu zona. Para ver la previsión, esas
-        coordenadas se envían al servicio meteorológico Open-Meteo únicamente para obtener
-        los datos y no se almacenan en ningún servidor gestionado por nosotros. Puedes usar
-        la app sin conceder el permiso de ubicación, buscando lugares por su nombre.
-        <strong>Si activas algún aviso</strong>, la ubicación también se envía a nuestro
-        servidor, como se describe en el apartado siguiente.
+        tu dispositivo para mostrarte la previsión de tu zona. Esas coordenadas se envían al
+        servicio meteorológico Open-Meteo y también a nuestro propio servidor, que las
+        necesita para buscar la estación de medida más cercana y los avisos oficiales que
+        afectan a ese punto. En ninguno de los dos casos se almacenan: se usan para responder
+        a esa consulta y se descartan. Lo mismo vale para cualquier lugar que busques o tengas
+        guardado. Puedes usar la app sin conceder el permiso de ubicación, buscando lugares
+        por su nombre. <strong>Si activas algún aviso</strong>, la ubicación además queda
+        registrada en nuestro servidor, como se describe en el apartado siguiente.
       </li>
       <li>
         <strong>Lugares guardados y preferencias.</strong> Los lugares que añades y la
@@ -68,7 +75,7 @@
     </ul>
 
     <h2>Avisos (opcional)</h2>
-    <p>La app incluye dos tipos de aviso, ambos opcionales y desactivados por defecto:</p>
+    <p>La app incluye tres tipos de aviso, todos opcionales y desactivados por defecto:</p>
     <ul>
       <li>
         <strong>Aviso de temperatura</strong>: te notifica cuando la temperatura de tu
@@ -77,6 +84,12 @@
       <li>
         <strong>Aviso de resumen</strong>: te envía a la hora que elijas un resumen del
         tiempo, de tu ubicación o de una ciudad concreta.
+      </li>
+      <li>
+        <strong>Avisos oficiales de AEMET</strong>: te notifica los avisos meteorológicos que
+        la Agencia Estatal de Meteorología publica para la zona donde estés, desde el nivel que
+        elijas (amarillo, naranja o rojo). Puedes silenciar los fenómenos que no te interesen;
+        silenciarlos apaga la notificación, pero el aviso se sigue viendo en la pantalla.
       </li>
     </ul>
     <p>
@@ -102,9 +115,10 @@
         seguirán funcionando pero usarán tu última ubicación conocida.
       </li>
       <li>
-        La <strong>configuración de cada aviso</strong>: los límites de temperatura, y para
+        La <strong>configuración de cada aviso</strong>: los límites de temperatura; para
         cada resumen su hora, los datos que has elegido incluir y el lugar (tu ubicación o
-        una ciudad concreta).
+        una ciudad concreta); y para los avisos oficiales, el nivel a partir del cual quieres
+        que te avisen y la lista de fenómenos que hayas silenciado.
       </li>
     </ul>
     <p>
@@ -129,10 +143,27 @@
         accede a ellos ni los usa para nada propio; se limita a proporcionar la máquina.
       </li>
       <li>
+        <strong>AEMET</strong> (Agencia Estatal de Meteorología,
+        <a href="https://www.aemet.es">aemet.es</a>): es la fuente de los avisos oficiales y de
+        las mediciones de sus estaciones. <strong>AEMET no recibe ningún dato tuyo</strong>:
+        nuestro servidor descarga los boletines de toda España y los datos de las estaciones, y
+        es él quien mira después cuáles te corresponden. Ni tus coordenadas ni el identificador
+        de tu dispositivo salen hacia AEMET.
+      </li>
+      <li>
         <strong>Expo y Apple</strong>: entregan las notificaciones push de los avisos a tu
         iPhone.
       </li>
     </ul>
+
+    <h2>Registros técnicos</h2>
+    <p>
+      Como cualquier servidor, el nuestro anota las peticiones que recibe para poder detectar
+      averías: la fecha, la ruta consultada y la dirección IP desde la que se conectó. Si una
+      consulta falla, la anotación incluye además las coordenadas de esa consulta. Estos
+      registros no se asocian a ningún usuario ni se usan para nada que no sea arreglar
+      problemas, y se pierden cada vez que el servidor se actualiza.
+    </p>
 
     <h2>Lo que la app NO hace</h2>
     <ul>
