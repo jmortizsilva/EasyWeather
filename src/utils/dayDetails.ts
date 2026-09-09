@@ -64,6 +64,58 @@ function hablado(valor: number | undefined): string {
   return valor !== undefined ? numeroEs(valor) : 'sin dato';
 }
 
+/**
+ * Minutos entre dos horas de un MISMO lugar, tal y como las da Open-Meteo: ISO local y sin sufijo
+ * de zona ("2026-09-09T07:45"). Se restan los campos a mano, sin `Date`, y por un motivo: `new
+ * Date('2026-09-09T07:45')` se interpreta en la zona del TELÉFONO, que no tiene por qué ser la del
+ * sitio que se está mirando, y un cambio de hora ahí dentro colaría una hora de más o de menos en
+ * una cuenta que no va con él. Llevar la fecha en el cálculo, y no solo la hora, hace que un ocaso
+ * pasada la medianoche —cerca del círculo polar— siga saliendo bien.
+ *
+ * `undefined` si falta alguna, si no tienen esa forma, o si el final no es posterior al principio:
+ * eso sería un dato roto, y es mejor callarse que enseñar un número absurdo.
+ */
+export function minutosEntre(inicioISO?: string, finISO?: string): number | undefined {
+  const enMinutos = (iso: string | undefined): number | undefined => {
+    const t = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/.exec(iso ?? '');
+    if (!t) {
+      return undefined;
+    }
+    const [, anio, mes, dia, hora, minuto] = t.map(Number);
+    return Date.UTC(anio, mes - 1, dia, hora, minuto) / 60000;
+  };
+
+  const inicio = enMinutos(inicioISO);
+  const fin = enMinutos(finISO);
+  if (inicio === undefined || fin === undefined || fin <= inicio) {
+    return undefined;
+  }
+  return fin - inicio;
+}
+
+/**
+ * Una duración dicha de las dos maneras, porque no se escribe igual de lo que se oye: "13 h 10 min"
+ * para leer y "13 horas y 10 minutos" para VoiceOver, que expande las abreviaturas a su manera. Se
+ * calla la parte que vale cero ("13 h", no "13 h 0 min") salvo que la duración entera sean minutos.
+ */
+function textosDuracion(minutos: number): { corto: string; hablado: string } {
+  const horas = Math.floor(minutos / 60);
+  const sueltos = minutos % 60;
+  const cortos: string[] = [];
+  const hablados: string[] = [];
+
+  if (horas > 0) {
+    cortos.push(`${horas} h`);
+    hablados.push(`${horas} ${horas === 1 ? 'hora' : 'horas'}`);
+  }
+  if (sueltos > 0 || horas === 0) {
+    cortos.push(`${sueltos} min`);
+    hablados.push(`${sueltos} ${sueltos === 1 ? 'minuto' : 'minutos'}`);
+  }
+
+  return { corto: cortos.join(' '), hablado: hablados.join(' y ') };
+}
+
 export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   const lines: DayDetailLine[] = [];
 
@@ -134,8 +186,16 @@ export function buildDayDetails(day: DayForecast): DayDetailLine[] {
   const sunrise = formatTime(day.sunrise);
   const sunset = formatTime(day.sunset);
   if (sunrise && sunset) {
-    const value = `amanece a las ${sunrise}, anochece a las ${sunset}`;
-    lines.push({ title: 'Sol', value, spoken: value });
+    const base = `amanece a las ${sunrise}, anochece a las ${sunset}`;
+    // Las horas de luz salen de restar, no de pedirle otro campo a Open-Meteo: el dato ya está
+    // aquí. Si la resta no cuadra, la línea se queda como estaba en vez de desaparecer.
+    const minutos = minutosEntre(day.sunrise, day.sunset);
+    const duracion = minutos !== undefined ? textosDuracion(minutos) : undefined;
+    lines.push({
+      title: 'Sol',
+      value: duracion ? `${base}, ${duracion.corto} de luz` : base,
+      spoken: duracion ? `${base}, ${duracion.hablado} de luz` : base,
+    });
   }
 
   if (day.moonPhase !== undefined || day.moonIllumination !== undefined) {

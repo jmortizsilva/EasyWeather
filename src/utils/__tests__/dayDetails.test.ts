@@ -1,5 +1,5 @@
 import { DayForecast } from '../../types';
-import { buildDayDetails, valoresFilaDia } from '../dayDetails';
+import { buildDayDetails, minutosEntre, valoresFilaDia } from '../dayDetails';
 
 // Un dia con TODOS los valores con decimales, que es donde se veian los dos fallos: el punto
 // decimal ("24.6") y las unidades leidas de forma distinta segun la fila.
@@ -70,6 +70,61 @@ describe('buildDayDetails', () => {
 
   it('sin datos de luna no aparece la fila, en vez de salir vacia', () => {
     expect(buildDayDetails(DIA).find((l) => l.title === 'Luna')).toBeUndefined();
+  });
+});
+
+// Las horas de luz eran la peticion de un usuario: la salida y la puesta ya estaban, pero restarlas
+// de cabeza no lo hace nadie. Salen de los datos que la app ya tenia, sin pedirle nada a Open-Meteo.
+describe('la linea del Sol dice cuanta luz hay', () => {
+  const conSol = (sunrise: string, sunset: string) =>
+    buildDayDetails({ ...DIA, sunrise, sunset }).find((l) => l.title === 'Sol');
+
+  it('lo visible abrevia y lo hablado dice las unidades enteras', () => {
+    const sol = conSol('2026-08-21T07:24', '2026-08-21T21:10');
+    expect(sol?.value).toBe('amanece a las 07:24, anochece a las 21:10, 13 h 46 min de luz');
+    expect(sol?.spoken).toBe(
+      'amanece a las 07:24, anochece a las 21:10, 13 horas y 46 minutos de luz',
+    );
+  });
+
+  it('se calla los minutos cuando son cero, en vez de decir "13 h 0 min"', () => {
+    expect(conSol('2026-08-21T07:00', '2026-08-21T20:00')?.value).toContain('13 h de luz');
+    expect(conSol('2026-08-21T07:00', '2026-08-21T20:00')?.spoken).toContain('13 horas de luz');
+  });
+
+  it('en singular no dice "1 horas y 1 minutos"', () => {
+    expect(conSol('2026-08-21T07:00', '2026-08-21T08:01')?.spoken).toContain(
+      '1 hora y 1 minuto de luz',
+    );
+  });
+
+  it('si la resta no cuadra, la linea sigue saliendo sin la coletilla', () => {
+    const sol = conSol('2026-08-21T21:10', '2026-08-21T07:24');
+    expect(sol?.value).toBe('amanece a las 21:10, anochece a las 07:24');
+  });
+
+  it('sin salida o sin puesta no hay linea del Sol, como antes', () => {
+    expect(buildDayDetails(DIA).find((l) => l.title === 'Sol')).toBeUndefined();
+  });
+});
+
+describe('minutosEntre', () => {
+  it('un ocaso pasada la medianoche no sale negativo: la fecha entra en la cuenta', () => {
+    // Cerca del circulo polar en junio; sin mirar el dia, esto habrian sido -1.410 minutos.
+    expect(minutosEntre('2026-06-21T01:30', '2026-06-22T00:00')).toBe(1350);
+  });
+
+  it('el cambio de hora del telefono no se cuela en la cuenta del lugar', () => {
+    // 29 de marzo de 2026: en Espana los relojes saltan de 02:00 a 03:00. La resta es de horas
+    // locales DEL LUGAR y no debe notarlo, corra donde corra el codigo.
+    expect(minutosEntre('2026-03-29T07:45', '2026-03-29T20:30')).toBe(765);
+  });
+
+  it('lo que no tiene esa forma devuelve undefined en vez de NaN', () => {
+    expect(minutosEntre(undefined, '2026-08-21T20:00')).toBeUndefined();
+    expect(minutosEntre('2026-08-21T07:00', undefined)).toBeUndefined();
+    expect(minutosEntre('ayer', 'hoy')).toBeUndefined();
+    expect(minutosEntre('2026-08-21T07:00', '2026-08-21T07:00')).toBeUndefined();
   });
 });
 
