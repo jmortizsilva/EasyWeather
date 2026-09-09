@@ -16,6 +16,7 @@ import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
+import { ConsultaHecha, veredictoRefresco } from '../utils/refrescoPorLugar';
 import { TempGuardada } from '../utils/tempActual';
 
 const STORAGE_PLACES = 'tiempo.places';
@@ -118,8 +119,11 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     {},
   );
   const [avisosByPlace, setAvisosByPlace] = useState<Record<string, AvisosLugar>>({});
-  const ultimaObservacionRef = useRef<Record<string, number>>({});
-  const ultimosAvisosRef = useRef<Record<string, number>>({});
+  // Cuando y PARA QUE PUNTO se pidio por ultima vez. El punto forma parte de la marca a proposito:
+  // el id de la ubicacion actual no cambia nunca pero sus coordenadas si, y con la hora sola el
+  // throttle se comia la consulta del sitio nuevo (ver utils/refrescoPorLugar).
+  const ultimaObservacionRef = useRef<Record<string, ConsultaHecha>>({});
+  const ultimosAvisosRef = useRef<Record<string, ConsultaHecha>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -268,32 +272,48 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   // Pide la observación MEDIDA de un lugar. Va aparte de la previsión y falla aparte: si no hay
   // estación, si el servidor está caído o si no hay red, la pantalla se queda con la previsión y
   // no se enseña ningún error. La medición es un extra; la previsión es el contenido.
+  const olvidarObservacion = useCallback((id: string) => {
+    setObservacionByPlace((previo) => {
+      if (previo[id] === undefined) {
+        return previo; // nada que quitar: se evita un render de más
+      }
+      const siguiente = { ...previo };
+      delete siguiente[id];
+      return siguiente;
+    });
+  }, []);
+
   const cargarObservacion = useCallback(
     async (id: string, lat: number, lon: number, elevacion?: number) => {
-      if (Date.now() - (ultimaObservacionRef.current[id] ?? 0) < OBSERVACION_RECHECK_MS) {
+      const veredicto = veredictoRefresco(
+        ultimaObservacionRef.current[id],
+        { lat, lon },
+        Date.now(),
+        OBSERVACION_RECHECK_MS,
+      );
+      if (veredicto === 'esperar') {
         return;
       }
-      ultimaObservacionRef.current[id] = Date.now();
+      if (veredicto === 'olvidar-y-consultar') {
+        // El lugar se ha movido bajo el mismo id: lo que hay en pantalla es la medición del sitio
+        // anterior. Se quita YA, sin esperar a que llegue la nueva, porque mientras tanto estaría
+        // diciendo que en tu calle mide lo que mide una estación a 350 km.
+        olvidarObservacion(id);
+      }
+      ultimaObservacionRef.current[id] = { cuando: Date.now(), lat, lon };
 
       const observacion = await getObservacion(lat, lon, elevacion);
       if (!observacion) {
         // Se permite reintentar antes del throttle: puede haber sido un fallo de red pasajero.
-        ultimaObservacionRef.current[id] = 0;
+        ultimaObservacionRef.current[id] = { cuando: 0, lat, lon };
         // Y se retira la anterior, si la había: sin dato nuevo, dejar el viejo en pantalla sería
-        // enseñar la medición de otro momento (o de otro sitio, si el lugar activo cambió).
-        setObservacionByPlace((previo) => {
-          if (previo[id] === undefined) {
-            return previo; // nada que quitar: se evita un render de más
-          }
-          const siguiente = { ...previo };
-          delete siguiente[id];
-          return siguiente;
-        });
+        // enseñar la medición de otro momento.
+        olvidarObservacion(id);
         return;
       }
       setObservacionByPlace((previo) => ({ ...previo, [id]: observacion }));
     },
-    [],
+    [olvidarObservacion],
   );
 
   // Pide los avisos OFICIALES de un lugar. Como la observacion, va y falla aparte de la prevision.
@@ -303,14 +323,33 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   // red seria decirle a alguien que ya no hay peligro. Una lista VACIA, en cambio, si se guarda:
   // ahi AEMET ha contestado que no hay nada, y el aviso de ayer tiene que desaparecer.
   const cargarAvisos = useCallback(async (id: string, lat: number, lon: number) => {
-    if (Date.now() - (ultimosAvisosRef.current[id] ?? 0) < AVISOS_RECHECK_MS) {
+    const veredicto = veredictoRefresco(
+      ultimosAvisosRef.current[id],
+      { lat, lon },
+      Date.now(),
+      AVISOS_RECHECK_MS,
+    );
+    if (veredicto === 'esperar') {
       return;
     }
-    ultimosAvisosRef.current[id] = Date.now();
+    if (veredicto === 'olvidar-y-consultar') {
+      // Aquí sí se borra al cambiar de sitio, aunque justo debajo se conserve ante un fallo de red:
+      // son casos opuestos. Un aviso naranja de la provincia que acabas de dejar no es información
+      // vieja, es información de otro.
+      setAvisosByPlace((previo) => {
+        if (previo[id] === undefined) {
+          return previo;
+        }
+        const siguiente = { ...previo };
+        delete siguiente[id];
+        return siguiente;
+      });
+    }
+    ultimosAvisosRef.current[id] = { cuando: Date.now(), lat, lon };
 
     const avisos = await getAvisos(lat, lon);
     if (!avisos) {
-      ultimosAvisosRef.current[id] = 0;
+      ultimosAvisosRef.current[id] = { cuando: 0, lat, lon };
       return;
     }
     setAvisosByPlace((previo) => ({ ...previo, [id]: avisos }));
