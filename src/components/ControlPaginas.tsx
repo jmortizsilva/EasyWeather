@@ -27,11 +27,12 @@ export default function ControlPaginas({
       accessibilityHint={CONTROL_PAGINAS_HINT}
       onAccessibilityAction={(event) => {
         const accion = event.nativeEvent.actionName;
+        // Arriba avanza, abajo retrocede: el sentido de la app Tiempo de iOS (ver paginasLugar).
         if (accion === 'increment') {
-          onCambiar(Math.max(actual - 1, 0));
+          onCambiar(Math.min(actual + 1, lugares.length - 1));
         }
         if (accion === 'decrement') {
-          onCambiar(Math.min(actual + 1, lugares.length - 1));
+          onCambiar(Math.max(actual - 1, 0));
         }
       }}>
       <ControlPaginasContent total={lugares.length} indice={actual} />

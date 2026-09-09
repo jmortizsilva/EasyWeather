@@ -3,7 +3,7 @@ import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import AlertsScreen from './src/screens/AlertsScreen';
+import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
 import { NotificationsProvider } from './src/state/NotificationsContext';
@@ -60,7 +60,7 @@ function Navegacion() {
               hoja desde el botón "Añadir lugar" de Mis lugares. Una pestaña menos que recorrer. */}
           <Tab.Screen
             name="Alerts"
-            component={AlertsScreen}
+            component={AvisosIndexScreen}
             options={{
               tabBarLabel: 'Avisos',
               tabBarIcon: () => ({ sfSymbol: 'bell.fill' }),

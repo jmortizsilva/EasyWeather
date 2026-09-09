@@ -88,7 +88,7 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
     'sunrise',
     'sunset',
   ].join(',');
-  const current = ['temperature_2m', 'weather_code'].join(',');
+  const current = ['temperature_2m', 'apparent_temperature', 'weather_code'].join(',');
 
   const url =
     `${FORECAST_URL}?latitude=${lat}&longitude=${lon}` +
@@ -127,9 +127,14 @@ export async function getForecast(lat: number, lon: number): Promise<Forecast> {
   return {
     current: {
       temperature: toNumber(payload?.current?.temperature_2m),
+      apparent: toNumber(payload?.current?.apparent_temperature),
       weatherCode: toNumber(payload?.current?.weather_code),
     },
     days,
+    // Altitud del terreno que Open-Meteo usa para este punto. Viene de regalo en la respuesta y la
+    // necesita la observacion medida, para no aceptar una estacion que esta a otra cota.
+    // (La copia del servidor no lo lleva: alli no se usa.)
+    elevation: toNumber(payload?.elevation),
   };
 }
 
@@ -183,6 +188,7 @@ export async function getHourlyForecast(
     'weather_code',
     'precipitation_probability',
     'wind_speed_10m',
+    'wind_direction_10m',
   ].join(',');
 
   const url =
@@ -198,5 +204,6 @@ export async function getHourlyForecast(
     weatherCode: toNumber(payload?.hourly?.weather_code?.[index]),
     rainProbability: toNumber(payload?.hourly?.precipitation_probability?.[index]),
     windSpeed: toNumber(payload?.hourly?.wind_speed_10m?.[index]),
+    windDirection: toNumber(payload?.hourly?.wind_direction_10m?.[index]),
   }));
 }

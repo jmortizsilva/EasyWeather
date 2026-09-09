@@ -3,15 +3,20 @@ import {
   Linking,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import AnuncioAvisos from './AnuncioAvisos';
 import DayRow from './DayRow';
 import { CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
-import { DayForecast, Place } from '../types';
+import { AvisosLugar, CurrentObservation, DayForecast, Place } from '../types';
+import { textoParaCompartir } from '../utils/compartir';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
+import { describirObservacion } from '../utils/observacionTexto';
+import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
 // La previsión de UN lugar. La usan la pantalla Hoy (una por página del carrusel) y la vista
@@ -22,6 +27,16 @@ type Estilos = ReturnType<typeof crearEstilos>;
 interface PaginaProps {
   place: Place;
   prevision: PrevisionGuardada | undefined;
+  /**
+   * Medición real de una estación, si hay alguna que represente este lugar. Falta a menudo (fuera
+   * de España siempre), y su ausencia no se anuncia: la página se queda con la previsión.
+   */
+  observacion?: CurrentObservation;
+  /**
+   * Avisos OFICIALES de AEMET de este lugar. Que falte significa que aun no se han pedido, y que
+   * venga con la lista vacia, que no hay ninguno: en los dos casos no se pinta nada.
+   */
+  avisos?: AvisosLugar;
   esActiva: boolean;
   cargando: boolean;
   message: string;
@@ -29,6 +44,7 @@ interface PaginaProps {
   colorCarga: string;
   onActualizar: () => void;
   onAbrirDia: (day: DayForecast, showSummary: boolean) => void;
+  onAbrirAvisos: () => void;
   /** En una consulta de paso no se ofrece refrescar: los datos se acaban de pedir. */
   ocultarActualizar?: boolean;
 }
@@ -39,6 +55,8 @@ interface PaginaProps {
 export function PaginaLugar({
   place,
   prevision,
+  observacion,
+  avisos,
   esActiva,
   cargando,
   message,
@@ -46,6 +64,7 @@ export function PaginaLugar({
   colorCarga,
   onActualizar,
   onAbrirDia,
+  onAbrirAvisos,
   ocultarActualizar = false,
 }: PaginaProps) {
   const forecast = prevision?.forecast;
@@ -55,22 +74,63 @@ export function PaginaLugar({
   const upcomingDays = forecast?.days.slice(1) ?? [];
   const updatedAt = formatUpdatedAt(prevision?.updatedAt);
   const esUbicacionActual = place.id === CURRENT_LOCATION_ID;
+  const medicion = describirObservacion(observacion);
+  // Con coma decimal, como la línea de la medición que va justo debajo: Open-Meteo devuelve
+  // decimales y antes salían con punto, mezclando dos criterios en la misma tarjeta.
+  const temperaturaAhora =
+    forecast?.current?.temperature !== undefined
+      ? numeroEs(forecast.current.temperature)
+      : undefined;
+  const sensacion =
+    forecast?.current?.apparent !== undefined ? numeroEs(forecast.current.apparent) : undefined;
+  const textoCompartir = textoParaCompartir({ nombre: place.name, forecast, observacion });
+
+  // La hoja de compartir es del sistema; si el usuario la cancela, Share resuelve sin más. Un fallo
+  // de verdad (no hay nada que compartir) tampoco merece un aviso: no ha roto nada de la pantalla.
+  const compartir = () => {
+    void Share.share({ message: textoCompartir }).catch(() => {});
+  };
 
   return (
     <ScrollView
       style={styles.pagina}
       contentContainerStyle={styles.content}
       accessibilityLabel={`Previsión de ${place.name}`}>
+      {/* Los avisos oficiales van ARRIBA DEL TODO, antes que la temperatura. Un aviso rojo por
+          lluvias no puede quedar por debajo del número grande ni a tres deslizamientos de
+          VoiceOver. Si no hay ninguno, esto no pinta nada y la pantalla queda como estaba. */}
+      <AnuncioAvisos avisos={avisos} onAbrir={onAbrirAvisos} />
+
       {today && (
         <View style={styles.currentCard}>
+          {/* Antes ponía "Ahora", y era mentira: este número es lo que el modelo de Open-Meteo
+              PREVÉ para la hora en curso, no algo que nadie haya medido. El rótulo lo dice ahora,
+              y la medición de verdad —cuando la hay— va debajo, con su hora y su estación. */}
           <View
             accessible
-            accessibilityLabel={`Ahora: ${forecast?.current?.temperature ?? '-'} grados, ${currentInfo.label}`}>
-            <Text style={styles.currentTemp}>{forecast?.current?.temperature ?? '-'}º</Text>
+            accessibilityLabel={
+              `Previsto para esta hora: ${temperaturaAhora ?? '-'} grados, ` +
+              `${currentInfo.label}${sensacion !== undefined ? `. Sensación térmica ${sensacion} grados` : ''}`
+            }>
+            <Text style={styles.currentLabel}>Previsto para esta hora</Text>
+            <Text style={styles.currentTemp}>{temperaturaAhora ?? '-'}º</Text>
             <Text style={styles.currentSky}>
               {currentInfo.emoji} {currentInfo.label}
             </Text>
+            {/* La sensación térmica es previsión, igual que el número grande, así que va DENTRO de
+                este bloque. Debajo de la línea empieza lo medido, y ahí no pinta nada: AEMET no la
+                publica y deducirla de su medición sería colar una cuenta nuestra como medición. */}
+            {sensacion !== undefined && (
+              <Text style={styles.currentSensacion}>Sensación térmica {sensacion}º</Text>
+            )}
           </View>
+
+          {medicion && (
+            <View style={styles.medicionBloque} accessible accessibilityLabel={medicion.spoken}>
+              <Text style={styles.medicionPrincipal}>{medicion.principal}</Text>
+              <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
+            </View>
+          )}
 
           {updatedAt && (
             <Text
@@ -100,6 +160,17 @@ export function PaginaLugar({
             accessibilityLabel="Ver hoy (hora a hora)">
             <Text style={styles.buttonSecondaryText}>Hoy (hora a hora)</Text>
           </Pressable>
+
+          {textoCompartir ? (
+            <Pressable
+              style={styles.buttonSecondary}
+              onPress={compartir}
+              accessibilityRole="button"
+              accessibilityLabel={`Compartir el tiempo de ${place.name}`}
+              accessibilityHint="Abre la hoja para compartir de iOS">
+              <Text style={styles.buttonSecondaryText}>Compartir</Text>
+            </Pressable>
+          ) : null}
         </View>
       )}
 
@@ -161,10 +232,26 @@ export function PaginaLugar({
         }}
         accessibilityRole="link"
         // "punto com" a mano: VoiceOver lee ".com" de forma irregular según el contexto.
-        accessibilityLabel="Datos meteorológicos de Open-Meteo punto com"
+        accessibilityLabel="Previsión de Open-Meteo punto com"
         accessibilityHint="Abre la web de Open-Meteo en el navegador">
-        <Text style={styles.atribucionTexto}>Datos meteorológicos de Open-Meteo.com</Text>
+        <Text style={styles.atribucionTexto}>Previsión de Open-Meteo.com</Text>
       </Pressable>
+
+      {/* AEMET autoriza el uso citando a AEMET como autora, y el "· AEMET" de la línea de la
+          estación no es una atribución: es parte del dato. Solo se pone si de verdad hay medición;
+          citar una fuente que no se ha usado sería tan falso como no citar la que sí. */}
+      {medicion && (
+        <Pressable
+          style={styles.atribucion}
+          onPress={() => {
+            void Linking.openURL('https://www.aemet.es/');
+          }}
+          accessibilityRole="link"
+          accessibilityLabel="Observación de AEMET, Agencia Estatal de Meteorología"
+          accessibilityHint="Abre la web de AEMET en el navegador">
+          <Text style={styles.atribucionTexto}>Observación de AEMET</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -204,6 +291,16 @@ export const crearEstilos = (c: Paleta) =>
       padding: 20,
       gap: 12,
     },
+    // Rotulo del bloque previsto. Va en mayusculas de tamano pequeno como encabezado visual, pero
+    // el texto real lleva sus minusculas: VoiceOver deletrea las mayusculas sostenidas.
+    currentLabel: {
+      color: c.textoTenue,
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
     currentTemp: {
       color: c.textoFuerte,
       fontSize: 54,
@@ -213,6 +310,31 @@ export const crearEstilos = (c: Paleta) =>
     currentSky: {
       color: c.textoCampo,
       fontSize: 17,
+      textAlign: 'center',
+    },
+    // Un punto por debajo del cielo: es un dato de apoyo del número grande, no otro titular.
+    currentSensacion: {
+      color: c.textoTenue,
+      fontSize: 15,
+      textAlign: 'center',
+    },
+    // La medicion se separa del bloque previsto con una linea, no con un color: la informacion no
+    // puede depender del color (y ademas hay que verla en las dos paletas).
+    medicionBloque: {
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.borde,
+      paddingTop: 12,
+      gap: 2,
+    },
+    medicionPrincipal: {
+      color: c.texto,
+      fontSize: 17,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
+    medicionEstacion: {
+      color: c.textoTenue,
+      fontSize: 15,
       textAlign: 'center',
     },
     updatedLine: {

@@ -5,7 +5,8 @@ import {
   pararSeguimiento,
 } from '../../modules/ubicacion-significativa';
 import { nombreUbicacion } from './geocode';
-import { destinoDeUbicacion, getPushToken } from './push';
+import { getPushToken } from './push';
+import { destinoDeUbicacion } from './servidorPropio';
 
 // Ubicacion para los avisos.
 //

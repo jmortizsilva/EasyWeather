@@ -40,8 +40,10 @@ yarn-error.*
 /ios
 /android
 
-# notas de trabajo en la raiz: textos del App Store, borradores de correo, apuntes. No son
-# contenido del repositorio, que ademas es publico.
+# Notas de trabajo sueltas en la carpeta del proyecto (encargos, borradores, textos del App Store).
+# Lo que de ellas resulte ser una decision del proyecto acaba en docs/, ya contrastado; el borrador
+# no se versiona porque envejece mal y se lee luego como si siguiera vigente. Ademas, este
+# repositorio es publico.
 /*.txt
 
 # Informes de fallo del iPhone: llevan datos del aparato y el repositorio es publico.

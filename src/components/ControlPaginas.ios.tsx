@@ -50,8 +50,10 @@ export default function ControlPaginas({
       // sin esto seguía recorriendo los elementos de la página anterior. Vale el propio índice,
       // porque lo único que importa es que el valor cambie.
       refrescoAccesibilidad={actual}
-      onAccessibilityIncrement={anterior}
-      onAccessibilityDecrement={siguiente}
+      // Arriba avanza y abajo retrocede, como el control de páginas de la app Tiempo de iOS. Es el
+      // sentido contrario al de las filas de día; ver el comentario de utils/paginasLugar.
+      onAccessibilityIncrement={siguiente}
+      onAccessibilityDecrement={anterior}
       // Tres dedos: izquierda avanza, derecha retrocede (como pasar hojas).
       onAccessibilityScrollNext={siguiente}
       onAccessibilityScrollPrevious={anterior}>

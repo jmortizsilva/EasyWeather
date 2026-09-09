@@ -14,9 +14,16 @@ const TEMPS: Record<string, TempGuardada> = {
 };
 
 describe('valoresControl', () => {
-  it('la etiqueta es corta y estable (en braille es un prefijo permanente)', () => {
-    expect(valoresControl(LUGARES, 0, TEMPS, 0).label).toBe('Lugar');
-    expect(valoresControl(LUGARES, 2, TEMPS, 0).label).toBe('Lugar');
+  it('la etiqueta es estable: no depende del lugar en el que estes', () => {
+    expect(valoresControl(LUGARES, 0, TEMPS, 0).label).toBe('Selector de ubicación');
+    expect(valoresControl(LUGARES, 2, TEMPS, 0).label).toBe('Selector de ubicación');
+  });
+
+  // Es la unica pagina que cambia sola al moverte; su nombre geocodificado no la distingue de un
+  // lugar guardado que se llame igual.
+  it('la ubicacion actual se anuncia como "Mi ubicación", los lugares guardados no', () => {
+    expect(valoresControl(LUGARES, 0, TEMPS, 0).value).toContain('Mi ubicación, Madrid');
+    expect(valoresControl(LUGARES, 1, TEMPS, 0).value).not.toContain('Mi ubicación');
   });
 
   it('el valor lleva lugar, grados y la posicion en el carrusel', () => {
@@ -26,20 +33,22 @@ describe('valoresControl', () => {
     expect(value).toContain('2 de 3');
   });
 
-  it('los valores vecinos se adelantan para refrescar la braille en el gesto', () => {
+  // El sentido es el de la app Tiempo de iOS: arriba avanza. Antes era al revés, y por eso este
+  // test se reescribió: afirmaba el comportamiento equivocado como si fuera el bueno.
+  it('flick arriba lleva al lugar siguiente y flick abajo al anterior', () => {
     const v = valoresControl(LUGARES, 1, TEMPS, 0);
-    expect(v.valueOnIncrement).toContain('Madrid'); // flick arriba = anterior
-    expect(v.valueOnDecrement).toContain('Vigo'); // flick abajo = siguiente
+    expect(v.valueOnIncrement).toContain('Vigo'); // flick arriba = siguiente
+    expect(v.valueOnDecrement).toContain('Madrid'); // flick abajo = anterior
   });
 
   it('en los extremos el vecino se queda en el mismo lugar, no se sale de la lista', () => {
     const primero = valoresControl(LUGARES, 0, TEMPS, 0);
-    expect(primero.valueOnIncrement).toContain('Madrid');
-    expect(primero.valueOnIncrement).toContain('1 de 3');
+    expect(primero.valueOnDecrement).toContain('Madrid');
+    expect(primero.valueOnDecrement).toContain('1 de 3');
 
     const ultimo = valoresControl(LUGARES, 2, TEMPS, 0);
-    expect(ultimo.valueOnDecrement).toContain('Vigo');
-    expect(ultimo.valueOnDecrement).toContain('3 de 3');
+    expect(ultimo.valueOnIncrement).toContain('Vigo');
+    expect(ultimo.valueOnIncrement).toContain('3 de 3');
   });
 
   it('un indice fuera de rango no rompe: se recorta a la lista', () => {
@@ -49,6 +58,6 @@ describe('valoresControl', () => {
 
   it('sin temperatura guardada dice solo el lugar y su posicion', () => {
     const { value } = valoresControl(LUGARES, 0, {}, 0);
-    expect(value).toBe('Madrid. 1 de 3');
+    expect(value).toBe('Mi ubicación, Madrid. 1 de 3');
   });
 });

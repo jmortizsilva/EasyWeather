@@ -10,8 +10,10 @@ import {
   useState,
 } from 'react';
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
+import { getAvisos } from '../services/avisos';
+import { getObservacion } from '../services/observacion';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
-import { Forecast, Place } from '../types';
+import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
 import { TempGuardada } from '../utils/tempActual';
@@ -34,8 +36,17 @@ const TEMPS_RECHECK_MS = 3 * 60 * 1000;
 // si se ha desplazado más de 1,5 km (dentro de la misma ciudad la previsión es la misma).
 const LOCATION_RECHECK_MS = 2 * 60 * 1000;
 const LOCATION_CHANGED_METERS = MISMO_SITIO_METROS;
+// La observacion medida no se vuelve a pedir mas de una vez cada 10 min por lugar: AEMET publica
+// el parte una vez por hora (y con ~85 min de retraso), asi que insistir mas no trae nada nuevo.
+const OBSERVACION_RECHECK_MS = 10 * 60 * 1000;
+// Los avisos oficiales tampoco se repiten mas de una vez cada 10 min por lugar. AEMET reelabora el
+// lote un par de veces al dia y lo actualiza cuando la situacion cambia; el servidor ya lo cachea
+// media hora, asi que pedirlo mas a menudo desde aqui solo gastaria bateria y datos.
+const AVISOS_RECHECK_MS = 10 * 60 * 1000;
 
-export const CURRENT_LOCATION_ID = 'current';
+// Definido en types.ts para que pueda usarlo la logica pura; se reexporta para no tocar los imports
+// de media app, que lo piden aqui desde siempre.
+export { CURRENT_LOCATION_ID } from '../types';
 
 export interface PrevisionGuardada {
   forecast: Forecast;
@@ -60,6 +71,19 @@ interface PlacesContextValue {
    * se desliza sin pedir nada. Se llena con lo que se va visitando; NO dispara consultas extra.
    */
   forecastByPlace: Record<string, PrevisionGuardada>;
+  /**
+   * Observacion MEDIDA de cada lugar (por id), cuando hay una estacion que lo represente. Que falte
+   * un lugar es normal: fuera de España no hay red, y dentro puede no haber estacion lo bastante
+   * cerca o a la misma cota. No se guarda en disco a proposito: una medicion vieja no vale, y sin
+   * red es preferible enseñar solo la prevision a resucitar la de anteayer.
+   */
+  observacionByPlace: Record<string, CurrentObservation>;
+  /**
+   * Avisos OFICIALES de AEMET de cada lugar (por id). Que falte un lugar significa "todavia no se
+   * ha preguntado"; que este con la lista vacia significa "se pregunto y no hay ninguno". Tampoco
+   * se guardan en disco: un aviso caducado en pantalla seria peor que no enseñar nada.
+   */
+  avisosByPlace: Record<string, AvisosLugar>;
   /** Refresca en una sola llamada la temperatura actual de todos los lugares. Con throttle. */
   refreshCurrentTemps: (force?: boolean) => Promise<void>;
   setActiveId: (id: string) => void;
@@ -90,6 +114,12 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   const [message, setMessage] = useState('Actualiza tu ubicación para empezar.');
   const [currentByPlace, setCurrentByPlace] = useState<Record<string, TempGuardada>>({});
   const [forecastByPlace, setForecastByPlace] = useState<Record<string, PrevisionGuardada>>({});
+  const [observacionByPlace, setObservacionByPlace] = useState<Record<string, CurrentObservation>>(
+    {},
+  );
+  const [avisosByPlace, setAvisosByPlace] = useState<Record<string, AvisosLugar>>({});
+  const ultimaObservacionRef = useRef<Record<string, number>>({});
+  const ultimosAvisosRef = useRef<Record<string, number>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -235,6 +265,57 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Pide la observación MEDIDA de un lugar. Va aparte de la previsión y falla aparte: si no hay
+  // estación, si el servidor está caído o si no hay red, la pantalla se queda con la previsión y
+  // no se enseña ningún error. La medición es un extra; la previsión es el contenido.
+  const cargarObservacion = useCallback(
+    async (id: string, lat: number, lon: number, elevacion?: number) => {
+      if (Date.now() - (ultimaObservacionRef.current[id] ?? 0) < OBSERVACION_RECHECK_MS) {
+        return;
+      }
+      ultimaObservacionRef.current[id] = Date.now();
+
+      const observacion = await getObservacion(lat, lon, elevacion);
+      if (!observacion) {
+        // Se permite reintentar antes del throttle: puede haber sido un fallo de red pasajero.
+        ultimaObservacionRef.current[id] = 0;
+        // Y se retira la anterior, si la había: sin dato nuevo, dejar el viejo en pantalla sería
+        // enseñar la medición de otro momento (o de otro sitio, si el lugar activo cambió).
+        setObservacionByPlace((previo) => {
+          if (previo[id] === undefined) {
+            return previo; // nada que quitar: se evita un render de más
+          }
+          const siguiente = { ...previo };
+          delete siguiente[id];
+          return siguiente;
+        });
+        return;
+      }
+      setObservacionByPlace((previo) => ({ ...previo, [id]: observacion }));
+    },
+    [],
+  );
+
+  // Pide los avisos OFICIALES de un lugar. Como la observacion, va y falla aparte de la prevision.
+  //
+  // `undefined` significa que no se ha podido preguntar, y entonces se deja lo que hubiera y se
+  // permite reintentar antes del throttle: quitar un aviso naranja de la pantalla porque se cayo la
+  // red seria decirle a alguien que ya no hay peligro. Una lista VACIA, en cambio, si se guarda:
+  // ahi AEMET ha contestado que no hay nada, y el aviso de ayer tiene que desaparecer.
+  const cargarAvisos = useCallback(async (id: string, lat: number, lon: number) => {
+    if (Date.now() - (ultimosAvisosRef.current[id] ?? 0) < AVISOS_RECHECK_MS) {
+      return;
+    }
+    ultimosAvisosRef.current[id] = Date.now();
+
+    const avisos = await getAvisos(lat, lon);
+    if (!avisos) {
+      ultimosAvisosRef.current[id] = 0;
+      return;
+    }
+    setAvisosByPlace((previo) => ({ ...previo, [id]: avisos }));
+  }, []);
+
   useEffect(() => {
     const loadStored = async () => {
       const [storedPlaces, storedLocation, storedTemps] = await Promise.all([
@@ -346,6 +427,11 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       setForecast(data);
       setForecastUpdatedAt(updatedAt);
       setForecastByPlace((previo) => ({ ...previo, [activeId]: { forecast: data, updatedAt } }));
+      // La medición se pide también cuando la previsión sale de la caché: la previsión aguanta 30
+      // min, pero la observación tiene su propio ritmo. `elevation` viaja dentro de la previsión
+      // (incluida la guardada), y sirve para descartar estaciones a otra cota.
+      void cargarObservacion(activeId, place.lat, place.lon, data.elevation);
+      void cargarAvisos(activeId, place.lat, place.lon);
     };
 
     const loadForecast = async (force: boolean, silent: boolean) => {
@@ -427,7 +513,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     // sí mostramos indicador aunque la recarga venga de un evento automático.
     const silent = silentRequested && forecastRef.current !== undefined;
     void loadForecast(force, silent);
-  }, [activeId, currentLocationPlace, places, forecastReloadTick]);
+  }, [activeId, currentLocationPlace, places, forecastReloadTick, cargarObservacion, cargarAvisos]);
 
   const refreshCurrentLocation = async () => {
     setLoadingLocation(true);
@@ -486,39 +572,46 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   // Previsión de un lugar cualquiera (p. ej. uno buscado y aún sin guardar), SIN convertirlo en el
   // lugar activo. Antes, consultar un lugar buscado lo metía como activo en "Hoy" y, al no estar en
   // la lista, no había forma de volver: se quedaba uno encerrado en esa previsión.
-  const cargarPrevision = useCallback(async (place: Place) => {
-    const [cachedRaw, tsRaw] = await Promise.all([
-      AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${place.id}`),
-      AsyncStorage.getItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`),
-    ]);
-    const edad = tsRaw ? Date.now() - Number(tsRaw) : Infinity;
-    if (cachedRaw && edad < FORECAST_TTL_MS) {
-      try {
-        const guardada = JSON.parse(cachedRaw) as Forecast;
-        if (guardada?.days?.length > 0) {
-          setForecastByPlace((previo) => ({
-            ...previo,
-            [place.id]: { forecast: guardada, updatedAt: tsRaw ? Number(tsRaw) : undefined },
-          }));
-          return;
+  const cargarPrevision = useCallback(
+    async (place: Place) => {
+      const [cachedRaw, tsRaw] = await Promise.all([
+        AsyncStorage.getItem(`${STORAGE_FORECAST_PREFIX}${place.id}`),
+        AsyncStorage.getItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`),
+      ]);
+      const edad = tsRaw ? Date.now() - Number(tsRaw) : Infinity;
+      if (cachedRaw && edad < FORECAST_TTL_MS) {
+        try {
+          const guardada = JSON.parse(cachedRaw) as Forecast;
+          if (guardada?.days?.length > 0) {
+            setForecastByPlace((previo) => ({
+              ...previo,
+              [place.id]: { forecast: guardada, updatedAt: tsRaw ? Number(tsRaw) : undefined },
+            }));
+            void cargarObservacion(place.id, place.lat, place.lon, guardada.elevation);
+            void cargarAvisos(place.id, place.lat, place.lon);
+            return;
+          }
+        } catch {
+          // cache corrupta: se pide de nuevo
         }
-      } catch {
-        // cache corrupta: se pide de nuevo
       }
-    }
 
-    const data = await getForecast(place.lat, place.lon);
-    const ahora = Date.now();
-    setForecastByPlace((previo) => ({
-      ...previo,
-      [place.id]: { forecast: data, updatedAt: ahora },
-    }));
-    // Se guarda en disco igual que la del lugar activo: si luego se guarda el lugar, ya está lista.
-    await Promise.all([
-      AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${place.id}`, JSON.stringify(data)),
-      AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`, String(ahora)),
-    ]);
-  }, []);
+      const data = await getForecast(place.lat, place.lon);
+      const ahora = Date.now();
+      setForecastByPlace((previo) => ({
+        ...previo,
+        [place.id]: { forecast: data, updatedAt: ahora },
+      }));
+      void cargarObservacion(place.id, place.lat, place.lon, data.elevation);
+      void cargarAvisos(place.id, place.lat, place.lon);
+      // Se guarda en disco igual que la del lugar activo: si luego se guarda el lugar, ya está lista.
+      await Promise.all([
+        AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${place.id}`, JSON.stringify(data)),
+        AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`, String(ahora)),
+      ]);
+    },
+    [cargarObservacion, cargarAvisos],
+  );
 
   // Al volver la app a primer plano se comprueba si el usuario se ha movido de ciudad
   // y, en cualquier caso, se refresca la previsión.
@@ -568,6 +661,8 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     message,
     currentByPlace,
     forecastByPlace,
+    observacionByPlace,
+    avisosByPlace,
     refreshCurrentTemps,
     setActiveId,
     refreshCurrentLocation,

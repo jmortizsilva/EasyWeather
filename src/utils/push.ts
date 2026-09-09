@@ -1,29 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Notifications from 'expo-notifications';
+import { cabeceras, endpoint } from './servidorPropio';
 
 // Servidor de avisos propio (Node/Fastify, multi-app). Vigila la temperatura y envia los push.
-// El servidor sirve varias apps: cada ruta cuelga de /apps/<app>/ y exige la clave de la app en la
-// cabecera X-App-Key. La clave llega por variable de entorno EXPO_PUBLIC_APP_KEY: se incrusta en el
-// bundle al publicar (eas update/build) pero NO se sube al repositorio, que es publico.
-const SERVER_URL = 'https://api.jmortiz.es';
-const APP_ID = 'easyweather';
-const APP_KEY = process.env.EXPO_PUBLIC_APP_KEY ?? '';
+// Los datos de conexion (URL, id de app y clave) viven en servidorPropio.ts, porque tambien los
+// usan las observaciones medidas.
+
 // Identificador del proyecto en EAS (necesario para obtener el token de push de Expo).
 const PROJECT_ID = 'bdc45482-63ad-4db7-b1cf-12e9a55b0479';
-
-function endpoint(ruta: string): string {
-  return `${SERVER_URL}/apps/${APP_ID}/${ruta}`;
-}
-
-// Lo que necesita el modulo nativo de seguimiento para reportar por su cuenta, con la app cerrada
-// y sin JavaScript. Se le pasa desde aqui para que no haya dos sitios con la URL y la clave.
-export function destinoDeUbicacion(): { url: string; appKey: string } {
-  return { url: endpoint('ubicacion'), appKey: APP_KEY };
-}
-
-function cabeceras(): Record<string, string> {
-  return { 'content-type': 'application/json', 'x-app-key': APP_KEY };
-}
 
 // Un resumen tal y como lo entiende el servidor. `seguirUbicacion` = usar la ubicacion actual del
 // dispositivo (para los resumenes de "mi ubicacion"); si es false, se usa la lat/lon fija enviada.
@@ -47,6 +31,12 @@ export interface SincronizacionAvisos {
   ubicacion: { lat: number; lon: number; nombre?: string } | null;
   umbral: { maxThreshold: number; minThreshold: number } | null;
   resumenes: ResumenServidor[];
+  /**
+   * Avisos OFICIALES de AEMET. `null` = apagados. Va aparte del `umbral` a proposito: el umbral es
+   * una regla del usuario y esto es informacion oficial, y el servidor los trata por separado para
+   * que nunca se mezclen en la misma notificacion.
+   */
+  avisosOficiales: { nivelMinimo: string; fenomenosSilenciados: string[] } | null;
 }
 
 // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona

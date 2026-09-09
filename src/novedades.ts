@@ -9,8 +9,9 @@
 // Se VACIA al lanzar una build: lo que va dentro del binario ya lo cuentan las notas de
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
-// Ultima vez que se vacio: build de produccion con runtimeVersion 1.4.0.
+// Ultima vez que se vacio: build de preview del 2026-09-01 (arreglo de la geovalla).
 export const NOVEDADES: string[] = [
-  'Se ha retirado el seguimiento de ubicación en segundo plano. Los avisos siguen llegando, y usan la ubicación de la última vez que abriste la app.',
-  'Volverá en la próxima versión, con un sistema que gasta menos batería y no depende del GPS.',
+  'El buscador ya solo ofrece poblaciones y países. Antes, al buscar "Bilbao", salía también el barrio de Bilbao de Madrid. El nombre de tu ubicación actual sigue diciendo el barrio, como hasta ahora.',
+  'La pantalla de Avisos dice ahora si se está siguiendo tu ubicación, o por qué no: si falta el permiso, si esta versión de la app no puede hacerlo, o si el seguimiento no ha arrancado.',
+  'Esa línea se equivocaba justo después de crear un aviso: decía que el seguimiento no había arrancado cuando en realidad estaba arrancando. Ya se actualiza cuando termina.',
 ];
