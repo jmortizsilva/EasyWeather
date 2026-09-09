@@ -10,4 +10,7 @@
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build 19 de produccion del 2026-09-09 (la que lleva AEMET).
-export const NOVEDADES: string[] = [];
+export const NOVEDADES: string[] = [
+  'Arreglado: al llegar de un viaje, la temperatura medida podia seguir siendo la del sitio anterior durante unos minutos. Ahora se actualiza en cuanto cambias de zona.',
+  'La linea del sol dice ahora cuantas horas de luz tiene el dia, ademas de a que hora amanece y anochece.',
+];
