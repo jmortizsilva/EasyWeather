@@ -1,4 +1,3 @@
-import { useFocusEffect } from '@react-navigation/native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   NativeScrollEvent,
@@ -8,6 +7,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { useAlEntrarEnPestana } from '../navegacion/PestanasContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ControlPaginas from '../components/ControlPaginas';
 import AvisosModal from '../components/AvisosModal';
@@ -119,7 +119,8 @@ export default function HomeScreen() {
   // Al entrar en la pestaña Hoy se comprueba si el usuario se ha movido de ciudad y se
   // refresca la previsión. Silencioso si ya hay datos. También se refrescan las temperaturas
   // que muestra el control de páginas.
-  useFocusEffect(
+  useAlEntrarEnPestana(
+    'hoy',
     useCallback(() => {
       setAhora(Date.now());
       void detectCurrentLocation();

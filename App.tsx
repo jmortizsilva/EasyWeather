@@ -1,98 +1,63 @@
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import { createNativeBottomTabNavigator } from '@bottom-tabs/react-navigation';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { NativeSyntheticEvent } from 'react-native';
+import { Tabs, TabSelectedEvent } from 'react-native-screens';
 import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
+import { ClavePestana, PESTANAS } from './src/navegacion/pestanas';
+import { PestanasProvider, usePestanas } from './src/navegacion/PestanasContext';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
-import { TabParamList } from './src/navigation/types';
 import { ThemeProvider, useTema } from './src/theme/ThemeContext';
 import { useActualizaciones } from './src/utils/actualizaciones';
 
-const Tab = createNativeBottomTabNavigator<TabParamList>();
+const PANTALLAS: Record<ClavePestana, () => React.JSX.Element> = {
+  hoy: HomeScreen,
+  lugares: PlacesScreen,
+  avisos: AvisosIndexScreen,
+};
 
-// La navegacion y la barra de pestanas (nativa) necesitan sus propios colores: no basta con
-// pintar las pantallas, o quedan franjas del tema contrario arriba y abajo.
+// La barra de pestañas es la NATIVA de iOS (UITabBarController), servida por react-native-screens.
+// El porque de no usar react-navigation ni react-native-bottom-tabs esta en navegacion/pestanas.ts:
+// resumido, la otra libreria rompia el rasgo de "seleccionado" de VoiceOver en iOS 27.
+//
+// Aqui NO se pinta el fondo de la barra a proposito. Se deja el material del sistema, que en iOS 26
+// y 27 es el cristal liquido y se adapta solo a claro y oscuro. El tema de la app sale de
+// useColorScheme y app.json declara userInterfaceStyle "automatic", asi que app y barra leen el
+// mismo interruptor del iPhone y no pueden desparejarse.
 function Navegacion() {
   const { colores, tema } = useTema();
-  const base = tema === 'oscuro' ? DarkTheme : DefaultTheme;
-  const navigationTheme = {
-    ...base,
-    colors: {
-      ...base.colors,
-      background: colores.fondo,
-      card: colores.tarjeta,
-      border: colores.bordeNavegacion,
-      primary: colores.acento,
-      text: colores.texto,
-    },
-  };
+  const { peticion, alSeleccionarNativo } = usePestanas();
 
   return (
     <>
       {/* Iconos de la barra de estado: claros sobre fondo oscuro y al reves. */}
       <StatusBar style={tema === 'oscuro' ? 'light' : 'dark'} />
-      <NavigationContainer theme={navigationTheme}>
-        {/* SIN `tabBarStyle` A PROPOSITO (2026-09-15). No es un descuido ni una simplificacion.
-
-            Con iOS 27, VoiceOver dejaba las pestañas ya visitadas dichas como "seleccionadas" y se
-            acumulaban: al recorrer las tres, las tres lo decian. La barra es nativa, asi que el
-            rasgo no lo ponemos nosotros y no hay nada que corregir desde aqui.
-
-            Lo localizo comparar con Audiocinemateca, que lleva la MISMA libreria en la MISMA
-            version (1.4.0) y no falla. Solo haciamos dos cosas distintas: fondo propio de la barra
-            e iconos. Quitando las dos, VoiceOver volvio a decirlo solo en la pestaña activa
-            (comprobado en el iPhone el 2026-09-15). Los iconos vuelven aqui porque la app tiene que
-            ser accesible Y verse bien; el fondo se queda fuera, que es lo que menos cuesta perder.
-
-            Por que el fondo es el sospechoso que se queda fuera: `tabBarStyle.backgroundColor`
-            acaba en un `backgroundColor` explicito del `UITabBarAppearance`
-            (react-native-bottom-tabs 1.4.0, ios/TabViewImpl.swift, configureStandardAppearance),
-            que en iOS 26+ sustituye al cristal liquido. Ya hay fallos abiertos en la libreria con
-            esa combinacion (callstack/react-native-bottom-tabs#433 y #448).
-
-            SI EL FALLO VUELVE CON LOS ICONOS, entonces eran ellos y no el fondo: la libreria
-            reasigna `item.image` y `item.selectedImage` en cada pasada de layout y por duplicado
-            (una sincrona y otra en un `DispatchQueue.main.async`), lo que obliga a UIKit a
-            reconstruir el boton de la pestaña por detras de los objetos `UITab` y del delegado
-            `shouldSelectTab` de iOS 27. En ese caso la salida NO es quedarse sin iconos, es cambiar
-            a las pestañas nativas de react-native-screens (TabsHost/TabsScreen), que ya esta
-            instalado y compilado, usa la API clasica de UITabBarController, trae SF Symbols y
-            expone `tabItemAccessibilityLabel` como prop. */}
-        <Tab.Navigator
-          tabBarActiveTintColor={colores.acento}
-          tabBarInactiveTintColor={colores.tabInactivo}>
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Hoy',
-              tabBarIcon: () => ({ sfSymbol: 'sun.max.fill' }),
-            }}
-          />
-          <Tab.Screen
-            name="Places"
-            component={PlacesScreen}
-            options={{
-              tabBarLabel: 'Mis lugares',
-              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
-            }}
-          />
-          {/* Buscar ya no es pestaña: su contenido es "añadir un lugar", así que se abre como
-              hoja desde el botón "Añadir lugar" de Mis lugares. Una pestaña menos que recorrer. */}
-          <Tab.Screen
-            name="Alerts"
-            component={AvisosIndexScreen}
-            options={{
-              tabBarLabel: 'Avisos',
-              tabBarIcon: () => ({ sfSymbol: 'bell.fill' }),
-            }}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
+      <Tabs.Host
+        navStateRequest={peticion}
+        onTabSelected={(evento: NativeSyntheticEvent<TabSelectedEvent>) =>
+          alSeleccionarNativo(evento.nativeEvent)
+        }
+        // El fondo del contenedor nativo, no el de la barra: sin el se ve el blanco del sistema
+        // durante el cambio de pestaña.
+        nativeContainerStyle={{ backgroundColor: colores.fondo }}
+        ios={{ tabBarTintColor: colores.acento }}>
+        {PESTANAS.map((pestana) => {
+          const Pantalla = PANTALLAS[pestana.clave];
+          return (
+            <Tabs.Screen
+              key={pestana.clave}
+              screenKey={pestana.clave}
+              title={pestana.titulo}
+              style={{ backgroundColor: colores.fondo }}
+              ios={{ icon: { type: 'sfSymbol', name: pestana.sfSymbol } }}>
+              <Pantalla />
+            </Tabs.Screen>
+          );
+        })}
+      </Tabs.Host>
     </>
   );
 }
@@ -109,7 +74,11 @@ export default function App() {
         <ThemeProvider>
           <PlacesProvider>
             <NotificationsProvider>
-              <Navegacion />
+              {/* Envuelve a Navegacion, no al reves: las pantallas de dentro preguntan por la
+                  pestaña activa (useAlEntrarEnPestana) y "Mis lugares" pide saltar a Hoy. */}
+              <PestanasProvider>
+                <Navegacion />
+              </PestanasProvider>
             </NotificationsProvider>
           </PlacesProvider>
         </ThemeProvider>

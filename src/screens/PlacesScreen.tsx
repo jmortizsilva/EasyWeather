@@ -1,9 +1,8 @@
-import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useCallback, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Swipeable } from 'react-native-gesture-handler';
+import { useAlEntrarEnPestana, usePestanas } from '../navegacion/PestanasContext';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TabParamList } from '../navigation/types';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
@@ -16,7 +15,7 @@ export default function PlacesScreen() {
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
-  const navigation = useNavigation<NavigationProp<TabParamList>>();
+  const { irA } = usePestanas();
   const {
     places,
     currentLocationPlace,
@@ -35,7 +34,8 @@ export default function PlacesScreen() {
   const [previsualizando, setPrevisualizando] = useState<Place | undefined>(undefined);
 
   // Al abrir "Mis lugares" se refresca la temperatura de todos los lugares (una sola llamada).
-  useFocusEffect(
+  useAlEntrarEnPestana(
+    'lugares',
     useCallback(() => {
       setAhora(Date.now());
       void refreshCurrentTemps();
@@ -53,7 +53,7 @@ export default function PlacesScreen() {
 
   const selectAndGoHome = (id: string) => {
     setActiveId(id);
-    navigation.navigate('Home');
+    irA('hoy');
   };
 
   // Cerrar la hoja se lleva por delante la previsión: si no, al volver a abrir la búsqueda

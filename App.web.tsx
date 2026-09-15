@@ -1,86 +1,84 @@
 import { Ionicons } from '@expo/vector-icons';
-import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StatusBar } from 'expo-status-bar';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
+import { ClavePestana, PESTANAS } from './src/navegacion/pestanas';
+import { PestanasProvider, usePestanas } from './src/navegacion/PestanasContext';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
-import { TabParamList } from './src/navigation/types';
-import { ThemeProvider, useTema } from './src/theme/ThemeContext';
+import { ThemeProvider, useColores, useTema } from './src/theme/ThemeContext';
 
-// Variante solo para web: react-native-bottom-tabs no tiene soporte web, así que aquí
-// se usa el navegador de pestañas en JS. Sirve únicamente para poder verificar la app
-// en el navegador durante el desarrollo; en iOS/Android se usa App.tsx (pestañas nativas).
-// Buscar no es pestaña: se abre como hoja desde "Mis lugares", igual que en iOS.
-const Tab = createBottomTabNavigator<TabParamList>();
+// Variante SOLO para web. La barra de pestañas de iOS es nativa y en web no existe: las
+// `Tabs.Screen` de react-native-screens se convierten alli en `View` a secas, asi que las tres
+// pantallas saldrian apiladas y sin forma de cambiar de una a otra.
+//
+// Esto sirve unicamente para poder mirar la app en el navegador durante el desarrollo; en el
+// iPhone manda App.tsx. Metro elige el fichero por la extension de plataforma.
+//
+// Ojo: la pestaña activa sale del MISMO PestanasProvider que en iOS, no de un navegador aparte.
+// Antes esto montaba react-navigation solo para web y eran dos modelos de navegacion conviviendo;
+// con las pantallas preguntando por la pestaña activa, eso ya no vale.
+
+const PANTALLAS: Record<ClavePestana, () => React.JSX.Element> = {
+  hoy: HomeScreen,
+  lugares: PlacesScreen,
+  avisos: AvisosIndexScreen,
+};
+
+const ICONOS: Record<ClavePestana, keyof typeof Ionicons.glyphMap> = {
+  hoy: 'sunny-outline',
+  lugares: 'list-outline',
+  avisos: 'notifications-outline',
+};
 
 function Navegacion() {
-  const { colores, tema } = useTema();
-  const base = tema === 'oscuro' ? DarkTheme : DefaultTheme;
-  const navigationTheme = {
-    ...base,
-    colors: {
-      ...base.colors,
-      background: colores.fondo,
-      card: colores.tarjeta,
-      border: colores.bordeNavegacion,
-      primary: colores.acento,
-      text: colores.texto,
-    },
-  };
+  const colores = useColores();
+  const { tema } = useTema();
+  const { activa, irA } = usePestanas();
+  const Pantalla = PANTALLAS[activa];
 
   return (
-    <>
+    <View style={[estilos.raiz, { backgroundColor: colores.fondo }]}>
       <StatusBar style={tema === 'oscuro' ? 'light' : 'dark'} />
-      <NavigationContainer theme={navigationTheme}>
-        <Tab.Navigator
-          screenOptions={{
-            headerShown: false,
-            tabBarStyle: {
-              backgroundColor: colores.tarjeta,
-              borderTopColor: colores.bordeNavegacion,
-            },
-            tabBarActiveTintColor: colores.acento,
-            tabBarInactiveTintColor: colores.tabInactivo,
-          }}>
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Hoy',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="sunny-outline" color={color} size={size} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Places"
-            component={PlacesScreen}
-            options={{
-              tabBarLabel: 'Mis lugares',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="list-outline" color={color} size={size} />
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Alerts"
-            component={AvisosIndexScreen}
-            options={{
-              tabBarLabel: 'Avisos',
-              tabBarIcon: ({ color, size }) => (
-                <Ionicons name="notifications-outline" color={color} size={size} />
-              ),
-            }}
-          />
-        </Tab.Navigator>
-      </NavigationContainer>
-    </>
+      <View style={estilos.contenido}>
+        <Pantalla />
+      </View>
+      <View
+        style={[
+          estilos.barra,
+          { backgroundColor: colores.tarjeta, borderTopColor: colores.bordeNavegacion },
+        ]}>
+        {PESTANAS.map((pestana) => {
+          const elegida = pestana.clave === activa;
+          const color = elegida ? colores.acento : colores.tabInactivo;
+          return (
+            <Pressable
+              key={pestana.clave}
+              onPress={() => irA(pestana.clave)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: elegida }}
+              accessibilityLabel={pestana.titulo}
+              style={estilos.pestana}>
+              <Ionicons name={ICONOS[pestana.clave]} color={color} size={24} />
+              <Text style={[estilos.etiqueta, { color }]}>{pestana.titulo}</Text>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
   );
 }
+
+const estilos = StyleSheet.create({
+  raiz: { flex: 1 },
+  contenido: { flex: 1 },
+  barra: { flexDirection: 'row', borderTopWidth: StyleSheet.hairlineWidth, paddingBottom: 6 },
+  pestana: { flex: 1, alignItems: 'center', paddingTop: 8, gap: 2 },
+  etiqueta: { fontSize: 11 },
+});
 
 export default function App() {
   return (
@@ -88,7 +86,9 @@ export default function App() {
       <ThemeProvider>
         <PlacesProvider>
           <NotificationsProvider>
-            <Navegacion />
+            <PestanasProvider>
+              <Navegacion />
+            </PestanasProvider>
           </NotificationsProvider>
         </PlacesProvider>
       </ThemeProvider>

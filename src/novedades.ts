@@ -11,5 +11,5 @@
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build 19 de produccion del 2026-09-09 (la que lleva AEMET).
 export const NOVEDADES: string[] = [
-  'Vuelven los iconos de la barra de pestanas. Sigue sin fondo de color propio, que es lo que parece estar detras del fallo de VoiceOver en iOS 27. Comprueba dos cosas: que la barra se ve bien, y que al recorrer las pestanas solo dice "seleccionada" en la que estas.',
+  'La barra de pestanas se ha rehecho por dentro, con los iconos de siempre. Era la unica forma de arreglar que VoiceOver dejase varias pestanas dichas como "seleccionada" en iOS 27. Comprueba que solo lo dice la pestana en la que estas, que los iconos se ven bien y que al elegir un lugar en Mis lugares se salta a Hoy.',
 ];
