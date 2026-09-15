@@ -11,6 +11,5 @@
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build 19 de produccion del 2026-09-09 (la que lleva AEMET).
 export const NOVEDADES: string[] = [
-  'Arreglado: al llegar de un viaje, la temperatura medida podia seguir siendo la del sitio anterior durante unos minutos. Ahora se actualiza en cuanto cambias de zona.',
-  'La linea del sol dice ahora cuantas horas de luz tiene el dia, ademas de a que hora amanece y anochece.',
+  'Prueba: la barra de pestanas va sin iconos y sin fondo propio, a proposito. Es para localizar por que VoiceOver deja varias pestanas dichas como "seleccionada" en iOS 27. Comprueba si ahora solo lo dice la pestana en la que estas.',
 ];

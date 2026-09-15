@@ -36,35 +36,42 @@ function Navegacion() {
       {/* Iconos de la barra de estado: claros sobre fondo oscuro y al reves. */}
       <StatusBar style={tema === 'oscuro' ? 'light' : 'dark'} />
       <NavigationContainer theme={navigationTheme}>
+        {/* PRUEBA EN CURSO (2026-09-15), NO ES EL ESTADO DEFINITIVO. Ver el bloque de abajo.
+            Con iOS 27, VoiceOver deja las pestañas ya visitadas como "seleccionadas" y se
+            acumulan: al final las tres lo dicen. Aqui se quitan a la vez el fondo propio de la
+            barra y los iconos, que son las dos unicas cosas que hacemos distinto de
+            Audiocinemateca, que lleva la MISMA libreria en la MISMA version y no falla.
+
+            Por que estas dos y no otras (react-native-bottom-tabs 1.4.0, TabViewImpl.swift):
+            - Los iconos: `configureTabBarItemImages` reasigna `item.image` y `item.selectedImage`
+              en cada pasada de layout, y ademas DOS veces (una sincrona y otra en un
+              `DispatchQueue.main.async`). Sin `tabBarIcon` ese bloque entero no se ejecuta, que es
+              justo el caso de Audiocinemateca. Reescribir las imagenes obliga a UIKit a
+              reconstruir el boton de la pestaña, y en iOS 26/27 la barra ya la gobiernan objetos
+              `UITab` y el delegado nuevo `shouldSelectTab`: ahi es donde puede quedarse pegado el
+              rasgo de seleccionado.
+            - `tabBarStyle`: pone un `backgroundColor` explicito en el `UITabBarAppearance`, que en
+              iOS 26+ sustituye el cristal liquido. Ya hay fallos abiertos en la libreria con esa
+              combinacion (callstack/react-native-bottom-tabs#433 y #448).
+
+            Si con esto se arregla, el siguiente update devuelve los ICONOS y deja fuera solo el
+            fondo, que es lo que menos duele perder. Si no se arregla, la causa esta en otro sitio
+            y toca pasar a las pestañas nativas de react-native-screens. */}
         <Tab.Navigator
-          tabBarStyle={{ backgroundColor: colores.tarjeta }}
           tabBarActiveTintColor={colores.acento}
           tabBarInactiveTintColor={colores.tabInactivo}>
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Hoy',
-              tabBarIcon: () => ({ sfSymbol: 'sun.max.fill' }),
-            }}
-          />
+          <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: 'Hoy' }} />
           <Tab.Screen
             name="Places"
             component={PlacesScreen}
-            options={{
-              tabBarLabel: 'Mis lugares',
-              tabBarIcon: () => ({ sfSymbol: 'list.bullet' }),
-            }}
+            options={{ tabBarLabel: 'Mis lugares' }}
           />
           {/* Buscar ya no es pestaña: su contenido es "añadir un lugar", así que se abre como
               hoja desde el botón "Añadir lugar" de Mis lugares. Una pestaña menos que recorrer. */}
           <Tab.Screen
             name="Alerts"
             component={AvisosIndexScreen}
-            options={{
-              tabBarLabel: 'Avisos',
-              tabBarIcon: () => ({ sfSymbol: 'bell.fill' }),
-            }}
+            options={{ tabBarLabel: 'Avisos' }}
           />
         </Tab.Navigator>
       </NavigationContainer>
