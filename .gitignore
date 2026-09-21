@@ -17,6 +17,9 @@ expo-env.d.ts
 *.p12
 *.key
 *.mobileprovision
+# El .p12 ya esta ignorado arriba, pero credentials.json guarda su CONTRASENA en claro
+# (lo escribe `eas credentials` al usar credenciales locales). Repo publico: no entra.
+credentials.json
 
 # Metro
 .metro-health-check*
