@@ -10,8 +10,9 @@
     "lint": "eslint .",
     "formatear": "eslint . --fix",
     "comprobar-tipos": "tsc --noEmit",
+    "empaquetar": "expo export --platform ios",
     "test": "jest",
-    "verificar": "npm run comprobar-tipos && npm run lint && npm test"
+    "verificar": "npm run comprobar-tipos && npm run lint && npm test && npm run empaquetar"
   },
   "dependencies": {
     "@bottom-tabs/react-navigation": "^1.4.0",
