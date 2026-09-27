@@ -13,13 +13,12 @@
 // Esto es texto que se LEE EN VOZ ALTA: el Alert de novedades lo recita VoiceOver. Por eso va con
 // tildes y eñes, al contrario que los comentarios y los identificadores del proyecto. Sin ellas,
 // VoiceOver dice "pestanas" y "Espana", que no son palabras.
+// Recortada el 2026-09-27 a la lista de ESTE update, y no es la regla general: las seis entradas
+// anteriores (pestañas, medición pegada al sitio anterior, horas de luz, municipios del INE, nombres
+// oficiales y la fecha atrasada en América) se anunciaron en el update de las 20:25 de ese mismo día,
+// y ocho cosas de golpe en un solo Alert se hacen largas de oír. El coste, aceptado a sabiendas:
+// quien no llegase a aplicar aquel update no se enterará de esas seis.
 export const NOVEDADES: string[] = [
-  'Arreglado: con iOS 27, VoiceOver daba por seleccionadas varias pestañas a la vez, no solo la abierta. La barra de pestañas se ha rehecho por dentro para arreglarlo; los iconos son los de siempre.',
-  'Arreglado: al llegar de un viaje, la temperatura medida podía seguir siendo la del sitio anterior durante unos minutos. Ahora se actualiza en cuanto cambias de zona.',
-  'La línea del sol dice ahora cuántas horas de luz tiene el día, además de a qué hora amanece y anochece.',
-  'Arreglado: había pueblos de España que no salían al buscarlos, como Badia del Vallès. La app lleva ahora dentro los 8.132 municipios del INE, así que los encuentra todos, incluso sin cobertura.',
-  'Los pueblos salen ahora con su nombre oficial: Begues y no «Begas», Sant Quirze del Vallès y no «San Quirico de Tarrasa», Errenteria y no «Rentería».',
-  'Arreglado: en América, la fecha de cada día salía con un día de retraso, tanto en la lista de días como en el detalle con la vista hora a hora. Los datos siempre fueron los del día correcto; lo que estaba mal era la fecha escrita.',
   'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
   'Con VoiceOver, al caer en la fila de un día ya se dice «Temperatura» antes de los números. Antes empezaba por «mínima 12 grados» y no había forma de saber de qué era ese número.',
 ];
