@@ -4,6 +4,7 @@ import {
   fechaDelCalendario,
   formatFullDate,
   minutosEntre,
+  resumenHablado,
   valoresFilaDia,
 } from '../dayDetails';
 
@@ -217,5 +218,31 @@ describe('la fecha del dia', () => {
 
   it('sigue aceptando una fecha con hora, que es como llegan el sol y la luna', () => {
     expect(fechaDelCalendario('2026-09-27T14:30')?.getDate()).toBe(27);
+  });
+});
+
+describe('resumenHablado', () => {
+  // Es la PRIMERA opcion del ajustable de cada dia, o sea lo que se oye al caer en la fila sin hacer
+  // nada. Un usuario de VoiceOver conto que ahi no se decia "temperatura": empezaba por "minima 24,6
+  // grados" y no habia forma de saber de que era ese numero, mientras que la siguiente opcion si lo
+  // decia. La primera era justo la unica muda.
+  it('dice "Temperatura" antes del primer numero', () => {
+    expect(resumenHablado(DIA, 'Cielo despejado')).toBe(
+      'Temperatura mínima 24,6 grados, máxima 31,4 grados, Cielo despejado, ' +
+        'probabilidad de lluvia 10 por ciento',
+    );
+  });
+
+  it('sin temperaturas no dice la unidad, que quedaba "sin dato grados"', () => {
+    expect(resumenHablado({ date: '2026-08-21' }, 'Nublado')).toBe(
+      'Temperatura mínima sin dato, máxima sin dato, Nublado, probabilidad de lluvia 0 por ciento',
+    );
+  });
+
+  it('los decimales con coma y a un decimal, como en el resto de la app', () => {
+    // numeroEs redondea a un decimal: 19,25 se dice "19,3".
+    expect(resumenHablado({ date: '2026-08-21', tMin: 7.5, tMax: 19.25 }, 'Nubes')).toContain(
+      'mínima 7,5 grados, máxima 19,3 grados',
+    );
   });
 });

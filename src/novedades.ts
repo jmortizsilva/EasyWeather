@@ -21,4 +21,5 @@ export const NOVEDADES: string[] = [
   'Los pueblos salen ahora con su nombre oficial: Begues y no «Begas», Sant Quirze del Vallès y no «San Quirico de Tarrasa», Errenteria y no «Rentería».',
   'Arreglado: en América, la fecha de cada día salía con un día de retraso, tanto en la lista de días como en el detalle con la vista hora a hora. Los datos siempre fueron los del día correcto; lo que estaba mal era la fecha escrita.',
   'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
+  'Con VoiceOver, al caer en la fila de un día ya se dice «Temperatura» antes de los números. Antes empezaba por «mínima 12 grados» y no había forma de saber de qué era ese número.',
 ];

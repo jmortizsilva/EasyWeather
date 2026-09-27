@@ -2,7 +2,12 @@ import { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast } from '../types';
-import { buildDayDetails, formatFullDate, valoresFilaDia } from '../utils/dayDetails';
+import {
+  buildDayDetails,
+  formatFullDate,
+  resumenHablado,
+  valoresFilaDia,
+} from '../utils/dayDetails';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
@@ -25,12 +30,10 @@ export function useDayRow(day: DayForecast) {
   // texto que cambia. La prevision, que antes vivia aqui, pasa a ser la primera opcion del
   // ajustable, y asi sale de la linea en cuanto se entra en los detalles.
   const label = formatFullDate(day.date);
-  const grados = (valor: number | undefined) =>
-    valor !== undefined ? numeroEs(valor) : 'sin dato';
-  const resumen =
-    `mínima ${grados(day.tMin)} grados, máxima ${grados(day.tMax)} grados, ${info.label}, ` +
-    `probabilidad de lluvia ${numeroEs(day.rainProbability ?? 0)} por ciento`;
-  const opciones = [resumen, ...details.map((linea) => `${linea.title}: ${linea.spoken}`)];
+  const opciones = [
+    resumenHablado(day, info.label),
+    ...details.map((linea) => `${linea.title}: ${linea.spoken}`),
+  ];
 
   // value y los valores vecinos se calculan por adelantado: la vista nativa de iOS los usa para
   // refrescar la línea braille de forma síncrona en el flick (ver modules/adjustable-button).

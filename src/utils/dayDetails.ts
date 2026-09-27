@@ -82,6 +82,28 @@ function visible(valor: number | undefined): string {
   return valor !== undefined ? numeroEs(valor) : '-';
 }
 
+/**
+ * Lo que se oye al caer en la fila de un dia, que es la primera opcion de su ajustable.
+ *
+ * Empieza por "Temperatura" A PROPOSITO. Antes empezaba por "minima 12 grados", asi que quien caia
+ * en la fila oia un numero sin saber de que era; las demas opciones del ajustable si lo decian
+ * ("Temperatura: minima 12 grados, maxima 30"), de modo que justo la primera —la unica que se oye
+ * sin hacer nada— era la que se callaba el dato. Lo reporto un usuario de VoiceOver.
+ *
+ * El cielo entra como parametro y no se calcula aqui para no arrastrar `weatherCodes` a este fichero,
+ * del que el servidor de notificaciones mantiene una copia.
+ */
+export function resumenHablado(day: DayForecast, cielo: string): string {
+  // "grados" va DENTRO: sin el dato, la unidad no se dice. Antes salia "minima sin dato grados",
+  // que suena a frase a medias.
+  const grados = (valor: number | undefined) =>
+    valor !== undefined ? `${numeroEs(valor)} grados` : 'sin dato';
+  return (
+    `Temperatura mínima ${grados(day.tMin)}, máxima ${grados(day.tMax)}, ${cielo}, ` +
+    `probabilidad de lluvia ${numeroEs(day.rainProbability ?? 0)} por ciento`
+  );
+}
+
 /** Número hablado, con coma decimal; "sin dato" si falta, que es lo que hay que oír. */
 function hablado(valor: number | undefined): string {
   return valor !== undefined ? numeroEs(valor) : 'sin dato';
