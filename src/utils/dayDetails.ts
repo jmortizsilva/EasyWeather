@@ -14,9 +14,32 @@ export function formatTime(timeISO: string | undefined): string | undefined {
   return date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
 }
 
+/**
+ * El "2026-09-27" que manda Open-Meteo, convertido a las 00:00 de ESE dia en el reloj del telefono.
+ *
+ * `new Date('2026-09-27')` NO vale, y este es el fallo que lo enseño: el estandar obliga a
+ * interpretar la forma de SOLO FECHA como medianoche UTC, y luego el telefono la escribe en SU zona
+ * horaria. Al oeste de Greenwich eso cae en el dia anterior —en Bogota, UTC-5, son las 19:00 del dia
+ * 26—, asi que la ficha del dia titulaba "Sabado, 26 de septiembre" encima de los datos del domingo
+ * 27. Lo reporto un usuario de Bogota el 2026-09-27. Desde España no se ve NUNCA, porque su desfase
+ * es positivo; se reprodujo pidiendole a Intl que formatease en otras zonas.
+ *
+ * Con el año, el mes y el dia por separado no hay ningun instante que convertir: la fecha se lee
+ * igual en Bogota, en Madrid y en Auckland. Se exporta para poder probar justo eso.
+ */
+export function fechaDelCalendario(dateISO: string): Date | undefined {
+  const partes = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateISO.trim());
+  if (partes) {
+    return new Date(Number(partes[1]), Number(partes[2]) - 1, Number(partes[3]));
+  }
+  // Cualquier otra forma (una fecha con hora, por ejemplo) se deja al parser de siempre.
+  const suelta = new Date(dateISO);
+  return Number.isNaN(suelta.getTime()) ? undefined : suelta;
+}
+
 export function formatFullDate(dateISO: string): string {
-  const date = new Date(dateISO);
-  if (Number.isNaN(date.getTime())) {
+  const date = fechaDelCalendario(dateISO);
+  if (!date) {
     return dateISO;
   }
   const formatted = new Intl.DateTimeFormat('es-ES', {

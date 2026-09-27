@@ -1,5 +1,11 @@
 import { DayForecast } from '../../types';
-import { buildDayDetails, minutosEntre, valoresFilaDia } from '../dayDetails';
+import {
+  buildDayDetails,
+  fechaDelCalendario,
+  formatFullDate,
+  minutosEntre,
+  valoresFilaDia,
+} from '../dayDetails';
 
 // Un dia con TODOS los valores con decimales, que es donde se veian los dos fallos: el punto
 // decimal ("24.6") y las unidades leidas de forma distinta segun la fila.
@@ -174,5 +180,42 @@ describe('valoresFilaDia', () => {
       valueOnIncrement: '',
       valueOnDecrement: '',
     });
+  });
+});
+
+describe('la fecha del dia', () => {
+  // El fallo que lo destapo: un usuario de Bogota (UTC-5) veia en la ficha del dia, y en las filas
+  // de la pantalla principal, la fecha del DIA ANTERIOR. Los datos eran los buenos; el rotulo, no.
+  // La causa: `new Date('2026-09-27')` es medianoche UTC, y el telefono la escribe en su zona, que
+  // al oeste de Greenwich todavia esta en el dia 26. Desde España no se ve, porque el desfase es
+  // positivo, asi que estas pruebas tienen que valer sea cual sea la zona de quien las ejecute.
+
+  it('cae a medianoche del DIA QUE DICE, en la zona horaria que sea', () => {
+    // Con el fallo, en Madrid esto eran las 02:00 (medianoche UTC vista desde UTC+2) y en Bogota las
+    // 19:00 del dia anterior. Comparar contra la medianoche local construida a mano lo caza en
+    // cualquier zona con desfase, que es lo que no hacia una prueba del texto formateado.
+    expect(fechaDelCalendario('2026-09-27')?.getTime()).toBe(new Date(2026, 8, 27).getTime());
+    expect(fechaDelCalendario('2026-09-27')?.getHours()).toBe(0);
+  });
+
+  it('conserva año, mes y dia tal cual los manda Open-Meteo', () => {
+    const fecha = fechaDelCalendario('2026-01-01');
+    expect([fecha?.getFullYear(), (fecha?.getMonth() ?? -1) + 1, fecha?.getDate()]).toEqual([
+      2026, 1, 1,
+    ]);
+  });
+
+  it('escribe el dia de la semana que toca', () => {
+    expect(formatFullDate('2026-09-27')).toBe('Domingo, 27 de septiembre');
+    expect(formatFullDate('2026-01-01')).toBe('Jueves, 1 de enero');
+  });
+
+  it('una fecha que no se entiende se devuelve tal cual, sin reventar', () => {
+    expect(formatFullDate('mañana')).toBe('mañana');
+    expect(fechaDelCalendario('mañana')).toBeUndefined();
+  });
+
+  it('sigue aceptando una fecha con hora, que es como llegan el sol y la luna', () => {
+    expect(fechaDelCalendario('2026-09-27T14:30')?.getDate()).toBe(27);
   });
 });
