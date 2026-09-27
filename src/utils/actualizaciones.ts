@@ -10,14 +10,14 @@ const STORAGE_ULTIMO_UPDATE = 'tiempo.updates.lastId';
 async function instalarActualizacion(): Promise<void> {
   try {
     // Anuncio inmediato: durante la descarga no hay Alert, solo esto para VoiceOver.
-    AccessibilityInfo.announceForAccessibility('Descargando la actualizacion.');
+    AccessibilityInfo.announceForAccessibility('Descargando la actualización.');
     await Updates.fetchUpdateAsync();
     await Updates.reloadAsync();
   } catch {
-    AccessibilityInfo.announceForAccessibility('No se ha podido instalar la actualizacion.');
+    AccessibilityInfo.announceForAccessibility('No se ha podido instalar la actualización.');
     Alert.alert(
-      'Actualizacion',
-      'No se ha podido instalar la actualizacion. Se reintentara mas tarde.',
+      'Actualización',
+      'No se ha podido instalar la actualización. Se reintentará más tarde.',
     );
   }
 }
@@ -56,8 +56,8 @@ export function useActualizaciones(): void {
       const resultado = await Updates.checkForUpdateAsync();
       if (resultado.isAvailable) {
         Alert.alert(
-          'Nueva version disponible',
-          'La app se reiniciara para instalarla. Se instalara igualmente en el proximo arranque.',
+          'Nueva versión disponible',
+          'La app se reiniciará para instalarla. Se instalará igualmente en el próximo arranque.',
           [
             { text: 'Ahora no', style: 'cancel' },
             { text: 'Instalar', onPress: () => void instalarActualizacion() },
