@@ -20,4 +20,5 @@ export const NOVEDADES: string[] = [
   'Arreglado: había pueblos de España que no salían al buscarlos, como Badia del Vallès. La app lleva ahora dentro los 8.132 municipios del INE, así que los encuentra todos, incluso sin cobertura.',
   'Los pueblos salen ahora con su nombre oficial: Begues y no «Begas», Sant Quirze del Vallès y no «San Quirico de Tarrasa», Errenteria y no «Rentería».',
   'Arreglado: en América, la fecha de cada día salía con un día de retraso, tanto en la lista de días como en el detalle con la vista hora a hora. Los datos siempre fueron los del día correcto; lo que estaba mal era la fecha escrita.',
+  'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
 ];

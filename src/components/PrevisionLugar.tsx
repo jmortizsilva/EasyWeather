@@ -218,7 +218,12 @@ export function PaginaLugar({
       )}
 
       {!forecast && !cargando && <Text style={styles.note}>Todavía no hay datos disponibles.</Text>}
-      {esActiva && <Text style={styles.statusNote}>{message}</Text>}
+      {/* Con el mensaje vacío NO se pinta el hueco: un `Text` sin contenido sigue siendo una parada
+          de VoiceOver, y una que no dice nada. Lo reportó un usuario al recorrer con flicks la
+          previsión de un lugar buscado, donde salía un elemento en blanco entre el último día y el
+          enlace a Open-Meteo. Esa pantalla pasa `message=""` a propósito, porque el pie de estado es
+          de la pantalla Hoy; lo que faltaba era no pintar nada cuando no hay nada que decir. */}
+      {esActiva && message.trim() !== '' && <Text style={styles.statusNote}>{message}</Text>}
 
       {/* Atribución que exige la licencia de Open-Meteo (CC BY 4.0): tiene que ir junto a los
           datos, dentro de la app, no solo en la ficha del App Store. Va la última de la página a
