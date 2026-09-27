@@ -18,7 +18,8 @@ que empieza a llover— está en [PENDIENTE.md](PENDIENTE.md).
 | Previsión diaria y horaria | Open-Meteo | Previsión | Directo desde el móvil |
 | Temperatura, cielo y **sensación térmica** "de ahora" | Open-Meteo | **Previsión** para la hora en curso | Directo desde el móvil |
 | Altitud del terreno (`elevation`) | Open-Meteo | Dato fijo | Viene dentro de la previsión |
-| Búsqueda de lugares | Open-Meteo (geocoding) | — | Directo desde el móvil |
+| Búsqueda de lugares, mundo | Open-Meteo (geocoding) | — | Directo desde el móvil |
+| **Búsqueda de lugares, España** | **INE** (nombres) y **Wikidata** (coordenadas) | — | **Dentro de la app, sin red** |
 | Nombre de "mi ubicación" | iOS (`expo-location`) | — | En el propio teléfono |
 | Salida y puesta de la luna, fase | Cálculo local (`suncalc`) | Cálculo | En el propio teléfono |
 | **Temperatura, humedad, viento y lluvia medidos** | **AEMET** | **Observación** | Por el servidor propio |
@@ -39,6 +40,118 @@ medición, que es un extra.
 
 Configuración de la clave: en el `.env` del repo `servidor-notificaciones`, variable
 `AEMET_API_KEY`. Ver su `README.md`.
+
+## La búsqueda: Open-Meteo no conoce toda España
+
+**Lo que destapó esto**: una amiga no encontraba su pueblo, **Badia del Vallès** (Barcelona, 13.000
+habitantes). No era un fallo de la app: el geocodificador de Open-Meteo devuelve la **lista vacía**
+para ese nombre, escrito como sea, y tampoco aparece buscando `Badia` con `count=100` —cien
+resultados, todos italianos—. Barberà del Vallès, a **1,2 km**, sí está.
+
+**No es un caso aislado, y por eso no se arregló como un caso aislado.** Medido el **2026-09-26**
+sobre una muestra aleatoria de 250 municipios, comprobando que el resultado cayera a menos de 15 km
+del municipio de verdad y reintentando los fallos con *todas* las etiquetas y alias de Wikidata:
+
+- **12 municipios con código INE no salen con ninguno de sus nombres**: un **4,8%** (±3 puntos por el
+  tamaño de la muestra), del orden de **400 municipios**. Entre ellos Pozuelo de Calatrava,
+  Villagonzalo Pedernales, Lahiguera, Zigoitia, Trucios-Turtzioz y Castellví de la Marca. No son
+  aldeas de doce vecinos.
+- Otros 19 solo salían con un nombre distinto del que se escribiría.
+
+Y hay un segundo problema con la misma raíz: **cuando sí están, muchos llegan con el exónimo viejo**,
+y la app lo pintaba tal cual. Open-Meteo llama «San Quirico de Tarrasa» a Sant Quirze del Vallès,
+«Begas» a Begues, «Rentería» a Errenteria y «Carbia» a Villa de Cruces, que se llama así desde 1975.
+Para quien vive allí eso hace quedar casi tan mal como no salir.
+
+### Qué se hizo: los 8.132 municipios van dentro de la app
+
+Los busca `utils/municipios.ts` en el propio teléfono, **antes** de mirar lo que conteste Open-Meteo,
+y el fichero de datos lo genera `herramientas/generar-municipios.mjs`.
+
+**Cada fuente da lo que es suyo**, y el reparto no es casual:
+
+| Qué | De dónde | Por qué esa y no otra |
+|---|---|---|
+| Qué municipios hay y **cómo se llaman** | **INE**, lista fechada a 1 de enero de 2026 | Es la autoridad legal sobre las dos cosas. El campo de nombre oficial de Wikidata (P1448) está a medias y se equivoca: para Santiago de Compostela dice solo «Santiago» |
+| **Coordenadas** | **Wikidata** (CC0) | El INE no las publica en esa lista. Cotejadas contra las de Open-Meteo para las 52 capitales de provincia: **mediana 0,52 km**, máxima 2,29 km |
+| **Nombres alternativos** | **Wikidata** (etiquetas en es/ca/eu/gl/an/ast) | No se enseñan nunca. Sirven para encontrar el pueblo escribiéndolo como se decía antes, y para reconocer la ficha de Open-Meteo del mismo sitio |
+| Provincia y comunidad | **INE** | Ver más abajo: los de Open-Meteo están descuidados |
+
+**Va dentro de la app y no en el servidor propio**, al revés que AEMET. El motivo es el mismo que
+hace que la previsión se pida directa: para esos 400 pueblos **esta lista es la única vía**, así que
+tenían que poder encontrarse sin red y sin depender de que el VPS esté levantado. Si Open-Meteo no
+contesta, los municipios españoles siguen apareciendo.
+
+**Manda el nombre oficial.** Cuando un resultado de Open-Meteo es el mismo pueblo que uno nuestro, se
+descarta el suyo y se enseña el del INE. Para decidir que son el mismo se exige **nombre y cercanía a
+la vez**: mismo nombre (o alternativo) a menos de **15 km**, o un nombre que sea el principio del otro
+—Open-Meteo acorta: «Sant Cugat» por Sant Cugat del Vallès— a menos de **8 km**. Con la distancia
+sola se perderían pueblos de verdad: Badia del Vallès y Barberà del Vallès son dos municipios
+distintos a 1,2 km, y ese es justamente el caso que había que no romper.
+
+**Las provincias también son del INE, no de Open-Meteo**, que ahí escribe «Província de Lérida»
+(mitad catalán, mitad castellano), «Provincia de Gerona» y «Bizkaia» al lado de «Provincia de
+Guipúzcoa». Copiar sus cadenas habría dejado las listas uniformes al precio de importar la misma
+enfermedad que esto viene a curar. Como consecuencia, una fila nuestra y una suya pueden describir la
+misma provincia con palabras distintas; cada una es correcta según su fuente y la nuestra es la
+oficial.
+
+### Las trampas del fichero del INE
+
+Las dos se descubrieron mirando los datos, no leyendo la documentación:
+
+1. **Escribe los nombres al revés** para poder ordenarlos alfabéticamente: «Roda, La», «Alfàs del
+   Pi, l'», «Coruña, A». Hay que darles la vuelta, y son **611 municipios**. Pero el intercambio solo
+   se hace cuando detrás de la coma hay un **artículo de una lista cerrada**, porque **tres municipios
+   llevan coma de verdad** —«Castell d'Aro, Platja d'Aro i s'Agaró», «Cruïlles, Monells i Sant
+   Sadurní de l'Heura», «Saus, Camallera i Llampaies»— y una regla general los dejaría
+   irreconocibles. Las mayúsculas se dejan como las escribe el INE, que no es coherente consigo
+   mismo: pone «Alfàs del Pi, l'» en minúscula y «Hospitalet de Llobregat, L'» en mayúscula.
+2. **Su página de códigos de provincia va en ISO-8859-15**, como los ficheros de AEMET.
+
+Y una de Wikidata: algún censo está escrito con el punto de los miles tomado por decimal (Torrox
+venía con «22.523» habitantes). Se redondea, porque ese número solo sirve para deshacer empates al
+ordenar.
+
+### Cómo se busca, y cómo se escribe lo que se busca
+
+Se normaliza lo escrito y el nombre: sin tildes, en minúsculas. Vale **empezar por cualquier
+palabra** del nombre y no solo por la primera, porque medio país se llama «algo de algo» y nadie
+escribe «Villanueva de» para buscar Villanueva de la Cañada. A igual encaje van delante los más
+poblados.
+
+El apóstrofo y el punto volado **no** se tratan igual, y la diferencia se nota al buscar: el apóstrofo
+separa palabras («l'Alfàs del Pi») y se convierte en espacio, porque borrándolo quedaba «lalfas del
+pi» y entonces quien escribía «alfas del pi» no encontraba su pueblo. El punto volado está *dentro*
+de una palabra —es la ela geminada catalana— y se borra, para que «Compostel·la» se encuentre
+escribiendo «compostella».
+
+Las tildes se quitan con una **tabla explícita**, no con `String.prototype.normalize('NFD')`: quien
+ejecuta esto de verdad es Hermes, lo que soporte de Unicode **no se ha podido comprobar**, y un test
+verde en Jest no diría nada porque Jest corre en Node.
+
+### Lo que cuesta y lo que no arregla
+
+- **Pesa unos 620 KB en el paquete** (Hermes guarda en UTF-16 un texto con acentos) y unos **130 KB**
+  al viajar comprimido. Llega **por aire** con `eas update`: ni build ni revisión de Apple.
+- **Interpretar las 8.132 líneas tarda 43 ms en Node**, una sola vez por sesión y en la primera
+  búsqueda, dentro de la espera de la red. **En Hermes no se ha medido**: hace falta el teléfono.
+- **Solo cubre España.** Fuera de España sigue mandando Open-Meteo, con sus agujeros.
+- **Un pueblo guardado antes puede guardarse dos veces.** Los lugares se recuerdan por su
+  identificador, y el nuestro (`ine:08020`) no es el de Open-Meteo, así que quien ya tuviera «Begas»
+  guardado puede añadir «Begues» y ver las dos filas. Se sabe y se acepta: juntarlos obligaría a
+  emparejar por cercanía lo ya guardado.
+
+### Volver a generar la lista
+
+```bash
+node herramientas/generar-municipios.mjs     # baja INE + Wikidata y reescribe src/data/municipios.ts
+```
+
+Se hace cuando el INE publique lista nueva (cambia un puñado de municipios por década) y **se
+commitea el `.ts` que sale**: la app no descarga nada. Hay un test que fija el número de municipios
+en **8.132**; si baja, el fichero se truncó, y si cambia de verdad se actualiza a mano, que es la
+única forma de que el cambio se note.
 
 ## La tarjeta de arriba, en detalle
 
@@ -227,6 +340,9 @@ sitio. Son cosas distintas y las dos se dicen por su nombre.
 
 - **AEMET**: autoriza el uso y la reproducción **citando a AEMET como autora** de la información.
 - **Open-Meteo**: gratuito para uso no comercial, con atribución.
+- **INE**: autoriza reutilizar sus datos **citando la fuente**.
+- **Wikidata**: **CC0**, dominio público. Citarla no es obligado; se cita igual, porque decir de dónde
+  sale una coordenada es de la casa.
 
 Dónde se cumple, que no es solo la ficha del App Store:
 
@@ -237,6 +353,8 @@ Dónde se cumple, que no es solo la ficha del App Store:
    condiciones: todo lo que hay dentro lo ha emitido AEMET.
 2. **Dentro del texto que se comparte** (`utils/compartir.ts`). Compartir es redistribuir, y ahí
    fuera ya no hay rótulos que expliquen qué es previsto y qué medido: el texto tiene que decirlo.
+3. **Al pie de la pantalla de búsqueda** (`SearchScreen`), donde se leen los nombres del INE. El
+   rótulo hablado no lleva siglas, porque VoiceOver lee «INE» como la palabra «ine».
 
 ## Detalles técnicos que muerden
 

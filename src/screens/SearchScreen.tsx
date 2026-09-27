@@ -16,6 +16,7 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 import { vibrarConfirmacion } from '../utils/haptica';
+import { mezclarMunicipios } from '../utils/municipios';
 import { ordenarPorCercania } from '../utils/ordenarResultados';
 import { describirResultados } from '../utils/resultadosBusqueda';
 
@@ -56,8 +57,12 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
     setSearchLoading(true);
     const timer = setTimeout(() => {
       void searchPlaces(trimmed)
-        .then((results) => setSearchResults(results))
-        .catch(() => setSearchResults([]))
+        // Los municipios de España se buscan en el propio telefono y se mezclan con lo que conteste
+        // Open-Meteo, porque a su geocodificador le faltan del orden de 400 (ver utils/municipios).
+        .then((deLaRed) => setSearchResults(mezclarMunicipios(trimmed, deLaRed)))
+        // Y por eso mismo, si Open-Meteo no contesta no se vacia la lista: esos pueblos no tienen
+        // otra via, asi que tienen que salir tambien sin red.
+        .catch(() => setSearchResults(mezclarMunicipios(trimmed, [])))
         .finally(() => setSearchLoading(false));
     }, SEARCH_DEBOUNCE_MS);
 
@@ -248,6 +253,18 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
       {!searchLoading && citySearch.trim().length >= 2 && searchResults.length === 0 && (
         <Text style={styles.note}>Sin resultados para «{citySearch.trim()}».</Text>
       )}
+
+      {/* El INE autoriza reutilizar sus datos citando la fuente, y los nombres de los municipios
+          que se leen en esta pantalla son suyos. Va la última, como la atribución de la previsión:
+          es una parada más de VoiceOver y no debe estorbar a quien viene a buscar su pueblo. El
+          rótulo hablado no lleva siglas —VoiceOver lee "INE" como la palabra "ine"— y Wikidata es
+          CC0, o sea que citarla no es obligado, pero decir de dónde sale una coordenada sí es de la
+          casa. */}
+      <Text
+        style={styles.atribucion}
+        accessibilityLabel="Los nombres de los municipios de España son del Instituto Nacional de Estadística, y sus coordenadas de Wikidata">
+        Municipios de España: INE · Coordenadas: Wikidata
+      </Text>
     </ScrollView>
   );
 }
@@ -364,5 +381,12 @@ const crearEstilos = (c: Paleta) =>
     note: {
       color: c.textoTenue,
       fontSize: 15,
+    },
+    // No es un enlace, asi que no va subrayado ni en color de acento: es una nota al pie.
+    atribucion: {
+      color: c.textoTenue,
+      fontSize: 13,
+      textAlign: 'center',
+      marginTop: 8,
     },
   });

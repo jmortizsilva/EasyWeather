@@ -40,6 +40,21 @@ móvil ni en Cloudflare: los envía un **servidor propio multi-app**.
   app resincroniza su estado al volver a primer plano (`AppState` → `active`), así que **cambiar la
   URL basta para migrar los dispositivos**: se re-registran solos al abrir la app.
 
+## La búsqueda de lugares NO es solo Open-Meteo
+
+Los **municipios de España** se buscan dentro del teléfono, en la lista del INE que viaja en el bundle
+(`src/data/municipios.ts`, 8.132 municipios), y se mezclan con lo que conteste Open-Meteo
+(`src/utils/municipios.ts`). El motivo, medido el 2026-09-26: al geocodificador de Open-Meteo le
+**faltan del orden de 400 municipios** —Badia del Vallès entre ellos, 13.000 habitantes, que es el
+caso que lo destapó— y a otros muchos los llama por el exónimo viejo («Begas» por Begues).
+
+- **El fichero de datos no se edita a mano**: lo genera `node herramientas/generar-municipios.mjs`
+  (INE + Wikidata) y se commitea el resultado. Un test fija el número en 8.132.
+- **Manda el nombre oficial del INE**, y la ficha de Open-Meteo del mismo pueblo se descarta por
+  nombre *y* cercanía a la vez. Solo por cercanía se perdería Badia, que está a 1,2 km de Barberà.
+- Todo el porqué, las trampas del fichero del INE y lo que cuesta, en
+  [FUENTES-DE-DATOS.md](docs/FUENTES-DE-DATOS.md#la-búsqueda-open-meteo-no-conoce-toda-españa).
+
 ## Geovallas sin el modo de fondo `location` (rechazo 2.5.4 de Apple)
 
 La app sigue la ubicación con **geovallas** (`src/utils/ubicacionFondo.ts`): una zona de 3 km y solo

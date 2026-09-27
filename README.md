@@ -2,7 +2,10 @@
 
 App de previsión meteorológica (React Native + Expo) accesible con VoiceOver, usando
 [Open-Meteo](https://open-meteo.com/) (sin API key) para la previsión y la
-geocodificación de lugares.
+geocodificación de lugares. Los **municipios de España** los busca dentro del propio
+teléfono, con la lista del INE: al geocodificador de Open-Meteo le faltan del orden de
+400 y a otros muchos los llama por su nombre de hace cincuenta años
+([por qué](docs/FUENTES-DE-DATOS.md#la-búsqueda-open-meteo-no-conoce-toda-españa)).
 
 ## Pestañas nativas: ya no vale Expo Go
 

@@ -11,6 +11,12 @@ module.exports = defineConfig([
     ignores: ['dist/*', 'node_modules/*', '.expo/*'],
   },
   {
+    // Las herramientas de la carpeta `herramientas/` las ejecuta Node a mano (no Metro, no el
+    // teléfono), así que usan APIs de Node que la configuración de Expo no da por conocidas.
+    files: ['herramientas/**/*.mjs'],
+    languageOptions: { globals: { Buffer: 'readonly' } },
+  },
+  {
     // El fichero de arranque de jest vive en la raíz, fuera de los __tests__ que la configuración
     // de Expo ya reconoce, así que hay que declararle el global `jest` a mano.
     files: ['jest.setup.js'],

@@ -14,4 +14,6 @@ export const NOVEDADES: string[] = [
   'Arreglado: con iOS 27, VoiceOver daba por seleccionadas varias pestanas a la vez, no solo la abierta. La barra de pestanas se ha rehecho por dentro para arreglarlo; los iconos son los de siempre.',
   'Arreglado: al llegar de un viaje, la temperatura medida podia seguir siendo la del sitio anterior durante unos minutos. Ahora se actualiza en cuanto cambias de zona.',
   'La linea del sol dice ahora cuantas horas de luz tiene el dia, ademas de a que hora amanece y anochece.',
+  'Arreglado: habia pueblos de Espana que no salian al buscarlos, como Badia del Valles. La app lleva ahora dentro los 8.132 municipios del INE, asi que los encuentra todos, incluso sin cobertura.',
+  'Los pueblos salen ahora con su nombre oficial: Begues y no "Begas", Sant Quirze del Valles y no "San Quirico de Tarrasa", Errenteria y no "Renteria".',
 ];
