@@ -1,4 +1,10 @@
-import { avisoSinDato, EstacionCandidata, filaAutomatica, filaEstacion } from '../estaciones';
+import {
+  avisoSinDato,
+  eleccionAplicable,
+  EstacionCandidata,
+  filaAutomatica,
+  filaEstacion,
+} from '../estaciones';
 
 // Los textos de elegir estacion. La hora sale de `horaMedicion`, que usa la zona del telefono: se
 // comprueba que la hora APARECE, no cual es, para que la prueba no dependa de donde se ejecute.
@@ -104,5 +110,37 @@ describe('avisoSinDato', () => {
       expect(avisoSinDato(motivo, 'Navacerrada').visible).toContain('Navacerrada');
       expect(avisoSinDato(motivo, 'Navacerrada').spoken).toContain('Navacerrada');
     }
+  });
+});
+
+describe('eleccionAplicable', () => {
+  // Poder elegir estación también en "Mi ubicación", que TE SIGUE, sin que acabe enseñando la
+  // estación de tu pueblo estando a 350 km. La elección no se borra: se queda dormida.
+  const enCasa = { id: '3195', nombre: 'Madrid Retiro', lat: 40.4168, lon: -3.7038 };
+
+  it('manda estando donde la elegiste', () => {
+    expect(eleccionAplicable(enCasa, { lat: 40.4168, lon: -3.7038 })).toBe(true);
+  });
+
+  it('sigue mandando por el barrio y por los pueblos de al lado', () => {
+    expect(eleccionAplicable(enCasa, { lat: 40.45, lon: -3.69 })).toBe(true);
+    // Alcalá de Henares, a unos 30 km... eso ya no.
+    expect(eleccionAplicable(enCasa, { lat: 40.4818, lon: -3.3643 })).toBe(false);
+  });
+
+  it('se queda dormida en un viaje, y eso es lo que evita el fallo de Valencia', () => {
+    expect(eleccionAplicable(enCasa, { lat: 39.47, lon: -0.376 })).toBe(false);
+  });
+
+  it('una elección guardada sin punto se aplica igual', () => {
+    // Son las de antes de que esto existiera, y las de los lugares guardados, que no se mueven:
+    // ante la duda no se le quita al usuario algo que sí eligió.
+    expect(
+      eleccionAplicable({ id: '3195', nombre: 'Madrid Retiro' }, { lat: 39.47, lon: -0.376 }),
+    ).toBe(true);
+  });
+
+  it('sin elección no hay nada que aplicar', () => {
+    expect(eleccionAplicable(undefined, { lat: 40.4168, lon: -3.7038 })).toBe(false);
   });
 });

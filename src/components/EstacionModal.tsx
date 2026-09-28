@@ -13,7 +13,7 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { Place } from '../types';
 import { EstacionCandidata, filaAutomatica, filaEstacion } from '../utils/estaciones';
-import { usePlaces } from '../state/PlacesContext';
+import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { vibrarConfirmacion } from '../utils/haptica';
 
 // Elegir la estacion de AEMET de un lugar. Se abre tocando la linea de la medicion.
@@ -38,6 +38,7 @@ export default function EstacionModal({ visible, place, elevacion, onClose }: Pr
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const { estacionPorLugar, elegirEstacion } = usePlaces();
   const elegida = estacionPorLugar[place.id];
+  const esMiUbicacion = place.id === CURRENT_LOCATION_ID;
 
   // Este componente se MONTA al abrirlo (la pantalla lo pinta solo cuando hay lugar elegido), asi
   // que el estado inicial ya es el bueno y no hay que ponerlo desde el efecto: hacerlo alli encadena
@@ -156,6 +157,16 @@ export default function EstacionModal({ visible, place, elevacion, onClose }: Pr
                 el sitio mejor que ella. Si la que elijas deja de publicar, se te dirá: no se pondrá
                 en su lugar el dato de otra.
               </Text>
+
+              {/* Solo en "Mi ubicación", que es el único que se mueve: hay que decir por qué a
+                  veces no manda tu elección, o parecería que la app se la ha comido. */}
+              {esMiUbicacion && (
+                <Text style={styles.aclaracion}>
+                  Como este lugar te sigue, tu elección se queda dormida si te alejas más de 25 km
+                  de aquí: mientras tanto manda la automática, y al volver tu estación vuelve sola.
+                  No se borra.
+                </Text>
+              )}
             </ScrollView>
           )}
         </View>

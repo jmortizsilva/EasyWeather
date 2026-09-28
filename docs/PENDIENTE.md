@@ -30,8 +30,10 @@ añadió una línea «Sin medición · Elegir estación» porque sería una para
 todo el que esté fuera de España. Habría que preguntar primero si hay candidatas y pintarla solo
 entonces.
 
-**Y «Mi ubicación» sigue fuera**, decidido el 2026-09-28: una estación fija deja de tener sentido en
-cuanto te mueves, y pelearía con el código que ya tira la medición cuando ese lugar cambia de sitio.
+**«Mi ubicación» entró al final**, el mismo 2026-09-28 y al probarlo: obligar a guardar el lugar
+para poder elegir estación era raro para quien no se mueve de su pueblo. Lo que protegía esa
+restricción —que no acabes viendo la estación de tu pueblo a 350 km— lo resuelve ahora la regla de
+que la elección se queda dormida al alejarte 25 km, sin borrarla.
 
 ---
 

@@ -12,7 +12,7 @@ import {
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
-import { EstacionElegida, MotivoSinDato } from '../utils/estaciones';
+import { eleccionAplicable, EstacionElegida, MotivoSinDato } from '../utils/estaciones';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
@@ -329,7 +329,11 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
       ultimaObservacionRef.current[id] = { cuando: Date.now(), lat, lon };
 
-      const elegida = estacionPorLugarRef.current[id];
+      // La elección solo manda si sigues donde la hiciste. Se comprueba con el punto que se está
+      // consultando, no con el id: "Mi ubicación" te sigue bajo el mismo identificador, y es justo
+      // ahí donde una estación clavada podría acabar midiendo a 350 km de ti.
+      const guardada = estacionPorLugarRef.current[id];
+      const elegida = eleccionAplicable(guardada, { lat, lon }) ? guardada : undefined;
       const { observacion, sinDato } = await getObservacion(lat, lon, elevacion, elegida?.id);
 
       // El nombre lo pone el servidor salvo cuando la estación ya no está en la red de AEMET; para
@@ -741,7 +745,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     async (place: Place, estacion: EstacionElegida | undefined) => {
       const siguiente = { ...estacionPorLugarRef.current };
       if (estacion) {
-        siguiente[place.id] = estacion;
+        // Se guarda DÓNDE estabas al elegirla: es lo que permite que en "Mi ubicación" la elección
+        // se quede dormida cuando te alejas, en vez de seguirte con la estación de tu pueblo.
+        siguiente[place.id] = { ...estacion, lat: place.lat, lon: place.lon };
       } else {
         delete siguiente[place.id];
       }

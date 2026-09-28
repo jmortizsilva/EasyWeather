@@ -90,9 +90,11 @@ export function PaginaLugar({
   const updatedAt = formatUpdatedAt(prevision?.updatedAt);
   const esUbicacionActual = place.id === CURRENT_LOCATION_ID;
   const medicion = describirObservacion(observacion);
-  // No se ofrece elegir en "Mi ubicacion" ni en la consulta de paso de un lugar sin guardar: quien
-  // decide eso es la pantalla, pasando (o no) el manejador.
-  const sePuedeElegirEstacion = onElegirEstacion !== undefined && !esUbicacionActual;
+  // Tambien en "Mi ubicacion": alli la eleccion se queda dormida si te alejas mas de 25 km de donde
+  // la hiciste (ver utils/estaciones), asi que no puede acabar enseñando la estacion de tu pueblo a
+  // 350 km. Lo unico que no la ofrece es la consulta de paso de un lugar sin guardar, y eso lo
+  // decide la pantalla no pasando el manejador.
+  const sePuedeElegirEstacion = onElegirEstacion !== undefined;
   const avisoEstacion =
     sinDatoEstacion &&
     avisoSinDato(sinDatoEstacion.motivo, sinDatoEstacion.nombre, sinDatoEstacion.observedAt);

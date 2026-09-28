@@ -1,3 +1,4 @@
+import { distanciaMetros } from './distancia';
 import { horaMedicion } from './observacionTexto';
 import { numeroEs } from './text';
 
@@ -31,6 +32,45 @@ export interface EstacionElegida {
   id: string;
   /** Se guarda para poder decir "tu estacion X no publica" antes de que conteste el servidor. */
   nombre: string;
+  /**
+   * Donde estabas al elegirla. Solo sirve para "Mi ubicacion", que es el unico lugar que se mueve
+   * bajo el mismo identificador; en uno guardado nunca cambia. Puede faltar: las elecciones hechas
+   * antes de que esto existiera siguen valiendo.
+   */
+  lat?: number;
+  lon?: number;
+}
+
+// A partir de aqui se considera que ya no estas donde elegiste la estacion. Son los mismos 25 km
+// que el servidor admite como maximo para que una estacion represente un punto: mas alla de eso, ni
+// la app la habria cogido sola ni tiene sentido llamarla "la mia".
+export const LEJOS_DE_DONDE_ELEGISTE_KM = 25;
+
+/**
+ * Si la eleccion del usuario se aplica estando en este punto.
+ *
+ * Existe para poder elegir estacion tambien en "Mi ubicacion", que TE SIGUE. Sin esto, quien fijara
+ * la estacion de su pueblo y se fuera a 350 km veria en pantalla el nombre de su sitio con la
+ * medicion de la estacion de su pueblo, que es exactamente el fallo que reporto una probadora en
+ * septiembre viniendo de Valencia.
+ *
+ * La eleccion NO se borra al alejarse, solo se queda dormida: mientras estas lejos manda la
+ * automatica, y al volver tu estacion vuelve sola. Borrarla castigaria por haber viajado.
+ */
+export function eleccionAplicable(
+  elegida: EstacionElegida | undefined,
+  punto: { lat: number; lon: number },
+): boolean {
+  if (!elegida) {
+    return false;
+  }
+  // Sin punto guardado se aplica siempre: o es una eleccion vieja, o es de un lugar fijo, que no se
+  // mueve. En los dos casos, dudar seria quitarle al usuario algo que si eligio.
+  if (elegida.lat === undefined || elegida.lon === undefined) {
+    return true;
+  }
+  const metros = distanciaMetros({ lat: elegida.lat, lon: elegida.lon }, punto);
+  return metros <= LEJOS_DE_DONDE_ELEGISTE_KM * 1000;
 }
 
 /** Por que el servidor no puede servir la estacion elegida. */

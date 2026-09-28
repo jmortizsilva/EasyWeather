@@ -199,9 +199,19 @@ motivos distintos (parte viejo, emite sin termómetro, o ya no está en la red).
 automática en silencio: poner el nombre de una estación encima del dato de otra sería mentir sobre
 quién midió, que es lo único que esta app no se permite con una medición.
 
-**Solo en los lugares guardados.** En «Mi ubicación» no se ofrece: una estación fija deja de tener
-sentido en cuanto te mueves, y pelearía con el código que ya tira la medición cuando ese lugar
-cambia de sitio.
+**También en «Mi ubicación», y ahí con una regla más.** Ese lugar te sigue, así que una estación
+clavada podría acabar enseñando la de tu pueblo estando a 350 km — que es exactamente el fallo que
+reportó una probadora en septiembre viniendo de Valencia. Por eso la elección **se queda dormida**
+cuando te alejas más de 25 km del punto donde la hiciste: mientras tanto manda la automática, y al
+volver tu estación vuelve sola.
+
+No se borra, se suspende. Borrarla castigaría por haber viajado, y quien elige la estación de su
+pueblo la quiere para siempre, no hasta el primer fin de semana fuera. Los 25 km son los mismos que
+el servidor admite como máximo para que una estación represente un punto: más allá, ni la app la
+habría cogido sola.
+
+La primera versión no lo ofrecía en «Mi ubicación» y obligaba a guardar el lugar. Lo cambió Jose al
+probarlo, con razón: quien no se mueve de su pueblo no tiene por qué guardar nada para esto.
 
 Lo que queda por hacer —que la elección llegue también a los avisos del servidor— está en
 [PENDIENTE.md](PENDIENTE.md).
