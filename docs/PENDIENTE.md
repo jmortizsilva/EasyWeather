@@ -74,6 +74,56 @@ revisión de Apple: es todo TypeScript y JSX dentro del runtime 1.5.0.
 
 ---
 
+## Los sitios que no son municipios, y guardar donde estás
+
+**Estado: causa localizada y comprobada el 2026-09-28. Sin arreglar.** Son dos peticiones del mismo
+usuario, y la segunda resuelve la primera por otro camino.
+
+**El síntoma.** Alguien de **Els Reguers** (Tortosa, Baix Ebre) cuenta que buscando su pueblo no
+sale nada para poder añadirlo, pero que la app **sí lo llama «Els Reguers»** cuando es su ubicación.
+
+**Por qué sale como ubicación**: ese nombre no viene de la búsqueda, viene de la **geocodificación
+inversa de Apple** (`nombreUbicacion`, en `src/utils/geocode.ts`), que conoce entidades por debajo
+del municipio. Son dos fuentes distintas para dos cosas distintas, y por eso una sabe el nombre y la
+otra no.
+
+**Por qué no sale al buscar**, que son dos agujeros a la vez:
+
+1. **En la lista del INE no está, y está bien que no esté**: son los 8.132 **municipios**, y Els
+   Reguers es una **EMD** (entidad municipal descentralizada) de Tortosa, no un municipio.
+2. **En Open-Meteo sí está, pero con otro nombre.** Es el registro de GeoNames **3112090**, llamado
+   **«Regués»**, clase P/PPL, admin4 `43155` —que es justo el código INE de Tortosa que tenemos en
+   nuestra lista—, en 40.83866, 0.44892, **sin un solo nombre alternativo** y sin tocar desde 2011.
+   Comprobado el 2026-09-28 contra la API: «Regues» lo devuelve; «Els Reguers» y «Reguers», nada.
+
+O sea, el mismo mal que «Begas» por Begues, pero peor: allí el exónimo viejo al menos se parecía al
+nombre real, y aquí no hay forma humana de acertar.
+
+**Lo que NO lo arregla**: ampliar nuestra lista del INE. Habría que bajar al **nomenclátor de
+entidades singulares**, que son del orden de 60.000 entradas frente a 8.132, y eso es otro tamaño de
+fichero, otro tiempo de búsqueda y otra decisión.
+
+**Lo que sí se puede hacer aguas arriba, y es barato**: en GeoNames los nombres alternativos los
+puede añadir cualquiera con cuenta. Añadir «Els Reguers» como alternativo de 3112090 lo arreglaría
+para Open-Meteo y para todo el que use esos datos. Es una acción distinta del informe de los 405
+municipios: aquello es un filtro de Open-Meteo, esto es un dato de GeoNames.
+
+### Guardar en Mis lugares el sitio donde estás
+
+Es la otra mitad de lo que pide el usuario y, de paso, **la salida para cualquier sitio que ninguna
+fuente sepa nombrar**: si estás allí, el teléfono ya sabe dónde estás y cómo se llama. Hoy «Mi
+ubicación» te sigue, así que en cuanto te vas, ese sitio se pierde.
+
+- `addPlace` ya acepta cualquier `Place`, así que el trabajo es de pantalla, no de estado.
+- **El id**: puede seguir el patrón que Open-Meteo ya usa cuando no tiene el suyo (`lat,lon`), algo
+  como `punto:40.8387,0.4489`. No puede ser `CURRENT_LOCATION_ID`, que es el que se mueve.
+- **El nombre** lo pone Apple, que es justo el que el usuario reconoce.
+- A decidir: si se deja renombrar, qué hacer si guardas dos veces el mismo sitio con 200 m de
+  diferencia, y cómo se dice que ese punto **se queda quieto** y no te sigue.
+- Es JavaScript puro: **entra por aire**.
+
+---
+
 ## Widget de pantalla de inicio
 
 **Estado: pendiente, sin empezar.**
