@@ -10,6 +10,13 @@
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
 // Ultima vez que se vacio: build 19 de produccion del 2026-09-09 (la que lleva AEMET).
+//
+// EXCEPCION del 2026-09-28, con la build de BETA (canal `beta`): esta vez NO se vacia. Esa regla se
+// escribio cuando habia un solo canal, y ahora hay dos: los probadores reciben la beta con esto ya
+// dentro, pero los usuarios de la Store siguen con la build 19, y cuando se les publique este
+// JavaScript por aire tienen que enterarse de lo que trae. Vaciarlo ahora les dejaria sin las notas
+// a ellos para ahorrarle a un probador leer algo que ya tiene. El coste, aceptado: en el primer
+// update sobre la beta, los probadores oiran novedades que ya estaban en su binario.
 // Esto es texto que se LEE EN VOZ ALTA: el Alert de novedades lo recita VoiceOver. Por eso va con
 // tildes y eñes, al contrario que los comentarios y los identificadores del proyecto. Sin ellas,
 // VoiceOver dice "pestanas" y "Espana", que no son palabras.
