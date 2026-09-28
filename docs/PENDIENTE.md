@@ -8,32 +8,17 @@ Que esté aquí no significa que se vaya a hacer, ni en este orden. Significa qu
 
 ---
 
-## Elegir la estación de AEMET — fases 2 y 3
+## Elegir la estación de AEMET — fase 3
 
-**Estado: la fase 1 está HECHA** (app y servidor, 2026-09-28). Se puede elegir la estación de un
-lugar guardado tocando la línea «Medido», y si la elegida calla se dice cuál calla en vez de
-enseñar el dato de otra. El porqué y cómo funciona está en
+**Las fases 1 y 2 están HECHAS** (2026-09-28). Se puede elegir la estación de cualquier lugar,
+incluida tu ubicación, y la elección llega también a los avisos por notificación. El porqué está en
 [FUENTES-DE-DATOS.md](FUENTES-DE-DATOS.md#la-estación-de-aemet-la-puede-elegir-el-usuario).
 
-Queda:
-
-**Fase 2 — que la elección llegue a los avisos.** Hoy un aviso de resumen con «Temperatura» puede
-nombrar una estación distinta de la que enseña la tarjeta de ese mismo lugar. Hace falta que
-`estacion` viaje en `sincronizar` y una **tabla nueva** `estacion_resumen (app, token, id, idema)`:
-no vale una columna, porque el esquema del servidor se aplica con `CREATE TABLE IF NOT EXISTS` y una
-columna nueva no llegaría nunca a la base que ya existe. El aviso de umbral seguirá siendo
-automático: usa la ubicación del dispositivo, y ahí no hay elección que aplicar.
-
-**Fase 3 — entrar cuando no hay ninguna medición.** Si no hay medición, la línea no se pinta y no
-hay por dónde abrir la lista, que es justo cuando alguien querría una estación más lejana. No se
-añadió una línea «Sin medición · Elegir estación» porque sería una parada nueva de VoiceOver para
+Queda la **fase 3: entrar cuando no hay ninguna medición.** Si no hay medición, la línea no se pinta
+y no hay por dónde abrir la lista, que es justo cuando alguien querría una estación más lejana. No
+se añadió una línea «Sin medición · Elegir estación» porque sería una parada nueva de VoiceOver para
 todo el que esté fuera de España. Habría que preguntar primero si hay candidatas y pintarla solo
 entonces.
-
-**«Mi ubicación» entró al final**, el mismo 2026-09-28 y al probarlo: obligar a guardar el lugar
-para poder elegir estación era raro para quien no se mueve de su pueblo. Lo que protegía esa
-restricción —que no acabes viendo la estación de tu pueblo a 350 km— lo resuelve ahora la regla de
-que la elección se queda dormida al alejarte 25 km, sin borrarla.
 
 ---
 

@@ -20,6 +20,12 @@ export interface ResumenServidor {
   lat: number;
   lon: number;
   nombre: string;
+  /**
+   * Estacion de AEMET elegida a mano para ESTE lugar. Solo en los de lugar fijo: los que siguen la
+   * ubicacion usan la del dispositivo (ver `estacion` abajo), que es la que sabe dormirse cuando te
+   * alejas. `null` = la elige la cercania.
+   */
+  estacion?: string | null;
 }
 
 // Estado completo de avisos que el cliente manda al servidor. El servidor reemplaza lo que tenga
@@ -37,6 +43,12 @@ export interface SincronizacionAvisos {
    * que nunca se mezclen en la misma notificacion.
    */
   avisosOficiales: { nivelMinimo: string; fenomenosSilenciados: string[] } | null;
+  /**
+   * Estacion elegida para la UBICACION VIVA del telefono, con el punto donde se eligio. La usan el
+   * aviso de umbral y los resumenes que te siguen. Sin el punto el servidor no puede dormirla, asi
+   * que viaja con ella.
+   */
+  estacion?: { idema: string; lat?: number; lon?: number } | null;
 }
 
 // Sube al servidor el estado completo de avisos (umbral + resumenes) con la ubicacion y zona

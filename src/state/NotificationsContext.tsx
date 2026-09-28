@@ -22,6 +22,7 @@ import {
   DEFAULT_NOTIFICATION_SETTINGS,
   isValidSettings,
 } from '../utils/ajustesAvisos';
+import { EstacionElegida } from '../utils/estaciones';
 import {
   canAskForNotificationPermission,
   cancelAllNotifications,
@@ -46,6 +47,15 @@ import { ubicacionParaEnviar, UbicacionConNombre } from '../utils/ubicacionAviso
 import { vibrarConfirmacion, vibrarError } from '../utils/haptica';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
 
+// La estacion elegida para "Mi ubicacion", tal y como la entiende el servidor. Viaja con el punto
+// donde se eligio: sin el, el servidor no puede dormirla cuando el telefono se va lejos, y quien
+// fijara la estacion de su pueblo recibiria en Valencia un aviso medido a 350 km.
+function estacionDeLaUbicacion(
+  elegida: EstacionElegida | undefined,
+): { idema: string; lat?: number; lon?: number } | null {
+  return elegida ? { idema: elegida.id, lat: elegida.lat, lon: elegida.lon } : null;
+}
+
 // Construye el estado completo de avisos para el servidor a partir de los ajustes. Los resumenes de
 // "mi ubicacion" van con seguirUbicacion=true (el servidor usa la ubicacion viva del telefono); los
 // de una ciudad fija llevan su lat/lon. Un resumen sin lugar resoluble (ubicacion aun desconocida)
@@ -54,6 +64,7 @@ function construirPayload(
   next: NotificationSettings,
   resolvePlace: (id: string) => Place | undefined,
   ubicacionActual: UbicacionConNombre | null,
+  estacionPorLugar: Record<string, EstacionElegida>,
 ): SincronizacionAvisos {
   const zonaHoraria = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const resumenes: ResumenServidor[] = [];
@@ -74,6 +85,10 @@ function construirPayload(
       lat: place.lat,
       lon: place.lon,
       nombre: place.name,
+      // Solo en los de lugar fijo: los que te siguen usan la del dispositivo, que viaja abajo con
+      // el punto donde se eligio para que el servidor pueda dormirla si te alejas.
+      estacion:
+        s.placeId === CURRENT_LOCATION_ID ? null : (estacionPorLugar[s.placeId]?.id ?? null),
     });
   }
   return {
@@ -89,6 +104,7 @@ function construirPayload(
           fenomenosSilenciados: next.avisosOficiales.fenomenosSilenciados ?? [],
         }
       : null,
+    estacion: estacionDeLaUbicacion(estacionPorLugar[CURRENT_LOCATION_ID]),
   };
 }
 
@@ -125,7 +141,7 @@ interface NotificationsContextValue {
 const NotificationsContext = createContext<NotificationsContextValue | undefined>(undefined);
 
 export function NotificationsProvider({ children }: { children: ReactNode }) {
-  const { places, currentLocationPlace } = usePlaces();
+  const { places, currentLocationPlace, estacionPorLugar } = usePlaces();
   const [settings, setSettings] = useState<NotificationSettings>(DEFAULT_NOTIFICATION_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [notice, setNotice] = useState<{ id: number; text: string } | undefined>(undefined);
@@ -149,13 +165,19 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
 
   // Espejos en refs para que los listeners (segundo plano) usen siempre lo último. Se escriben en
   // render a proposito (ver PlacesContext): moverlo a un efecto retrasaria la actualizacion.
+  //
+  // La eleccion de estacion va en el mismo saco: se lee por ref dentro de `sincronizarServidor`
+  // porque, si entrara en sus dependencias, esa funcion se reharia en cada cambio y arrastraria a
+  // los efectos que la usan.
   const placesRef = useRef(places);
   const currentLocationRef = useRef(currentLocationPlace);
   const settingsRef = useRef(settings);
+  const estacionPorLugarRef = useRef(estacionPorLugar);
   /* eslint-disable react-hooks/refs */
   placesRef.current = places;
   currentLocationRef.current = currentLocationPlace;
   settingsRef.current = settings;
+  estacionPorLugarRef.current = estacionPorLugar;
   /* eslint-enable react-hooks/refs */
 
   useEffect(() => {
@@ -215,6 +237,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
           fresca,
           cacheada && { lat: cacheada.lat, lon: cacheada.lon, nombre: cacheada.name },
         ),
+        estacionPorLugarRef.current,
       );
       const ok = await sincronizarAvisos(payload);
 
@@ -258,6 +281,23 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     }
     void sincronizarServidor(settingsRef.current);
   }, [loaded, places, currentLocationPlace, sincronizarServidor]);
+
+  // Y también al cambiar de estación. Sin esto, el servidor seguiría midiendo donde decía la
+  // elección anterior hasta la próxima vez que la app fuera al fondo y volviera, y el aviso de la
+  // mañana podría nombrar una estación distinta de la que enseña la pantalla.
+  //
+  // La huella va ordenada para que el efecto no se dispare porque un objeto se haya vuelto a crear
+  // con las mismas elecciones dentro.
+  const huellaEstaciones = Object.entries(estacionPorLugar)
+    .map(([lugar, estacion]) => `${lugar}:${estacion.id}`)
+    .sort()
+    .join('|');
+  useEffect(() => {
+    if (!loaded) {
+      return;
+    }
+    void sincronizarServidor(settingsRef.current);
+  }, [loaded, huellaEstaciones, sincronizarServidor]);
 
   // Al volver a primer plano se reenvía la ubicación actual al servidor.
   //
