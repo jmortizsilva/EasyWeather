@@ -12,6 +12,7 @@ import {
 import { AccessibilityInfo, Alert, AppState } from 'react-native';
 import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
+import { EstacionElegida, MotivoSinDato } from '../utils/estaciones';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
 import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
@@ -28,6 +29,9 @@ const STORAGE_FORECAST_TS_PREFIX = 'tiempo.forecast.ts.v2.';
 // Temperatura actual de todos los lugares (lista de "Mis lugares" y selector de "Hoy"), cada una
 // con la hora en que se obtuvo para poder anunciar su antiguedad.
 const STORAGE_CURRENT_TEMPS = 'tiempo.currentTemps.v1';
+// Estacion de AEMET que el usuario ha elegido para cada lugar. Solo lugares FIJOS: para "Mi
+// ubicacion" no se ofrece, porque una estacion fija deja de tener sentido en cuanto te mueves.
+const STORAGE_ESTACIONES = 'tiempo.estacionPorLugar.v1';
 const FORECAST_TTL_MS = 30 * 60 * 1000;
 // No se piden las temperaturas de todos los lugares mas de una vez cada 3 min al cambiar de
 // pestana; es una sola llamada, pero no hace falta repetirla en cada foco.
@@ -52,6 +56,13 @@ export { CURRENT_LOCATION_ID } from '../types';
 export interface PrevisionGuardada {
   forecast: Forecast;
   updatedAt: number | undefined;
+}
+
+/** Por que la estacion ELEGIDA a mano no esta dando dato en este lugar. */
+export interface AvisoEstacion {
+  motivo: MotivoSinDato;
+  nombre: string;
+  observedAt?: string;
 }
 
 interface PlacesContextValue {
@@ -85,6 +96,16 @@ interface PlacesContextValue {
    * se guardan en disco: un aviso caducado en pantalla seria peor que no enseñar nada.
    */
   avisosByPlace: Record<string, AvisosLugar>;
+  /** Estacion de AEMET elegida a mano para cada lugar. Sin entrada = la elige la app. */
+  estacionPorLugar: Record<string, EstacionElegida>;
+  /**
+   * Por que la estacion elegida no da dato hoy, por lugar. Cuando hay esto NO hay medicion: la
+   * tarjeta lo cuenta en su sitio, porque enseñar el dato de otra estacion bajo este nombre seria
+   * mentir sobre quien midio.
+   */
+  sinDatoPorLugar: Record<string, AvisoEstacion>;
+  /** Fija la estacion de un lugar, o vuelve a la automatica con `undefined`. */
+  elegirEstacion: (place: Place, estacion: EstacionElegida | undefined) => Promise<void>;
   /** Refresca en una sola llamada la temperatura actual de todos los lugares. Con throttle. */
   refreshCurrentTemps: (force?: boolean) => Promise<void>;
   setActiveId: (id: string) => void;
@@ -119,6 +140,12 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     {},
   );
   const [avisosByPlace, setAvisosByPlace] = useState<Record<string, AvisosLugar>>({});
+  const [estacionPorLugar, setEstacionPorLugar] = useState<Record<string, EstacionElegida>>({});
+  // Por que la estacion elegida no contesta hoy. Ocupa el sitio de la medicion en la tarjeta: o una
+  // cosa o la otra, nunca las dos.
+  const [sinDatoPorLugar, setSinDatoPorLugar] = useState<Record<string, AvisoEstacion>>({});
+  // La eleccion tambien en una ref: `cargarObservacion` la lee desde callbacks que no se rehacen.
+  const estacionPorLugarRef = useRef<Record<string, EstacionElegida>>({});
   // Cuando y PARA QUE PUNTO se pidio por ultima vez. El punto forma parte de la marca a proposito:
   // el id de la ubicacion actual no cambia nunca pero sus coordenadas si, y con la hora sola el
   // throttle se comia la consulta del sitio nuevo (ver utils/refrescoPorLugar).
@@ -302,10 +329,36 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }
       ultimaObservacionRef.current[id] = { cuando: Date.now(), lat, lon };
 
-      const observacion = await getObservacion(lat, lon, elevacion);
+      const elegida = estacionPorLugarRef.current[id];
+      const { observacion, sinDato } = await getObservacion(lat, lon, elevacion, elegida?.id);
+
+      // El nombre lo pone el servidor salvo cuando la estación ya no está en la red de AEMET; para
+      // ese caso vale el que se guardó al elegirla, que es justo para lo que se guarda.
+      setSinDatoPorLugar((previo) => {
+        if (!sinDato) {
+          if (previo[id] === undefined) {
+            return previo;
+          }
+          const copia = { ...previo };
+          delete copia[id];
+          return copia;
+        }
+        return {
+          ...previo,
+          [id]: {
+            motivo: sinDato.motivo,
+            nombre: sinDato.nombre ?? elegida?.nombre ?? 'tu estación',
+            observedAt: sinDato.observedAt,
+          },
+        };
+      });
+
       if (!observacion) {
-        // Se permite reintentar antes del throttle: puede haber sido un fallo de red pasajero.
-        ultimaObservacionRef.current[id] = { cuando: 0, lat, lon };
+        // Que la estación elegida calle es una RESPUESTA, no un fallo: no se reintenta antes de
+        // tiempo. Lo demás (red caída, servidor mudo) sí puede ser pasajero.
+        if (!sinDato) {
+          ultimaObservacionRef.current[id] = { cuando: 0, lat, lon };
+        }
         // Y se retira la anterior, si la había: sin dato nuevo, dejar el viejo en pantalla sería
         // enseñar la medición de otro momento.
         olvidarObservacion(id);
@@ -357,11 +410,24 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const loadStored = async () => {
-      const [storedPlaces, storedLocation, storedTemps] = await Promise.all([
+      const [storedPlaces, storedLocation, storedTemps, storedEstaciones] = await Promise.all([
         AsyncStorage.getItem(STORAGE_PLACES),
         AsyncStorage.getItem(STORAGE_CURRENT_LOCATION),
         AsyncStorage.getItem(STORAGE_CURRENT_TEMPS),
+        AsyncStorage.getItem(STORAGE_ESTACIONES),
       ]);
+
+      if (storedEstaciones) {
+        try {
+          const parsed = JSON.parse(storedEstaciones) as Record<string, EstacionElegida>;
+          if (parsed && typeof parsed === 'object') {
+            estacionPorLugarRef.current = parsed;
+            setEstacionPorLugar(parsed);
+          }
+        } catch {
+          // ignora cache corrupta
+        }
+      }
 
       if (storedPlaces) {
         try {
@@ -664,6 +730,40 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [detectCurrentLocation, reloadForecast]);
 
+  /**
+   * Fija la estacion de AEMET de un lugar, o vuelve a la automatica con `undefined`.
+   *
+   * Lo importante de aqui es lo que pasa DESPUES de guardar: hay que invalidar el acelerador de la
+   * observacion, o el dato de la estacion nueva no llegaria hasta diez minutos despues y pareceria
+   * que el cambio no ha hecho nada.
+   */
+  const elegirEstacion = useCallback(
+    async (place: Place, estacion: EstacionElegida | undefined) => {
+      const siguiente = { ...estacionPorLugarRef.current };
+      if (estacion) {
+        siguiente[place.id] = estacion;
+      } else {
+        delete siguiente[place.id];
+      }
+      estacionPorLugarRef.current = siguiente;
+      setEstacionPorLugar(siguiente);
+      await AsyncStorage.setItem(STORAGE_ESTACIONES, JSON.stringify(siguiente));
+
+      // Lo que hay en pantalla es de la estacion anterior: se quita YA, sin esperar a la respuesta.
+      olvidarObservacion(place.id);
+      ultimaObservacionRef.current[place.id] = { cuando: 0, lat: place.lat, lon: place.lon };
+      // La altitud del terreno viaja dentro de la prevision ya cargada de ese lugar. Si todavia no
+      // esta, se consulta sin ella: solo sirve para descartar estaciones a otra cota, y aqui la
+      // estacion la ha elegido el usuario.
+      const elevacion = forecastByPlace[place.id]?.forecast.elevation;
+      await cargarObservacion(place.id, place.lat, place.lon, elevacion);
+      setMessage(
+        estacion ? `Estación ${estacion.nombre} elegida.` : 'Vuelves a la estación automática.',
+      );
+    },
+    [cargarObservacion, olvidarObservacion, forecastByPlace],
+  );
+
   // `activar` existe porque hay dos formas de añadir un lugar y no quieren lo mismo. Guardándolo
   // desde la búsqueda, lo que quieres es verlo, así que pasa a ser el lugar de "Hoy". Guardando el
   // sitio donde estás, no: lo estás marcando para cuando te vayas, y cambiar el lugar activo te
@@ -707,6 +807,9 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     currentByPlace,
     forecastByPlace,
     observacionByPlace,
+    estacionPorLugar,
+    sinDatoPorLugar,
+    elegirEstacion,
     avisosByPlace,
     refreshCurrentTemps,
     setActiveId,

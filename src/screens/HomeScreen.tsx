@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ControlPaginas from '../components/ControlPaginas';
 import AvisosModal from '../components/AvisosModal';
 import DayDetailModal from '../components/DayDetailModal';
+import EstacionModal from '../components/EstacionModal';
 import { crearEstilos, PaginaLugar } from '../components/PrevisionLugar';
 import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
 import { useColores } from '../theme/ThemeContext';
@@ -33,6 +34,7 @@ export default function HomeScreen() {
     currentByPlace,
     forecastByPlace,
     observacionByPlace,
+    sinDatoPorLugar,
     avisosByPlace,
     detectCurrentLocation,
     refreshCurrentLocation,
@@ -46,6 +48,9 @@ export default function HomeScreen() {
   // El lugar cuyos avisos se estan mirando. Se guarda el lugar, no un booleano, porque el carrusel
   // puede tener varias paginas y hay que saber de cual salio el toque.
   const [avisosDe, setAvisosDe] = useState<Place | undefined>(undefined);
+  // Igual que los avisos: se guarda el lugar, no un booleano, porque el carrusel tiene varias
+  // paginas y hay que saber de cual salio el toque.
+  const [estacionDe, setEstacionDe] = useState<Place | undefined>(undefined);
   const scrollRef = useRef<ScrollView>(null);
 
   // Páginas del carrusel: la ubicación actual primero, luego los guardados.
@@ -198,6 +203,8 @@ export default function HomeScreen() {
                 place={place}
                 prevision={previsionDe(place)}
                 observacion={observacionByPlace[place.id]}
+                sinDatoEstacion={sinDatoPorLugar[place.id]}
+                onElegirEstacion={() => setEstacionDe(place)}
                 avisos={avisosByPlace[place.id]}
                 esActiva={place.id === activeId}
                 cargando={cargando}
@@ -217,6 +224,8 @@ export default function HomeScreen() {
             place={activePlace}
             prevision={previsionDe(activePlace)}
             observacion={observacionByPlace[activePlace.id]}
+            sinDatoEstacion={sinDatoPorLugar[activePlace.id]}
+            onElegirEstacion={() => setEstacionDe(activePlace)}
             avisos={avisosByPlace[activePlace.id]}
             esActiva
             cargando={cargando}
@@ -236,6 +245,15 @@ export default function HomeScreen() {
         lugar={avisosDe?.name ?? ''}
         onClose={() => setAvisosDe(undefined)}
       />
+
+      {estacionDe && (
+        <EstacionModal
+          visible
+          place={estacionDe}
+          elevacion={forecastByPlace[estacionDe.id]?.forecast.elevation}
+          onClose={() => setEstacionDe(undefined)}
+        />
+      )}
 
       <DayDetailModal
         visible={detail !== undefined}

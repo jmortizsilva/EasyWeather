@@ -172,6 +172,40 @@ Open-Meteo para la hora en curso, no algo que nadie hubiera medido.
 partir de su medición para colocarla bajo el rótulo "Medido" sería presentar una cuenta nuestra como
 si fuera una medición, que es justo lo que esta app no hace.
 
+## La estación de AEMET la puede elegir el usuario
+
+Por defecto la elige el servidor: la más cercana que esté a menos de 25 km, con menos de 300 m de
+desnivel y con un parte de menos de 3 horas. **Y no siempre acierta.** En un país con montañas, la
+estación más cercana puede estar en otro valle o en otra vertiente, y quien vive allí lo sabe mejor
+que la fórmula. Lo pidió un usuario, y desde el 2026-09-28 se puede cambiar.
+
+**Se entra tocando la línea «Medido»**, en la tarjeta de arriba. Va ahí y no en unos ajustes porque
+es donde surge la duda: se lee «Estación tal, a 12 km» y se piensa «pero si yo tengo una al lado».
+Y como ese bloque ya era **un solo elemento accesible**, volverlo tocable no añade ninguna parada
+nueva a VoiceOver.
+
+La lista sale de `GET /apps/easyweather/estaciones` y enseña, de cada una, distancia, desnivel con
+signo, hora de su último dato y **por qué la app no la cogería sola**. Las descartadas se enseñan
+igual: esconderlas convertiría la elección en una apuesta a ciegas, y hay casos legítimos para
+preferir una de 30 km. Solo se ocultan las que no están midiendo temperatura, que no podrían
+contestar.
+
+**La asimetría es el corazón de esto.** Con estación elegida, el servidor **no** aplica los filtros
+de distancia ni de desnivel —el usuario los ha anulado a propósito—, pero **sí** el de frescura,
+porque un número de hace cinco horas no es «ahora» lo elija quien lo elija.
+
+**Y si la elegida calla, se dice cuál calla**: «Madrid Retiro no publica desde las 09:00», con tres
+motivos distintos (parte viejo, emite sin termómetro, o ya no está en la red). Nunca se cae en la
+automática en silencio: poner el nombre de una estación encima del dato de otra sería mentir sobre
+quién midió, que es lo único que esta app no se permite con una medición.
+
+**Solo en los lugares guardados.** En «Mi ubicación» no se ofrece: una estación fija deja de tener
+sentido en cuanto te mueves, y pelearía con el código que ya tira la medición cuando ese lugar
+cambia de sitio.
+
+Lo que queda por hacer —que la elección llegue también a los avisos del servidor— está en
+[PENDIENTE.md](PENDIENTE.md).
+
 ## Avisos oficiales de AEMET
 
 Son la **tercera naturaleza** de dato que maneja la app, junto a lo previsto y lo medido, y la que

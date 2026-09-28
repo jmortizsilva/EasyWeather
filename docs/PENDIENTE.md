@@ -8,69 +8,30 @@ Que esté aquí no significa que se vaya a hacer, ni en este orden. Significa qu
 
 ---
 
-## Elegir la estación de AEMET
+## Elegir la estación de AEMET — fases 2 y 3
 
-**Estado: diseñado, sin escribir una línea.** Es lo más listo para empezar de todo este fichero.
+**Estado: la fase 1 está HECHA** (app y servidor, 2026-09-28). Se puede elegir la estación de un
+lugar guardado tocando la línea «Medido», y si la elegida calla se dice cuál calla en vez de
+enseñar el dato de otra. El porqué y cómo funciona está en
+[FUENTES-DE-DATOS.md](FUENTES-DE-DATOS.md#la-estación-de-aemet-la-puede-elegir-el-usuario).
 
-Hoy el servidor elige la estación por cercanía y la app la enseña. La idea, sugerida por un usuario:
-que se pueda **discutir esa elección**, viendo las estaciones cercanas con su distancia y su
-altitud. El caso real es el de siempre en un país con montañas: la estación más cercana puede estar
-en otro valle o en otra vertiente, y el usuario lo sabe mejor que la fórmula.
+Queda:
 
-### Tres cosas del código que mandan sobre el diseño
+**Fase 2 — que la elección llegue a los avisos.** Hoy un aviso de resumen con «Temperatura» puede
+nombrar una estación distinta de la que enseña la tarjeta de ese mismo lugar. Hace falta que
+`estacion` viaje en `sincronizar` y una **tabla nueva** `estacion_resumen (app, token, id, idema)`:
+no vale una columna, porque el esquema del servidor se aplica con `CREATE TABLE IF NOT EXISTS` y una
+columna nueva no llegaría nunca a la base que ya existe. El aviso de umbral seguirá siendo
+automático: usa la ubicación del dispositivo, y ahí no hay elección que aplicar.
 
-1. **En el servidor no hay migraciones.** `src/esquema.ts` se aplica con
-   `CREATE TABLE IF NOT EXISTS`, así que **una columna nueva en `dispositivos` o en `resumenes` no
-   llegaría nunca** a la base de datos que ya existe. Todo dato nuevo va en tabla aparte, como ya se
-   hizo con `umbrales_fuente`.
-2. **La app tira la medición cuando un lugar se mueve bajo el mismo id**
-   (`PlacesContext.cargarObservacion`, veredicto `olvidar-y-consultar`), para no decir que en tu
-   calle mide lo que mide una estación a 350 km. Una estación fija para «Mi ubicación» pelearía
-   contra esa máquina.
-3. **El texto de los push nombra la estación** (`avisoUmbral` y `cuerpoResumen` del servidor). Si la
-   elección no llega al servidor, el push dice una estación y la pantalla otra, del mismo sitio y el
-   mismo día. Eso parte el trabajo en dos fases.
+**Fase 3 — entrar cuando no hay ninguna medición.** Si no hay medición, la línea no se pinta y no
+hay por dónde abrir la lista, que es justo cuando alguien querría una estación más lejana. No se
+añadió una línea «Sin medición · Elegir estación» porque sería una parada nueva de VoiceOver para
+todo el que esté fuera de España. Habría que preguntar primero si hay candidatas y pintarla solo
+entonces.
 
-### Lo decidido
-
-- **Por lugar, y solo en los lugares fijos.** Una estación es un punto del mapa; «mi estación» no
-  significa nada con dos ciudades guardadas. Se guarda en `tiempo.estacionPorLugar.v1`.
-- **Se entra por la propia línea de la medición**, que ya es un solo elemento accesible: pasa a ser
-  botón y **no añade ninguna parada nueva a VoiceOver**. Abre un modal, como el de avisos.
-- **Ruta nueva** `GET /apps/easyweather/estaciones?lat&lon&alt`: las 12 más cercanas en 60 km, con
-  distancia, desnivel, hora del último parte y el motivo por el que la política automática
-  descartaría cada una. **No le cuesta ni una petición más a AEMET** (sale del fichero horario que
-  ya está cacheado en memoria) y **no toca la ruta diezminutal**, que es la que responde 429.
-- **`estacion=IDEMA` opcional en `/observacion`**, con una asimetría deliberada: con estación
-  elegida **no** se aplican los filtros de distancia ni desnivel —el usuario los ha anulado a
-  propósito— pero **sí** el de frescura, porque un número de hace cinco horas no es «ahora» lo elija
-  quien lo elija.
-- **Al cambiar la elección hay que invalidar `ultimaObservacionRef`**, o el dato nuevo no llegaría
-  hasta diez minutos después y parecería que el cambio no ha hecho nada.
-
-### Lo propuesto que falta confirmar
-
-Son decisiones de producto, no técnicas:
-
-- **Cuando la estación elegida calla, no se cae en la automática en silencio**: la tarjeta dice «tu
-  estación no publica desde las 09:00» y ofrece cambiarla. Caer en la automática pondría «Estación
-  X» debajo de un número de Y, que es lo que la app se prohíbe.
-- **«Mi ubicación» queda fuera**, por el punto 2 de arriba.
-- **Si no hay ninguna medición no hay por dónde entrar**, que es justo cuando alguien querría una
-  estación más lejana. No se añade una línea «Sin medición · Elegir estación» porque sería una
-  parada nueva de VoiceOver **para todo el que esté fuera de España**. Queda para el final.
-
-### Fases y orden de despliegue
-
-1. Ruta nueva, parámetro nuevo, modal y guardar la elección. Se ve y funciona.
-2. Que la elección viaje en `sincronizar` (tabla nueva `estacion_resumen`) para que el resumen de un
-   lugar fijo mida donde dice la pantalla. **Parándose en la fase 1**, un resumen con «Temperatura»
-   puede nombrar una estación distinta de la que enseña la tarjeta.
-3. La entrada cuando no hay medición.
-
-**El servidor se despliega primero**: si la app pregunta por `/estaciones` y todavía no existe, el
-modal solo puede decir que no ha podido cargar la lista. La app **entra por aire**, sin build ni
-revisión de Apple: es todo TypeScript y JSX dentro del runtime 1.5.0.
+**Y «Mi ubicación» sigue fuera**, decidido el 2026-09-28: una estación fija deja de tener sentido en
+cuanto te mueves, y pelearía con el código que ya tira la medición cuando ese lugar cambia de sitio.
 
 ---
 

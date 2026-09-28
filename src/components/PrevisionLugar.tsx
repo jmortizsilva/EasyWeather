@@ -10,11 +10,12 @@ import {
 } from 'react-native';
 import AnuncioAvisos from './AnuncioAvisos';
 import DayRow from './DayRow';
-import { CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
+import { AvisoEstacion, CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { AvisosLugar, CurrentObservation, DayForecast, Place } from '../types';
 import { textoParaCompartir } from '../utils/compartir';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
+import { avisoSinDato } from '../utils/estaciones';
 import { describirObservacion } from '../utils/observacionTexto';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
@@ -32,6 +33,18 @@ interface PaginaProps {
    * de España siempre), y su ausencia no se anuncia: la página se queda con la previsión.
    */
   observacion?: CurrentObservation;
+  /**
+   * Por que la estacion ELEGIDA a mano no da dato. Ocupa el sitio de la medicion: cuando esto
+   * viene, no hay `observacion`, porque enseñar el dato de otra estacion bajo este nombre seria
+   * mentir sobre quien midio.
+   */
+  sinDatoEstacion?: AvisoEstacion;
+  /**
+   * Abre la lista de estaciones. Sin esto, la linea de la medicion no es tocable: no se ofrece en
+   * "Mi ubicacion" (una estacion fija deja de tener sentido en cuanto te mueves) ni en la consulta
+   * de paso de un lugar que todavia no esta guardado.
+   */
+  onElegirEstacion?: () => void;
   /**
    * Avisos OFICIALES de AEMET de este lugar. Que falte significa que aun no se han pedido, y que
    * venga con la lista vacia, que no hay ninguno: en los dos casos no se pinta nada.
@@ -56,6 +69,8 @@ export function PaginaLugar({
   place,
   prevision,
   observacion,
+  sinDatoEstacion,
+  onElegirEstacion,
   avisos,
   esActiva,
   cargando,
@@ -75,6 +90,12 @@ export function PaginaLugar({
   const updatedAt = formatUpdatedAt(prevision?.updatedAt);
   const esUbicacionActual = place.id === CURRENT_LOCATION_ID;
   const medicion = describirObservacion(observacion);
+  // No se ofrece elegir en "Mi ubicacion" ni en la consulta de paso de un lugar sin guardar: quien
+  // decide eso es la pantalla, pasando (o no) el manejador.
+  const sePuedeElegirEstacion = onElegirEstacion !== undefined && !esUbicacionActual;
+  const avisoEstacion =
+    sinDatoEstacion &&
+    avisoSinDato(sinDatoEstacion.motivo, sinDatoEstacion.nombre, sinDatoEstacion.observedAt);
   // Con coma decimal, como la línea de la medición que va justo debajo: Open-Meteo devuelve
   // decimales y antes salían con punto, mezclando dos criterios en la misma tarjeta.
   const temperaturaAhora =
@@ -125,11 +146,39 @@ export function PaginaLugar({
             )}
           </View>
 
-          {medicion && (
-            <View style={styles.medicionBloque} accessible accessibilityLabel={medicion.spoken}>
-              <Text style={styles.medicionPrincipal}>{medicion.principal}</Text>
-              <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
-            </View>
+          {/* La linea de la medicion ES el boton para cambiar de estacion. Va aqui y no en unos
+              ajustes porque es donde surge la duda: se lee "Estacion tal, a 12 km" y se piensa
+              "pero si yo tengo una al lado". Y como el bloque ya era un solo elemento accesible,
+              volverlo tocable NO añade ninguna parada nueva a VoiceOver. */}
+          {medicion &&
+            (sePuedeElegirEstacion ? (
+              <Pressable
+                style={styles.medicionBloque}
+                onPress={onElegirEstacion}
+                accessibilityRole="button"
+                accessibilityLabel={medicion.spoken}
+                accessibilityHint="Elige otra estación de AEMET para este lugar">
+                <Text style={styles.medicionPrincipal}>{medicion.principal}</Text>
+                <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.medicionBloque} accessible accessibilityLabel={medicion.spoken}>
+                <Text style={styles.medicionPrincipal}>{medicion.principal}</Text>
+                <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
+              </View>
+            ))}
+
+          {/* Y cuando la estacion elegida calla, su sitio lo ocupa el motivo. Sin numero: el de la
+              estacion automatica iria debajo del nombre de otra. */}
+          {!medicion && avisoEstacion && (
+            <Pressable
+              style={styles.medicionBloque}
+              onPress={onElegirEstacion}
+              accessibilityRole="button"
+              accessibilityLabel={avisoEstacion.spoken}
+              accessibilityHint="Elige otra estación de AEMET o vuelve a la automática">
+              <Text style={styles.medicionEstacion}>{avisoEstacion.visible}</Text>
+            </Pressable>
           )}
 
           {updatedAt && (

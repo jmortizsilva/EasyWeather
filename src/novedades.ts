@@ -31,4 +31,5 @@ export const NOVEDADES: string[] = [
   'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
   'Con VoiceOver, al caer en la fila de un día ya se dice «Temperatura» antes de los números. Antes empezaba por «mínima 12 grados» y no había forma de saber de qué era ese número.',
   'Nuevo: en «Mis lugares», debajo de tu ubicación, el botón «Guardar este sitio» deja fijo el sitio donde estás, con su nombre, para seguir viéndolo cuando te vayas. Sirve además para los pueblos y barrios que no aparecen al buscarlos.',
+  'Nuevo: ahora puedes elegir la estación de AEMET de cada lugar guardado. Toca la línea «Medido» de la pantalla del tiempo y verás las que hay cerca, con su distancia, su altitud y la hora de su último dato. Si la que elijas deja de publicar, se te dirá: nunca se pondrá en su sitio el dato de otra.',
 ];
