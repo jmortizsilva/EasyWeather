@@ -22,4 +22,17 @@ module.exports = defineConfig([
     files: ['jest.setup.js'],
     languageOptions: { globals: { jest: 'readonly' } },
   },
+  {
+    // Y lo mismo para las pruebas de la RAÍZ (la configuración de la app): lo que Expo reconoce
+    // como prueba es el código de `src/`, no un `__tests__` colgando de la raíz del proyecto.
+    files: ['__tests__/**/*.js'],
+    languageOptions: {
+      globals: {
+        describe: 'readonly',
+        it: 'readonly',
+        expect: 'readonly',
+        jest: 'readonly',
+      },
+    },
+  },
 ]);
