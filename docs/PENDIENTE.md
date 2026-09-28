@@ -8,6 +8,72 @@ Que esté aquí no significa que se vaya a hacer, ni en este orden. Significa qu
 
 ---
 
+## Elegir la estación de AEMET
+
+**Estado: diseñado, sin escribir una línea.** Es lo más listo para empezar de todo este fichero.
+
+Hoy el servidor elige la estación por cercanía y la app la enseña. La idea, sugerida por un usuario:
+que se pueda **discutir esa elección**, viendo las estaciones cercanas con su distancia y su
+altitud. El caso real es el de siempre en un país con montañas: la estación más cercana puede estar
+en otro valle o en otra vertiente, y el usuario lo sabe mejor que la fórmula.
+
+### Tres cosas del código que mandan sobre el diseño
+
+1. **En el servidor no hay migraciones.** `src/esquema.ts` se aplica con
+   `CREATE TABLE IF NOT EXISTS`, así que **una columna nueva en `dispositivos` o en `resumenes` no
+   llegaría nunca** a la base de datos que ya existe. Todo dato nuevo va en tabla aparte, como ya se
+   hizo con `umbrales_fuente`.
+2. **La app tira la medición cuando un lugar se mueve bajo el mismo id**
+   (`PlacesContext.cargarObservacion`, veredicto `olvidar-y-consultar`), para no decir que en tu
+   calle mide lo que mide una estación a 350 km. Una estación fija para «Mi ubicación» pelearía
+   contra esa máquina.
+3. **El texto de los push nombra la estación** (`avisoUmbral` y `cuerpoResumen` del servidor). Si la
+   elección no llega al servidor, el push dice una estación y la pantalla otra, del mismo sitio y el
+   mismo día. Eso parte el trabajo en dos fases.
+
+### Lo decidido
+
+- **Por lugar, y solo en los lugares fijos.** Una estación es un punto del mapa; «mi estación» no
+  significa nada con dos ciudades guardadas. Se guarda en `tiempo.estacionPorLugar.v1`.
+- **Se entra por la propia línea de la medición**, que ya es un solo elemento accesible: pasa a ser
+  botón y **no añade ninguna parada nueva a VoiceOver**. Abre un modal, como el de avisos.
+- **Ruta nueva** `GET /apps/easyweather/estaciones?lat&lon&alt`: las 12 más cercanas en 60 km, con
+  distancia, desnivel, hora del último parte y el motivo por el que la política automática
+  descartaría cada una. **No le cuesta ni una petición más a AEMET** (sale del fichero horario que
+  ya está cacheado en memoria) y **no toca la ruta diezminutal**, que es la que responde 429.
+- **`estacion=IDEMA` opcional en `/observacion`**, con una asimetría deliberada: con estación
+  elegida **no** se aplican los filtros de distancia ni desnivel —el usuario los ha anulado a
+  propósito— pero **sí** el de frescura, porque un número de hace cinco horas no es «ahora» lo elija
+  quien lo elija.
+- **Al cambiar la elección hay que invalidar `ultimaObservacionRef`**, o el dato nuevo no llegaría
+  hasta diez minutos después y parecería que el cambio no ha hecho nada.
+
+### Lo propuesto que falta confirmar
+
+Son decisiones de producto, no técnicas:
+
+- **Cuando la estación elegida calla, no se cae en la automática en silencio**: la tarjeta dice «tu
+  estación no publica desde las 09:00» y ofrece cambiarla. Caer en la automática pondría «Estación
+  X» debajo de un número de Y, que es lo que la app se prohíbe.
+- **«Mi ubicación» queda fuera**, por el punto 2 de arriba.
+- **Si no hay ninguna medición no hay por dónde entrar**, que es justo cuando alguien querría una
+  estación más lejana. No se añade una línea «Sin medición · Elegir estación» porque sería una
+  parada nueva de VoiceOver **para todo el que esté fuera de España**. Queda para el final.
+
+### Fases y orden de despliegue
+
+1. Ruta nueva, parámetro nuevo, modal y guardar la elección. Se ve y funciona.
+2. Que la elección viaje en `sincronizar` (tabla nueva `estacion_resumen`) para que el resumen de un
+   lugar fijo mida donde dice la pantalla. **Parándose en la fase 1**, un resumen con «Temperatura»
+   puede nombrar una estación distinta de la que enseña la tarjeta.
+3. La entrada cuando no hay medición.
+
+**El servidor se despliega primero**: si la app pregunta por `/estaciones` y todavía no existe, el
+modal solo puede decir que no ha podido cargar la lista. La app **entra por aire**, sin build ni
+revisión de Apple: es todo TypeScript y JSX dentro del runtime 1.5.0.
+
+---
+
 ## Widget de pantalla de inicio
 
 **Estado: pendiente, sin empezar.**
@@ -95,6 +161,24 @@ Se apuntan para que no se pierdan; no hay diseño de ninguna.
 - **Calidad del aire.**
 - **Motor de alertas**: unificar las reglas del usuario (umbral, resumen) y los avisos oficiales bajo
   una sola forma de decidir cuándo suena el teléfono, en vez de tres caminos separados.
+
+---
+
+## Avisar a Open-Meteo del agujero de España
+
+**Estado: el informe está escrito, falta decidir si se publica.**
+
+La medición del 2026-09-26: al geocodificador de Open-Meteo le faltan **405 municipios españoles**
+(el 4,98 %, 669.686 habitantes), Badia del Vallès entre ellos. La causa está identificada: GeoNames
+los tiene solo como registros `ADM3` (clase A) y el índice de Open-Meteo excluye los `ADM*`. No es
+que falten los datos; es que el filtro los tapa. Comprobado en vivo sobre los 15 más grandes: 14
+ausentes.
+
+La app ya no lo sufre —busca en la lista del INE—, así que esto no arregla nada nuestro: es
+devolverle el hallazgo a quien nos da los datos gratis. No hay ninguna incidencia igual abierta en
+`open-meteo/geocoding-api`.
+
+Queda por decidir si se publica tal cual o adjuntando la lista completa de los 405 en un gist.
 
 ---
 
