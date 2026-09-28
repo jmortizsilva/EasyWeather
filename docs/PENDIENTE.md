@@ -108,33 +108,49 @@ investigación:
 Esto es **nowcasting**: extrapolar los ecos del radar en los próximos minutos. Otra naturaleza de
 dato, y por tanto una fila nueva en la tabla de FUENTES-DE-DATOS.
 
-### Lo que hay que contestar antes de nada
+### Lo medido el 2026-09-28: de dónde puede salir el dato
 
-1. **De dónde sale el dato.** Candidatas a mirar, ninguna comprobada todavía:
-   - el **radar de AEMET** en OpenData, que hasta donde sé sirve **imágenes** compuestas, no una
-     rejilla de valores: habría que extraer los ecos de un PNG, que es un problema muy distinto y
-     bastante peor;
-   - la precipitación en tramos de **15 minutos** de Open-Meteo, que ya usamos y no necesita clave,
-     pero que es **modelo**, no radar: hay que ver si acierta a esa escala o promete de más;
-   - servicios de teselas de radar de terceros, con su licencia y su coste por mirar.
+**1. La precipitación en tramos de 15 minutos de Open-Meteo: DESCARTADA para esto.**
 
-   La pregunta que decide: **¿el dato es medido o previsto?** De la respuesta depende cómo se puede
-   redactar el aviso sin mentir, que es la regla que sostiene toda la app.
+No trae ninguna información por debajo de la hora. Medido contra la API en A Coruña, Madrid y
+Valencia, mirando todas las horas con lluvia de los tres días siguientes: **49 de 49** encajan con
+«la precipitación horaria dividida entre cuatro, desplazada una hora». Los cuatro cuartos de una
+hora son el mismo número, y ese número es el de la hora de al lado.
 
-2. **Quién lo calcula.** Casi seguro el servidor, como los avisos oficiales: es quien puede mirar
-   cada pocos minutos con la app cerrada. Pero un nowcast útil se refresca cada 5 o 10 minutos, no
-   cada 20 como el cron de ahora, y eso multiplica las consultas y el gasto del VPS.
+Dicho de otra forma: `minutely_15` en España es la horaria repartida, no un modelo de 15 minutos.
+Sirve para lo que ya la usamos, pero **no puede decir «empieza a llover en un cuarto de hora»**, y
+construir un aviso sobre ella sería prometer una precisión que el dato no tiene.
 
-3. **Cuándo callarse.** Es el riesgo de verdad. Un aviso de lluvia que no acierta, o que suena tres
-   veces en una tarde de chubascos, enseña a la gente a ignorar las notificaciones de esta app —
-   incluidas las rojas de AEMET, que son las que importan. Hará falta un margen de confianza, un
-   tiempo mínimo entre avisos y, seguramente, que nazca **desactivado**.
+(Reproducible: pedir `minutely_15=precipitation` y `hourly=precipitation` del mismo punto y comparar
+los cuartos con `hourly[i+1]/4`.)
 
-4. **Cómo se dice.** Un radar es una imagen, y aquí el dato tiene que llegar como **frase**:
-   distancia, dirección y minutos, no un mapa de colores. Es la parte que más valor tiene y la que
-   ninguna app de radar resuelve bien.
+**2. Radar de verdad: sí hay, y hay dos fuentes.**
 
-5. **Atribución y licencia** de la fuente que se elija, antes de publicar nada.
+- **RainViewer** (`api.rainviewer.com/public/weather-maps.json`, sin clave): **13 fotogramas de
+  pasado con cadencia de 10 minutos**, o sea dos horas de historia. Las imágenes son **teselas PNG
+  en proyección web estándar**, que es la ventaja gorda: georreferenciarlas es aritmética de
+  teselas, no reproyectar nada. Comprobado que hay eco real sobre España: la tesela de Madrid pesaba
+  20 KB y la del Sáhara, sin cobertura, 334 bytes. **Su campo `nowcast` venía VACÍO** en la consulta
+  de ese día, así que la extrapolación al futuro tendríamos que hacerla nosotros. Falta leerse su
+  licencia: el uso libre es para no comerciales y con atribución.
+- **Radar de AEMET** (OpenData): es la fuente oficial de España y **ya tenemos clave y un servidor
+  que puede usarla**. También sirve imágenes, pero con su propia proyección, así que hay que
+  situarlas a mano. No se pudo probar desde el portátil porque la clave vive en el servidor.
+
+### Lo que sigue sin decidir
+
+**Qué se promete.** Con solo fotogramas de pasado se puede decir algo **medido y cierto**: «radar de
+las 14:10: lluvia a 12 km al oeste, acercándose». Eso encaja con la regla de la casa —un dato, con
+su hora y su procedencia— y no exige inventar nada. Prometer «empieza a llover en 15 minutos» es
+otra cosa: obliga a extrapolar los ecos, y a acertar.
+
+**Qué cuesta.** Sacar un valor de un punto a partir de una imagen obliga a **decodificar un PNG en
+el servidor**, y Node no lo hace solo: es una dependencia nueva, que se propone y se aprueba antes
+de instalarse. Y un aviso útil se refresca cada 5 o 10 minutos, no cada 20 como el cron de ahora.
+
+**Cuándo callarse**, que sigue siendo el riesgo de verdad: un aviso de lluvia que no acierta, o que
+suena tres veces en una tarde de chubascos, enseña a la gente a ignorar las notificaciones de esta
+app, incluidas las rojas de AEMET.
 
 ---
 
