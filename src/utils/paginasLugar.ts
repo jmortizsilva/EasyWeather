@@ -54,3 +54,49 @@ export function valoresControl(
     valueOnDecrement: conPosicion(indice - 1), // flick abajo = anterior
   };
 }
+
+/**
+ * Huella de la LISTA de páginas: cambia si se añade, se quita o se reordena un lugar.
+ *
+ * Se compara por identidad y no por longitud: quitar uno y añadir otro deja el mismo número de
+ * páginas y sin embargo los índices ya no señalan a los mismos sitios.
+ */
+export function claveDeLugares(lugares: { id: string }[]): string {
+  return lugares.map((l) => l.id).join('|');
+}
+
+export interface CambioDePaginas {
+  activeIdPrevio: string;
+  activeId: string;
+  clavePrevia: string;
+  clave: string;
+  /** La página que se está mostrando ahora mismo. */
+  indicePagina: number;
+  /** Dónde ha quedado el lugar activo en la lista de ahora. -1 si no está. */
+  indiceActivo: number;
+}
+
+/**
+ * Qué página hay que mostrar tras un cambio de estado, o `undefined` si no hay que tocar nada.
+ *
+ * Existe por un fallo que costó encontrar: el índice de página y el lugar activo se desincronizan
+ * al AÑADIR un lugar sin activarlo, que es lo que hace el botón «Guardar este sitio». La lista
+ * crece POR DELANTE (el nuevo va el primero), así que todos los índices se corren una posición,
+ * pero `activeId` no cambia y por tanto nada volvía a calcular la página. El control de páginas
+ * acababa leyendo el lugar de otro índice: VoiceOver decía un sitio y la pantalla enseñaba otro.
+ *
+ * Quitar un lugar por delante del activo tenía el mismo defecto, solo que nadie lo había pillado.
+ */
+export function paginaQueTocaMostrar(cambio: CambioDePaginas): number | undefined {
+  const cambioElLugar = cambio.activeId !== cambio.activeIdPrevio;
+  const cambioLaLista = cambio.clave !== cambio.clavePrevia;
+  if (!cambioElLugar && !cambioLaLista) {
+    return undefined;
+  }
+  // Si el lugar activo ya no está en la lista (lo acaban de quitar) se deja la página donde está:
+  // quien lo quitó decide a dónde ir, y saltar a ciegas sería peor.
+  if (cambio.indiceActivo < 0 || cambio.indiceActivo === cambio.indicePagina) {
+    return undefined;
+  }
+  return cambio.indiceActivo;
+}

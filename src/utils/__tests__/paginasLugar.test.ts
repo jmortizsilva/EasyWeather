@@ -1,5 +1,5 @@
 import { Place } from '../../types';
-import { valoresControl } from '../paginasLugar';
+import { claveDeLugares, paginaQueTocaMostrar, valoresControl } from '../paginasLugar';
 import { TempGuardada } from '../tempActual';
 
 const lugar = (id: string, name: string): Place => ({ id, name, lat: 0, lon: 0 });
@@ -59,5 +59,74 @@ describe('valoresControl', () => {
   it('sin temperatura guardada dice solo el lugar y su posicion', () => {
     const { value } = valoresControl(LUGARES, 0, {}, 0);
     expect(value).toBe('Mi ubicación, Madrid. 1 de 3');
+  });
+});
+
+describe('paginaQueTocaMostrar', () => {
+  // El fallo que lo trajo: se guarda el sitio donde estás desde "Mis lugares", el lugar nuevo entra
+  // EL PRIMERO de los guardados y todos los índices se corren, pero el lugar activo no cambia.
+
+  const base = {
+    activeIdPrevio: 'madrid',
+    activeId: 'madrid',
+    clavePrevia: 'current|madrid|vigo',
+    clave: 'current|madrid|vigo',
+    indicePagina: 1,
+    indiceActivo: 1,
+  };
+
+  it('sin cambios no toca nada', () => {
+    expect(paginaQueTocaMostrar(base)).toBeUndefined();
+  });
+
+  it('al añadir un lugar por delante, la página sigue al lugar que estabas viendo', () => {
+    // "punto:40,0" entra el primero de los guardados: Madrid pasa del índice 1 al 2.
+    expect(
+      paginaQueTocaMostrar({
+        ...base,
+        clave: 'current|punto:40,0|madrid|vigo',
+        indiceActivo: 2,
+      }),
+    ).toBe(2);
+  });
+
+  it('al quitar un lugar por delante del activo, también', () => {
+    expect(
+      paginaQueTocaMostrar({
+        ...base,
+        indicePagina: 2,
+        clavePrevia: 'current|vigo|madrid',
+        clave: 'current|madrid',
+        indiceActivo: 1,
+      }),
+    ).toBe(1);
+  });
+
+  it('al cambiar de lugar activo desde fuera, la página va con él', () => {
+    expect(paginaQueTocaMostrar({ ...base, activeId: 'vigo', indiceActivo: 2 })).toBe(2);
+  });
+
+  it('si la lista cambia pero el activo se queda donde estaba, no se mueve nada', () => {
+    // Se quitó uno de DETRÁS: los índices anteriores no se corren.
+    expect(
+      paginaQueTocaMostrar({ ...base, clave: 'current|madrid', indiceActivo: 1 }),
+    ).toBeUndefined();
+  });
+
+  it('si el lugar activo ya no está en la lista, se deja la página donde está', () => {
+    // Quien lo quitó decide a dónde ir; saltar a ciegas sería peor.
+    expect(
+      paginaQueTocaMostrar({ ...base, clave: 'current|vigo', indiceActivo: -1 }),
+    ).toBeUndefined();
+  });
+});
+
+describe('claveDeLugares', () => {
+  it('cambia al añadir, al quitar y al reordenar', () => {
+    const a = claveDeLugares([{ id: 'current' }, { id: 'madrid' }]);
+    expect(claveDeLugares([{ id: 'current' }, { id: 'x' }, { id: 'madrid' }])).not.toBe(a);
+    expect(claveDeLugares([{ id: 'current' }])).not.toBe(a);
+    // Reordenar deja la misma longitud y sin embargo los índices ya no señalan lo mismo.
+    expect(claveDeLugares([{ id: 'madrid' }, { id: 'current' }])).not.toBe(a);
   });
 });

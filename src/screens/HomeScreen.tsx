@@ -17,6 +17,7 @@ import { crearEstilos, PaginaLugar } from '../components/PrevisionLugar';
 import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
+import { claveDeLugares, paginaQueTocaMostrar } from '../utils/paginasLugar';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -65,14 +66,29 @@ export default function HomeScreen() {
   // Página mostrada. Se lleva aparte de activeId porque el scroll físico va por delante del estado.
   const [indicePagina, setIndicePagina] = useState(Math.max(indiceActivo, 0));
 
-  // Si el lugar activo cambia por fuera (GPS, Mis lugares, Buscar), la página se pone al día.
+  // La página se pone al día cuando cambia el lugar activo (GPS, Mis lugares, Buscar) Y TAMBIÉN
+  // cuando cambia la lista de lugares, aunque el activo siga siendo el mismo: al añadir uno sin
+  // activarlo, la lista crece por delante y todos los índices se corren. El porqué y el caso que
+  // lo destapó, en utils/paginasLugar.
+  //
   // Ajuste de estado durante el render (patrón recomendado de React) en vez de un efecto: no
   // provoca renders en cascada. Del scroll se encarga el efecto de abajo, no el render.
+  const clavePaginas = claveDeLugares(seleccionables);
   const [activeIdPrevio, setActiveIdPrevio] = useState(activeId);
-  if (activeId !== activeIdPrevio) {
+  const [clavePrevia, setClavePrevia] = useState(clavePaginas);
+  if (activeId !== activeIdPrevio || clavePaginas !== clavePrevia) {
     setActiveIdPrevio(activeId);
-    if (indiceActivo >= 0 && indiceActivo !== indicePagina) {
-      setIndicePagina(indiceActivo);
+    setClavePrevia(clavePaginas);
+    const pagina = paginaQueTocaMostrar({
+      activeIdPrevio,
+      activeId,
+      clavePrevia,
+      clave: clavePaginas,
+      indicePagina,
+      indiceActivo,
+    });
+    if (pagina !== undefined) {
+      setIndicePagina(pagina);
     }
   }
 
