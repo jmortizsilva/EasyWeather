@@ -8,6 +8,8 @@ import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import VistaPreviaLugar from '../components/VistaPreviaLugar';
 import { Place } from '../types';
+import { lugarDesdeUbicacion, yaGuardado } from '../utils/guardarUbicacion';
+import { vibrarConfirmacion } from '../utils/haptica';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
 import SearchScreen from './SearchScreen';
 
@@ -22,6 +24,7 @@ export default function PlacesScreen() {
     activeId,
     currentByPlace,
     setActiveId,
+    addPlace,
     removePlace,
     refreshCurrentTemps,
   } = usePlaces();
@@ -54,6 +57,22 @@ export default function PlacesScreen() {
   const selectAndGoHome = (id: string) => {
     setActiveId(id);
     irA('hoy');
+  };
+
+  // "Mi ubicación" te sigue, así que el sitio donde estás se pierde en cuanto te vas. Esto lo fija
+  // en la lista con el nombre que le da Apple, que además es la única vía para los sitios que ni la
+  // lista del INE ni Open-Meteo saben nombrar (ver docs/PENDIENTE.md, el caso de Els Reguers).
+  const puntoActual = lugarDesdeUbicacion(currentLocationPlace);
+  const sePuedeGuardar = puntoActual !== undefined && yaGuardado(places, puntoActual) === undefined;
+
+  const guardarDondeEstoy = async () => {
+    if (!puntoActual) {
+      return;
+    }
+    // No se activa: estás marcando el sitio para luego, no pidiendo verlo. El anuncio de VoiceOver
+    // lo lanza el propio contexto al cambiar el mensaje; la vibración confirma sin mirar.
+    await addPlace(puntoActual, { activar: false });
+    vibrarConfirmacion();
   };
 
   // Cerrar la hoja se lleva por delante la previsión: si no, al volver a abrir la búsqueda
@@ -91,7 +110,11 @@ export default function PlacesScreen() {
           const meta = [currentLocationPlace?.admin1, tempVisible].filter(Boolean).join(' · ');
           return (
             <Pressable
-              style={[styles.row, activeId === CURRENT_LOCATION_ID && styles.rowSelected]}
+              style={[
+                styles.row,
+                sePuedeGuardar && styles.rowDivider,
+                activeId === CURRENT_LOCATION_ID && styles.rowSelected,
+              ]}
               onPress={() => selectAndGoHome(CURRENT_LOCATION_ID)}
               accessibilityRole="button"
               accessibilityLabel={hablado}
@@ -101,6 +124,22 @@ export default function PlacesScreen() {
             </Pressable>
           );
         })()}
+
+        {/* Guardar el sitio donde estás, dentro de la misma tarjeta que la ubicación y justo
+            debajo: es lo que el botón hace, y así VoiceOver lo encuentra al salir de esa fila.
+            Desaparece en cuanto el sitio ya está guardado —abajo se ve la fila nueva— para no
+            dejar un botón permanente que la mitad de las veces no hace nada. */}
+        {sePuedeGuardar && (
+          <Pressable
+            style={styles.row}
+            onPress={() => void guardarDondeEstoy()}
+            accessibilityRole="button"
+            accessibilityLabel="Guardar este sitio en Mis lugares"
+            accessibilityHint={`Guarda ${puntoActual?.name} como lugar fijo, para seguir viéndolo cuando te vayas`}>
+            <Text style={styles.rowTitle}>Guardar este sitio</Text>
+            <Text style={styles.rowMeta}>{puntoActual?.name} se queda aunque te vayas</Text>
+          </Pressable>
+        )}
       </View>
 
       {places.length === 0 && (

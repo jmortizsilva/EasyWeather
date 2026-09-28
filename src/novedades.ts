@@ -18,7 +18,10 @@
 // oficiales y la fecha atrasada en América) se anunciaron en el update de las 20:25 de ese mismo día,
 // y ocho cosas de golpe en un solo Alert se hacen largas de oír. El coste, aceptado a sabiendas:
 // quien no llegase a aplicar aquel update no se enterará de esas seis.
+// Las dos primeras ya se publicaron el 2026-09-27; se quedan porque este fichero solo se vacía al
+// lanzar una build, y quien no llegara a aplicar aquel update tiene que enterarse igual.
 export const NOVEDADES: string[] = [
   'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
   'Con VoiceOver, al caer en la fila de un día ya se dice «Temperatura» antes de los números. Antes empezaba por «mínima 12 grados» y no había forma de saber de qué era ese número.',
+  'Nuevo: en «Mis lugares», debajo de tu ubicación, el botón «Guardar este sitio» deja fijo el sitio donde estás, con su nombre, para seguir viéndolo cuando te vayas. Sirve además para los pueblos y barrios que no aparecen al buscarlos.',
 ];

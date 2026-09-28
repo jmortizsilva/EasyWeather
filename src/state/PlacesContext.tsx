@@ -97,7 +97,7 @@ interface PlacesContextValue {
    * deja en forecastByPlace, sin tocar el lugar activo ni la pantalla Hoy.
    */
   cargarPrevision: (place: Place) => Promise<void>;
-  addPlace: (place: Place) => Promise<void>;
+  addPlace: (place: Place, opciones?: { activar?: boolean }) => Promise<void>;
   removePlace: (id: string) => Promise<void>;
 }
 
@@ -664,11 +664,17 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [detectCurrentLocation, reloadForecast]);
 
-  const addPlace = async (place: Place) => {
+  // `activar` existe porque hay dos formas de añadir un lugar y no quieren lo mismo. Guardándolo
+  // desde la búsqueda, lo que quieres es verlo, así que pasa a ser el lugar de "Hoy". Guardando el
+  // sitio donde estás, no: lo estás marcando para cuando te vayas, y cambiar el lugar activo te
+  // sacaría de "Mi ubicación" sin haberlo pedido, para enseñarte el mismo tiempo del mismo punto.
+  const addPlace = async (place: Place, { activar = true }: { activar?: boolean } = {}) => {
     const next = [place, ...places.filter((p) => p.id !== place.id)];
     setPlaces(next);
     await AsyncStorage.setItem(STORAGE_PLACES, JSON.stringify(next));
-    setActiveId(place.id);
+    if (activar) {
+      setActiveId(place.id);
+    }
     setMessage(`${place.name} añadido a tus lugares.`);
   };
 
