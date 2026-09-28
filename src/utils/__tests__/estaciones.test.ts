@@ -4,6 +4,7 @@ import {
   EstacionCandidata,
   filaAutomatica,
   filaEstacion,
+  ofrecerEstacionSinMedicion,
 } from '../estaciones';
 
 // Los textos de elegir estacion. La hora sale de `horaMedicion`, que usa la zona del telefono: se
@@ -142,5 +143,37 @@ describe('eleccionAplicable', () => {
 
   it('sin elección no hay nada que aplicar', () => {
     expect(eleccionAplicable(undefined, { lat: 40.4168, lon: -3.7038 })).toBe(false);
+  });
+});
+
+describe('ofrecerEstacionSinMedicion', () => {
+  // La linea que ofrece elegir cuando no hay medicion es una parada NUEVA de VoiceOver. Sin filtro
+  // la tendria todo el que esta fuera de España, que es justo quien nunca va a tener estacion.
+  const base = {
+    hayMedicion: false,
+    hayAvisoDeEstacion: false,
+    sePuedeElegir: true,
+    countryCode: 'ES',
+  };
+
+  it('se ofrece en España cuando no hay medicion', () => {
+    expect(ofrecerEstacionSinMedicion(base)).toBe(true);
+  });
+
+  it('NO se ofrece fuera de España: alli no hay red que elegir', () => {
+    expect(ofrecerEstacionSinMedicion({ ...base, countryCode: 'PT' })).toBe(false);
+    expect(ofrecerEstacionSinMedicion({ ...base, countryCode: undefined })).toBe(false);
+  });
+
+  it('no se duplica con la medicion: si la hay, se entra por ella', () => {
+    expect(ofrecerEstacionSinMedicion({ ...base, hayMedicion: true })).toBe(false);
+  });
+
+  it('ni con el aviso de que tu estacion calla, que ya es el boton', () => {
+    expect(ofrecerEstacionSinMedicion({ ...base, hayAvisoDeEstacion: true })).toBe(false);
+  });
+
+  it('ni donde la pantalla no deja elegir', () => {
+    expect(ofrecerEstacionSinMedicion({ ...base, sePuedeElegir: false })).toBe(false);
   });
 });

@@ -193,3 +193,30 @@ export function avisoSinDato(
       : `Tu estación elegida, ${nombre}, no publica ahora mismo.`,
   };
 }
+
+/**
+ * Si hay que ofrecer elegir estacion cuando NO hay medicion que enseñar.
+ *
+ * Es el caso en el que mas falta hace —no hay dato porque ninguna estacion pasa el filtro, y a lo
+ * mejor el usuario quiere una mas lejana— y a la vez el que hay que ofrecer con mas cuidado: la
+ * linea que lo ofrece es una parada nueva de VoiceOver, y sin filtro la tendria TODO el que esta
+ * fuera de España, que es justo quien nunca va a tener estacion.
+ *
+ * De ahi el pais: AEMET solo mide en España, asi que fuera no se pinta nada y no se pregunta nada.
+ * Sin codigo de pais tampoco se ofrece (lugares guardados antes de que existiera ese campo): ante
+ * la duda, mejor no dar una parada de mas que darla donde no sirve.
+ */
+export function ofrecerEstacionSinMedicion(situacion: {
+  /** Hay medicion en pantalla: entonces se entra por ella, no por aqui. */
+  hayMedicion: boolean;
+  /** Ya se esta contando que la estacion elegida calla: ese aviso ya es el boton. */
+  hayAvisoDeEstacion: boolean;
+  /** La pantalla permite elegir en este lugar (no es una consulta de paso). */
+  sePuedeElegir: boolean;
+  countryCode?: string;
+}): boolean {
+  if (situacion.hayMedicion || situacion.hayAvisoDeEstacion || !situacion.sePuedeElegir) {
+    return false;
+  }
+  return situacion.countryCode === 'ES';
+}

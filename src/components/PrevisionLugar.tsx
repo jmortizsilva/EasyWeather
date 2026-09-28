@@ -15,7 +15,7 @@ import { Paleta } from '../theme/colores';
 import { AvisosLugar, CurrentObservation, DayForecast, Place } from '../types';
 import { textoParaCompartir } from '../utils/compartir';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
-import { avisoSinDato } from '../utils/estaciones';
+import { avisoSinDato, ofrecerEstacionSinMedicion } from '../utils/estaciones';
 import { describirObservacion } from '../utils/observacionTexto';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
@@ -98,6 +98,12 @@ export function PaginaLugar({
   const avisoEstacion =
     sinDatoEstacion &&
     avisoSinDato(sinDatoEstacion.motivo, sinDatoEstacion.nombre, sinDatoEstacion.observedAt);
+  const ofrecerEstacion = ofrecerEstacionSinMedicion({
+    hayMedicion: medicion !== undefined,
+    hayAvisoDeEstacion: avisoEstacion !== undefined,
+    sePuedeElegir: sePuedeElegirEstacion,
+    countryCode: place.countryCode,
+  });
   // Con coma decimal, como la línea de la medición que va justo debajo: Open-Meteo devuelve
   // decimales y antes salían con punto, mezclando dos criterios en la misma tarjeta.
   const temperaturaAhora =
@@ -169,6 +175,21 @@ export function PaginaLugar({
                 <Text style={styles.medicionEstacion}>{medicion.estacion}</Text>
               </View>
             ))}
+
+          {/* Sin ninguna medicion tampoco se deja al usuario sin salida: en España puede haber
+              una estacion mas lejana que a el le valga, aunque la app no la coja sola. Fuera de
+              España esto NO se pinta, porque alli no hay red de AEMET y seria una parada de
+              VoiceOver que no lleva a ninguna parte (ver utils/estaciones). */}
+          {ofrecerEstacion && (
+            <Pressable
+              style={styles.medicionBloque}
+              onPress={onElegirEstacion}
+              accessibilityRole="button"
+              accessibilityLabel="No hay ninguna estación de AEMET que represente este sitio. Elegir una a mano"
+              accessibilityHint="Abre la lista de estaciones cercanas, incluidas las que la app no usa sola">
+              <Text style={styles.medicionEstacion}>Sin medición cerca · elegir estación</Text>
+            </Pressable>
+          )}
 
           {/* Y cuando la estacion elegida calla, su sitio lo ocupa el motivo. Sin numero: el de la
               estacion automatica iria debajo del nombre de otra. */}

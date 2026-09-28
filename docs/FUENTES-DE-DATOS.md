@@ -199,6 +199,12 @@ motivos distintos (parte viejo, emite sin termómetro, o ya no está en la red).
 automática en silencio: poner el nombre de una estación encima del dato de otra sería mentir sobre
 quién midió, que es lo único que esta app no se permite con una medición.
 
+**Y si no hay ninguna medición, tampoco te quedas sin salida**: en España sale una línea «Sin
+medición cerca · elegir estación» que abre la misma lista, porque puede haber una estación más
+lejana que a ti te valga aunque la app no la coja sola. **Fuera de España esa línea no se pinta**:
+allí no hay red de AEMET, y sería una parada de VoiceOver que no lleva a ninguna parte para todo el
+que nunca va a tener estación.
+
 **También en «Mi ubicación», y ahí con una regla más.** Ese lugar te sigue, así que una estación
 clavada podría acabar enseñando la de tu pueblo estando a 350 km — que es exactamente el fallo que
 reportó una probadora en septiembre viniendo de Valencia. Por eso la elección **se queda dormida**

@@ -8,19 +8,6 @@ Que esté aquí no significa que se vaya a hacer, ni en este orden. Significa qu
 
 ---
 
-## Elegir la estación de AEMET — fase 3
-
-**Las fases 1 y 2 están HECHAS** (2026-09-28). Se puede elegir la estación de cualquier lugar,
-incluida tu ubicación, y la elección llega también a los avisos por notificación. El porqué está en
-[FUENTES-DE-DATOS.md](FUENTES-DE-DATOS.md#la-estación-de-aemet-la-puede-elegir-el-usuario).
-
-Queda la **fase 3: entrar cuando no hay ninguna medición.** Si no hay medición, la línea no se pinta
-y no hay por dónde abrir la lista, que es justo cuando alguien querría una estación más lejana. No
-se añadió una línea «Sin medición · Elegir estación» porque sería una parada nueva de VoiceOver para
-todo el que esté fuera de España. Habría que preguntar primero si hay candidatas y pintarla solo
-entonces.
-
----
 
 ## Los sitios que no son municipios, y guardar donde estás
 
