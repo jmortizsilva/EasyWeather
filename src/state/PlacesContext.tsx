@@ -119,6 +119,11 @@ interface PlacesContextValue {
    */
   cargarPrevision: (place: Place) => Promise<void>;
   addPlace: (place: Place, opciones?: { activar?: boolean }) => Promise<void>;
+  /**
+   * Da por buenos para un lugar nuevo los datos que ya se tienen de OTRO id con las MISMAS
+   * coordenadas, en vez de volver a pedirlos.
+   */
+  heredarDatos: (origenId: string, destino: Place) => Promise<void>;
   removePlace: (id: string) => Promise<void>;
 }
 
@@ -770,6 +775,45 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     [cargarObservacion, olvidarObservacion, forecastByPlace],
   );
 
+  /**
+   * Estrena un lugar con los datos que ya hay de otro id del MISMO punto.
+   *
+   * Es el caso de «Guardar este sitio»: el lugar que se guarda ES el punto de «Mi ubicación», cuya
+   * previsión y medición están cargadas hace un momento. Sin esto, al pasar a su página había que
+   * esperar a una consulta de red para ver algo —con VoiceOver, un «Cargando» y a probar otra vez—,
+   * y encima se le pedía a Open-Meteo dos veces lo mismo.
+   *
+   * Si no hubiera nada que heredar se pide como siempre.
+   */
+  const heredarDatos = useCallback(
+    async (origenId: string, destino: Place) => {
+      const guardada = forecastByPlace[origenId];
+      if (!guardada) {
+        await cargarPrevision(destino);
+        return;
+      }
+      setForecastByPlace((previo) => ({ ...previo, [destino.id]: guardada }));
+      // La medición es del mismo punto y del mismo momento, así que la tarjeta queda entera desde
+      // el primer instante. Los avisos oficiales no se copian: los pide el lugar al activarse, y
+      // un aviso es algo que más vale volver a preguntar que arrastrar.
+      const medicion = observacionByPlace[origenId];
+      if (medicion) {
+        setObservacionByPlace((previo) => ({ ...previo, [destino.id]: medicion }));
+      }
+      await Promise.all([
+        AsyncStorage.setItem(
+          `${STORAGE_FORECAST_PREFIX}${destino.id}`,
+          JSON.stringify(guardada.forecast),
+        ),
+        AsyncStorage.setItem(
+          `${STORAGE_FORECAST_TS_PREFIX}${destino.id}`,
+          String(guardada.updatedAt ?? Date.now()),
+        ),
+      ]);
+    },
+    [forecastByPlace, observacionByPlace, cargarPrevision],
+  );
+
   // `activar` existe porque hay dos formas de añadir un lugar y no quieren lo mismo. Guardándolo
   // desde la búsqueda, lo que quieres es verlo, así que pasa a ser el lugar de "Hoy". Guardando el
   // sitio donde estás, no: lo estás marcando para cuando te vayas, y cambiar el lugar activo te
@@ -824,6 +868,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     reloadForecast,
     cargarPrevision,
     addPlace,
+    heredarDatos,
     removePlace,
   };
 

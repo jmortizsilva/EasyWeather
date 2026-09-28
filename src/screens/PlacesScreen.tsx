@@ -25,6 +25,7 @@ export default function PlacesScreen() {
     currentByPlace,
     setActiveId,
     addPlace,
+    heredarDatos,
     removePlace,
     refreshCurrentTemps,
   } = usePlaces();
@@ -72,6 +73,9 @@ export default function PlacesScreen() {
     // No se activa: estás marcando el sitio para luego, no pidiendo verlo. El anuncio de VoiceOver
     // lo lanza el propio contexto al cambiar el mensaje; la vibración confirma sin mirar.
     await addPlace(puntoActual, { activar: false });
+    // El lugar guardado ES el punto de "Mi ubicación": hereda su previsión y su medición en vez de
+    // volver a pedirlas, para que su página tenga datos desde el primer momento.
+    await heredarDatos(CURRENT_LOCATION_ID, puntoActual);
     vibrarConfirmacion();
   };
 
