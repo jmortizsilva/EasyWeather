@@ -295,6 +295,61 @@ Lo que sí salió redondo es lo puramente medido. Sobre Barcelona ciudad (píxel
 las 11:00 y 36 dBZ a las 11:20**, o sea de ~1 mm/h a ~6 mm/h. Eso es un dato con su hora, su sitio y
 su procedencia, y no hace falta extrapolar nada para decirlo.
 
+### El umbral manda más que la extrapolación
+
+Esto se descubrió escribiendo los textos de ejemplo, y cambió la idea de cuál era la decisión difícil.
+
+Con los tres barridos de Barcelona se buscó un caso de lluvia acercándose de verdad. El primer
+intento solo devolvió artefactos (los de Mallorca, 90 → 75 → 21 km, que son 420 km/h). Filtrando por
+pasos físicamente posibles y constantes salió un grupo limpio: **siete pueblos vecinos del Maresme,
+todos con el mismo 6 y 5 km por barrido**. Que coincidan entre sí es lo que distingue el movimiento
+real de un eco que nace, y vale como filtro.
+
+El caso elegido fue **Calella** (a 70 km del radar). Y mirado por intensidades, la historia se da la
+vuelta:
+
+| umbral | 11:00 | 11:10 | 11:20 | |
+| --- | --- | --- | --- | --- |
+| 12 dBZ (~0,2 mm/h) | 15,7 km | 10,8 km | **9,5 km** | se acerca |
+| 24 dBZ (~1,2 mm/h) | 27,2 km | 30,4 km | **28,5 km** | no se acerca |
+| 30 dBZ (~2,7 mm/h) | 40,8 km | 42,2 km | **40,1 km** | quieta |
+
+Lo que se acercaba a Calella era **solo el borde deshilachado del sistema**. La lluvia de mojarse
+estaba a 28 km y no venía. Un aviso construido sobre «hay eco» habría prometido lluvia en veinte
+minutos por una llovizna de 0,2 mm/h.
+
+**Conclusión: el umbral decide si el aviso es verdad o es ruido, y lo decide antes que la elección
+entre medir y extrapolar.** En este caso cambia la respuesta de «te llega en veinte minutos» a «no te
+llega». Es la primera cifra que hay que fijar, no la última.
+
+(Y algo que no se pudo comprobar: si llovió en Calella a las 11:45. AEMET solo sirve la última
+imagen, así que no hay forma de volver atrás a mirar si el aviso habría acertado. Para evaluar esto
+en serio hay que ir **guardando** los barridos antes de poder juzgar nada.)
+
+### Lo que se propone empezar: la pantalla, no el aviso
+
+No hace falta decidir el texto del push para empezar, y decidirlo a ciegas es lo que más fácil sale
+mal. Lo que se propone es **enseñar el radar en la pantalla primero**:
+
+> «Radar de las 11:20: lluvia a 9 km al oeste.»
+
+Una línea más en la ficha del lugar, al lado de la medición de la estación, con la misma forma que
+todo lo demás: un dato, con su hora y su procedencia. Sin notificaciones.
+
+Por qué así:
+
+- **No gasta confianza.** Si el dato resulta ser malo, molesta a nadie; nadie aprende a ignorar las
+  notificaciones de esta app.
+- **Se puede probar de verdad**, en TestFlight y en la mano, que es la única forma de saber si «a 9 km
+  al oeste» le dice algo útil a una persona.
+- **Obliga a resolver justo lo que está sin resolver** —el ancla de cada radar, el umbral, la máscara
+  del amarillo, los reintentos— sin tener encima la decisión del texto.
+- **El aviso viene después y ya informado**: cuando se haya visto durante unas semanas qué pinta
+  tiene el dato, el umbral y el «cuándo callarse» se deciden con experiencia en vez de a ojo.
+
+Lo que esto no es: no es la versión descafeinada del aviso. Es el paso que hace falta para que el
+aviso, cuando llegue, se pueda decidir sobre algo visto.
+
 ### Lo fiable que es la fuente
 
 En media hora de sondeo cada minuto y medio: **un 503 de nueve descargas**, y la composición nacional
