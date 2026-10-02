@@ -131,14 +131,36 @@ servidor, no solo en el VPS.
 
 Lo que contesta la API:
 
-- `/api/red/radar/regional/{radar}` → **GIF de 480×530, 18 KB, cada 10 minutos**. De catorce códigos
-  probados a ojo contestaron ocho: `ba`, `ma`, `va`, `se`, `za`, `mu`, `pm` y `cc`. Los otros seis
-  (`ac`, `bi`, `al`, `lc`, `gc`, `te`) dieron 404, pero **eso no quiere decir que el radar esté
-  caído**: lo más probable es que yo adivinara mal el código. La lista buena de los quince radares
-  está sin encontrar, y es lo primero que hay que atar si esto sigue adelante.
+- `/api/red/radar/regional/{radar}` → **GIF de 480×530, unos 10-20 KB, cada 10 minutos**.
 - `/api/red/radar/nacional` → **404 en todos los intentos**. La composición nacional, que sería una
   sola imagen para toda España y lo más cómodo con diferencia, no estaba disponible ese día. Hay que
   contar con apañarse solo con los regionales.
+
+**Los quince códigos, de la propia especificación de AEMET.** Adivinarlos a ojo salió mal: ocho
+aciertos y seis 404 que no eran radares caídos, sino códigos inventados. La lista buena está en el
+OpenAPI que sirve la documentación (`https://opendata.aemet.es/AEMET_OpenData_specification.json`),
+dentro del parámetro `radar`:
+
+| | | | | |
+| --- | --- | --- | --- | --- |
+| `am` Almería | `sa` Asturias | `pm` Illes Balears | `ba` Barcelona | `cc` Cáceres |
+| `co` A Coruña | `ma` Madrid | `ml` Málaga | `mu` Murcia | `vd` Palencia |
+| `ca` Las Palmas | `se` Sevilla | `va` Valencia | `ss` Vizcaya | `za` Zaragoza |
+
+Ojo con los que se parecen a otra cosa: `ma` es **Madrid** y no Málaga (que es `ml`), `va` es
+**Valencia** y no Valladolid, y Canarias entera va con **un solo radar**, `ca`, sin nada en Tenerife.
+
+**Los quince contestan y los quince traen la misma imagen.** Descargados todos el 2026-10-02:
+
+- Mismo lienzo (480×530), mismo centro del disco (240,0 , 238,9 ± 0,2 px) y **la misma leyenda de
+  once colores en el mismo orden**. Dentro del disco, el 100 % de los píxeles es negro o uno de esos
+  once, en los quince. O sea: **un solo decodificador para toda España**, sin casos especiales.
+- La única excepción es **Vizcaya**, cuyo disco mide 239,6 px en vez de 249,5. Si la escala sigue
+  siendo 1 km/px, es que ese radar se dibuja hasta 240 km y no hasta 250. Encaja con que Vizcaya sea
+  también el único que no emite en los 5,62 GHz del resto de la red, así que seguramente es otro
+  aparato; pero hay que comprobarlo antes de fiarse.
+- Dos de los quince (`ca` y `ss`) necesitaron **reintento**: la primera petición devolvió un 503. Los
+  reintentos no son una mejora opcional, son parte de usar esta API.
 
 Y esto es lo que se saca de la imagen. Todo medido sobre el PPI de Barcelona de las 11:00 UTC:
 
@@ -169,6 +191,27 @@ Y esto es lo que se saca de la imagen. Todo medido sobre el PPI de Barcelona de 
   número de un PNG obliga a instalar algo en Node. Pero **AEMET sirve GIF**, y un GIF de un fotograma
   con paleta global se decodifica con unas sesenta líneas de LZW, ya escritas y probadas contra esta
   imagen. Nada de terceros que aprobar ni que mantener.
+
+**Lo que falta para poder usarlo: dónde está cada radar.** La imagen da la geometría, pero no dice
+en qué punto del mapa cae su centro. Para Barcelona se supuso Corbera (41,40 N / 1,88 E) y encajó
+con la costa dibujada a dos o tres píxeles sobre distancias de 150-250 km — pero ese margen incluye
+el error de la propia suposición, así que no es una medida de la proyección, es un techo. A los
+20-30 km que importan para el aviso, el error queda muy por debajo del kilómetro con cualquier
+aproximación razonable. Las coordenadas de los quince emplazamientos no aparecen en la API ni en la
+imagen, y hay que sacarlas de algún sitio o deducirlas de la costa que cada imagen dibuja. **Es el
+único cabo suelto que impide convertir un píxel en un lugar.**
+
+De buscarlo salieron siete nombres de emplazamiento —Níjar (Almería), Aguión (Asturias), Llucmajor
+(Illes Balears), Corbera (Barcelona), Sierra de Fuentes (Cáceres), Cerceda (A Coruña) y Autilla del
+Pino (Palencia)—, pero **de segunda mano**: la página que los lista devuelve 403 y no se pudo leer
+directamente. El único verificado es Corbera, y porque encajó con la costa dibujada. Los otros seis
+radares ni eso. AEMET no publica los emplazamientos, y España no participa en OPERA, que es donde
+estarían si participara.
+
+Hay una salida que no depende de encontrar la lista: **los discos de radares vecinos se solapan**, y
+en el solape los dos ven el mismo eco. Correlacionando dos imágenes simultáneas sale la posición
+relativa de sus centros, y con un ancla verificada (Corbera) se encadena al resto. Es más trabajo,
+pero no depende de que nadie publique nada.
 
 **Las dos trampas que ya se ven, antes de escribir nada:**
 
