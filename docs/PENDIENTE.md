@@ -108,9 +108,9 @@ investigación:
 Esto es **nowcasting**: extrapolar los ecos del radar en los próximos minutos. Otra naturaleza de
 dato, y por tanto una fila nueva en la tabla de FUENTES-DE-DATOS.
 
-### Lo medido el 2026-09-28: de dónde puede salir el dato
+### Lo medido: de dónde puede salir el dato
 
-**1. La precipitación en tramos de 15 minutos de Open-Meteo: DESCARTADA para esto.**
+**1. La precipitación en tramos de 15 minutos de Open-Meteo: DESCARTADA para esto** (2026-09-28).
 
 No trae ninguna información por debajo de la hora. Medido contra la API en A Coruña, Madrid y
 Valencia, mirando todas las horas con lluvia de los tres días siguientes: **49 de 49** encajan con
@@ -124,33 +124,160 @@ construir un aviso sobre ella sería prometer una precisión que el dato no tien
 (Reproducible: pedir `minutely_15=precipitation` y `hourly=precipitation` del mismo punto y comparar
 los cuartos con `hourly[i+1]/4`.)
 
-**2. Radar de verdad: sí hay, y hay dos fuentes.**
+**2. El radar de AEMET: medido el 2026-10-02, y sirve.**
 
-- **RainViewer** (`api.rainviewer.com/public/weather-maps.json`, sin clave): **13 fotogramas de
-  pasado con cadencia de 10 minutos**, o sea dos horas de historia. Las imágenes son **teselas PNG
-  en proyección web estándar**, que es la ventaja gorda: georreferenciarlas es aritmética de
-  teselas, no reproyectar nada. Comprobado que hay eco real sobre España: la tesela de Madrid pesaba
-  20 KB y la del Sáhara, sin cobertura, 334 bytes. **Su campo `nowcast` venía VACÍO** en la consulta
-  de ese día, así que la extrapolación al futuro tendríamos que hacerla nosotros. Falta leerse su
-  licencia: el uso libre es para no comerciales y con atribución.
-- **Radar de AEMET** (OpenData): es la fuente oficial de España y **ya tenemos clave y un servidor
-  que puede usarla**. También sirve imágenes, pero con su propia proyección, así que hay que
-  situarlas a mano. No se pudo probar desde el portátil porque la clave vive en el servidor.
+La prueba que faltaba se pudo hacer porque la clave de AEMET también está en el `.env` local del
+servidor, no solo en el VPS.
+
+Lo que contesta la API:
+
+- `/api/red/radar/regional/{radar}` → **GIF de 480×530, 18 KB, cada 10 minutos**. De catorce códigos
+  probados a ojo contestaron ocho: `ba`, `ma`, `va`, `se`, `za`, `mu`, `pm` y `cc`. Los otros seis
+  (`ac`, `bi`, `al`, `lc`, `gc`, `te`) dieron 404, pero **eso no quiere decir que el radar esté
+  caído**: lo más probable es que yo adivinara mal el código. La lista buena de los quince radares
+  está sin encontrar, y es lo primero que hay que atar si esto sigue adelante.
+- `/api/red/radar/nacional` → **404 en todos los intentos**. La composición nacional, que sería una
+  sola imagen para toda España y lo más cómodo con diferencia, no estaba disponible ese día. Hay que
+  contar con apañarse solo con los regionales.
+
+Y esto es lo que se saca de la imagen. Todo medido sobre el PPI de Barcelona de las 11:00 UTC:
+
+- **La geometría es exacta.** El disco de cobertura ajusta a una circunferencia con un residuo medio
+  de **0,41 px** (máximo 2,76): centro en el píxel (240,00 , 238,90) y radio 249,55 px.
+- **Un píxel es un kilómetro**, y esto está comprobado contra geografía, no supuesto. Situando el
+  radar en Corbera (41,40 N / 1,88 E) y midiendo dónde cae la costa que la propia imagen dibuja:
+
+  | punto | predicho a 1 km/px | medido en la imagen |
+  | --- | --- | --- |
+  | Mallorca, punta oeste | x 279 | x 277 |
+  | Mallorca, cabo de ses Salines | y 477 | y 478 |
+  | Menorca, costa norte | y 385 | y 386 |
+  | Menorca, punta este | x 447 | x 449 |
+
+  Con la otra hipótesis —radio de 240 km, 0,962 km/px— el cabo de ses Salines se iría a y 486, fuera
+  del disco. Así que el dibujo llega a 250 km aunque AEMET hable de 240 km de cobertura útil.
+
+- **Cada píxel es un valor, no una mezcla.** Dentro del disco, el **100 %** de los píxeles es negro o
+  uno de los once colores de la leyenda: cero degradados, cero antialiasing. La escala viene en la
+  propia imagen (barra de once tramos de 24 px, de 12 a 72 dBZ de seis en seis), así que no hay que
+  fiarse de ninguna tabla de fuera. Por Marshall-Palmer, el suelo de 12 dBZ son **0,2 mm/h**: por
+  debajo de eso AEMET no pinta nada, que es más o menos donde una persona empieza a notar que llueve.
+- **La hora está dentro de la imagen**, en una tipografía de mapa de bits de 7×9 sobre rejilla de
+  paso 9: `2 OCT  26275  110000` → día 275 de 2026, **11:00:00 UTC**. Leerla es una tabla de diez
+  glifos, no OCR. Eso resuelve el «cuándo» que exige la regla de la casa.
+- **Y no hace falta ninguna dependencia nueva.** Esta era la pega que bloqueaba la decisión: sacar un
+  número de un PNG obliga a instalar algo en Node. Pero **AEMET sirve GIF**, y un GIF de un fotograma
+  con paleta global se decodifica con unas sesenta líneas de LZW, ya escritas y probadas contra esta
+  imagen. Nada de terceros que aprobar ni que mantener.
+
+**Las dos trampas que ya se ven, antes de escribir nada:**
+
+- **El amarillo está pillado.** El color de 48-54 dBZ es el mismo (255,255,0) con el que se dibujan
+  las costas y las fronteras, así que leer un píxel a ciegas puede dar «granizo» en toda la costa. Se
+  arregla con una máscara estática por radar: las líneas salen idénticas en todas las imágenes y el
+  eco no. Se calcula una vez y se guarda.
+- **AEMET se cae.** En media hora de pruebas: un 503 en la descarga de la imagen y 404 constante en
+  la composición nacional. Para un aviso cuyo valor entero depende de llegar a tiempo, esto es parte
+  del diseño, no una anécdota.
+
+**3. RainViewer** (`api.rainviewer.com/public/weather-maps.json`, sin clave): **13 fotogramas de
+pasado con cadencia de 10 minutos**, o sea dos horas de historia, en **teselas PNG en proyección web
+estándar** —georreferenciarlas es aritmética de teselas—. Comprobado que hay eco real sobre España:
+la tesela de Madrid pesaba 20 KB y la del Sáhara, sin cobertura, 334 bytes. **Su campo `nowcast`
+venía vacío**, así que la extrapolación tendríamos que hacerla igual. Su licencia libre es para uso
+personal, educativo y de poco volumen, exige mostrar «Weather data by RainViewer» con enlace, y
+cualquier uso comercial o con garantía de servicio se negocia aparte. Y sigue necesitando decodificar
+PNG, que es justo lo que AEMET nos ahorra.
+
+### Lo que hacen las apps que viven de esto
+
+- **Rain Alarm** es la referencia, porque hace exactamente lo que se pide: **no predice**. Su propia
+  API comercial devuelve tres campos —`coverage`, `intensity` (0 a 12) y `updated`, que es la hora
+  del radar— y los documenta como derivados del radar, sin extrapolación; la distancia hasta la
+  precipitación es un campo opcional por acuerdo. Su nivel 1 es «>0,2 mm/h», que es **exactamente el
+  umbral donde AEMET empieza a pintar**: dos casas distintas han puesto el suelo en el mismo sitio.
+  Y para España, Rain Alarm usa **AEMET** (con Meteocat, Euskalmet y MeteoGaliza). O sea que la
+  fuente que acabamos de decodificar es la misma de la que vive el líder de este nicho. Su API cuesta
+  1.000 €/mes de mínimo, así que lo que nos sirve es el diseño, no el servicio.
+- **Foreca** hace lo contrario: su endpoint `minutely` da una hora en pasos de un minuto y en Europa
+  es **extrapolación de radar de verdad**, con datos de menos de quince minutos. Es la opción
+  ambiciosa bien hecha, por una casa con meteorólogos dentro. Fuera de Europa y Estados Unidos
+  degrada a interpolar la horaria, que es el mismo truco que ya le medimos a Open-Meteo.
+
+### El cálculo que decide si esto sirve de algo
+
+El retraso se midió sondeando el radar de Barcelona y leyendo la hora grabada en cada imagen, con
+peticiones cada minuto y medio a lo largo de tres barridos seguidos:
+
+| barrido | cuándo se pidió | resultado |
+| --- | --- | --- |
+| 11:00 | 11:15 | ahí estaba, y el de las 11:10 todavía no |
+| 11:10 | 11:23 | ahí estaba |
+| 11:20 | 11:25:23 → no; 11:26:13 → sí | **publicado a los 6 minutos** |
+
+O sea que **la imagen tarda unos seis minutos en publicarse**, no quince. Con un cron de 5 minutos,
+lo que llega al teléfono tiene como mucho unos once. Con el cron de 20 que hay hoy, hasta veintiséis,
+que ya se come media ventaja.
+
+- Lluvia a 25 km moviéndose a 30 km/h → tarda 50 minutos → quedan **unos 39 minutos de aviso real**.
+  Eso es útil de verdad: da tiempo a recoger la ropa o a no salir todavía.
+- Lluvia a 10 km → tarda 20 minutos → quedan **nueve**. Justo, pero sirve.
+
+De ahí salen dos consecuencias de diseño, no de gusto: el radio de vigilancia tiene que ser generoso
+(20-30 km, no 5), y el texto tiene que decir **la hora del radar**, no «ahora».
+
+### La trampa que ya se comió una prueba
+
+Con los tres barridos descargados (11:00, 11:10 y 11:20 de Barcelona, con lluvia de verdad sobre
+Cataluña) se probó a calcular «a qué velocidad se acerca», que es el número del que depende todo el
+aviso. Salió mal de dos maneras distintas, y las dos hay que contarlas antes de escribir una línea:
+
+**1. Restar distancias entre dos fotogramas NO es una velocidad.** Buscando el eco más cercano a cada
+punto y restando, el mejor candidato daba una lluvia acercándose a **279 km/h**. No existe tal cosa.
+Lo que había pasado es que al este, por Menorca, el eco pasó de **0 px a las 11:00 y 11:10 a 7 px a
+las 11:20**: no es lluvia que se mueve, es una célula que nace. El método confunde movimiento con
+nacimiento, y habría mandado un aviso falso el primer día.
+
+Y de paso enseña el segundo filtro: 7 píxeles son 7 km², a más de 200 km del radar, donde el haz va
+alto y ancho. Hace falta un tamaño mínimo y un alcance máximo, además de un tope de velocidad
+físicamente posible.
+
+**2. Un solo vector para todo el disco describe mal un campo grande.** Correlacionando los dos
+fotogramas enteros, el mejor desplazamiento fue de 5 km en 20 minutos (15 km/h hacia el norte), pero
+el solape solo subía del **79 % al 81 %**: la masa de lluvia era enorme y casi parada, así que el
+máximo apenas destaca. Si se mide el desplazamiento, hay que hacerlo **en una ventana alrededor del
+usuario**, no sobre toda la provincia.
+
+Lo que sí salió redondo es lo puramente medido. Sobre Barcelona ciudad (píxel 264, 240): **24 dBZ a
+las 11:00 y 36 dBZ a las 11:20**, o sea de ~1 mm/h a ~6 mm/h. Eso es un dato con su hora, su sitio y
+su procedencia, y no hace falta extrapolar nada para decirlo.
+
+### Lo fiable que es la fuente
+
+En media hora de sondeo cada minuto y medio: **un 503 de nueve descargas**, y la composición nacional
+en 404 permanente. La API de estado contestó 200 siempre; lo que falla es la descarga de la imagen.
+Para un aviso que vale por llegar a tiempo, hay que decidir qué se hace cuando el radar no contesta:
+callarse es la respuesta correcta, pero hay que escribirlo.
 
 ### Lo que sigue sin decidir
 
-**Qué se promete.** Con solo fotogramas de pasado se puede decir algo **medido y cierto**: «radar de
-las 14:10: lluvia a 12 km al oeste, acercándose». Eso encaja con la regla de la casa —un dato, con
-su hora y su procedencia— y no exige inventar nada. Prometer «empieza a llover en 15 minutos» es
-otra cosa: obliga a extrapolar los ecos, y a acertar.
+**Qué se promete.** Hay un término medio que conviene ver, porque no es trampa: el **desplazamiento
+entre dos fotogramas también es una medida**. «El eco que a las 10:50 estaba a 18 km y a las 11:00
+está a 13 km» son dos observaciones; «a este paso te llega en unos veinte minutos» es una división,
+no un modelo. Lo que no se puede es que el texto lo disfrace de certeza: «a este paso» no es «va a
+llover a las 11:20», porque una célula se para, se desvía o se deshace. Decidir esto es decidir el
+texto.
 
-**Qué cuesta.** Sacar un valor de un punto a partir de una imagen obliga a **decodificar un PNG en
-el servidor**, y Node no lo hace solo: es una dependencia nueva, que se propone y se aprueba antes
-de instalarse. Y un aviso útil se refresca cada 5 o 10 minutos, no cada 20 como el cron de ahora.
+**Qué radar manda.** Sin composición nacional hay que elegir el regional que toca para cada usuario,
+y contestar qué pasa fuera de cobertura o en los huecos entre discos. Es la misma forma de problema
+que el selector de estación, y seguramente la misma respuesta: decirlo, en vez de callarse.
 
 **Cuándo callarse**, que sigue siendo el riesgo de verdad: un aviso de lluvia que no acierta, o que
 suena tres veces en una tarde de chubascos, enseña a la gente a ignorar las notificaciones de esta
 app, incluidas las rojas de AEMET.
+
+**Cada cuánto corre el cron.** Hoy son 20 minutos. Un dato que se renueva cada 10 pide 5, y eso toca
+el servidor entero, no solo esta función.
 
 ---
 
