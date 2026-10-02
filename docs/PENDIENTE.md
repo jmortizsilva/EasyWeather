@@ -153,8 +153,9 @@ Ojo con los que se parecen a otra cosa: `ma` es **Madrid** y no Málaga (que es 
 **Los quince contestan y los quince traen la misma imagen.** Descargados todos el 2026-10-02:
 
 - Mismo lienzo (480×530), mismo centro del disco (240,0 , 238,9 ± 0,2 px) y **la misma leyenda de
-  once colores en el mismo orden**. Dentro del disco, el 100 % de los píxeles es negro o uno de esos
-  once, en los quince. O sea: **un solo decodificador para toda España**, sin casos especiales.
+  once colores en el mismo orden**. Dentro del disco y en las filas útiles, **todos** los píxeles son
+  negro o uno de esos once, en los quince. O sea: **un solo decodificador para toda España**, sin
+  casos especiales.
 - La única excepción es **Vizcaya**, cuyo disco mide 239,6 px en vez de 249,5. Si la escala sigue
   siendo 1 km/px, es que ese radar se dibuja hasta 240 km y no hasta 250. Encaja con que Vizcaya sea
   también el único que no emite en los 5,62 GHz del resto de la red, así que seguramente es otro
@@ -179,8 +180,13 @@ Y esto es lo que se saca de la imagen. Todo medido sobre el PPI de Barcelona de 
   Con la otra hipótesis —radio de 240 km, 0,962 km/px— el cabo de ses Salines se iría a y 486, fuera
   del disco. Así que el dibujo llega a 250 km aunque AEMET hable de 240 km de cobertura útil.
 
-- **Cada píxel es un valor, no una mezcla.** Dentro del disco, el **100 %** de los píxeles es negro o
-  uno de los once colores de la leyenda: cero degradados, cero antialiasing. La escala viene en la
+- **Cada píxel es un valor, no una mezcla.** Dentro del disco, **todos** los píxeles son negro o
+  uno de los once colores de la leyenda: cero degradados, cero antialiasing. (La primera cuenta dijo
+  «el 100 %» y estaba hecha sobre un muestreo de uno de cada tres píxeles; mirándolos todos aparecen
+  **19 píxeles blancos**, siempre los mismos y en los quince radares, que son el rótulo de «© Agencia
+  Estatal de Meteorología» pisando el borde de arriba del círculo. De ahí sale declarar una banda
+  útil de la fila 15 a la 479, que además deja fuera lo que está a más de 240 km del radar.) La
+  escala viene en la
   propia imagen (barra de once tramos de 24 px, de 12 a 72 dBZ de seis en seis), así que no hay que
   fiarse de ninguna tabla de fuera. Por Marshall-Palmer, el suelo de 12 dBZ son **0,2 mm/h**: por
   debajo de eso AEMET no pinta nada, que es más o menos donde una persona empieza a notar que llueve.
