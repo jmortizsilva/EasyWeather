@@ -350,6 +350,72 @@ Por qué así:
 Lo que esto no es: no es la versión descafeinada del aviso. Es el paso que hace falta para que el
 aviso, cuando llegue, se pueda decidir sobre algo visto.
 
+### DECIDIDO (2026-10-02): se hace lo mismo que Rain Alarm
+
+Es lo que pide la gente, así que se deja de dar vueltas a si se promete movimiento o no. Y resulta
+que el mecanismo de Rain Alarm es más simple de lo que parecía, y **no extrapola nada**:
+
+> Un círculo de radio R alrededor de ti. Suena cuando aparece precipitación de al menos intensidad N
+> dentro del círculo. Ya está.
+
+R lo elige el usuario (por defecto 22 millas, unos **35 km**) y N también, por lugar. Y ahí está lo
+elegante, que es lo que resuelve la tensión de «avísame de cuándo va a empezar, pero sin predecir»:
+**el tiempo de antelación lo elige el usuario a través del radio**. La app no adivina cuándo llega;
+dice que hay lluvia a menos de R km, que es una observación. Quien quiera más margen, agranda el
+círculo.
+
+**Lo que ya encaja sin tener que inventar nada:**
+
+- **La escala de intensidad de Rain Alarm es la misma escalera que la de AEMET.** Sus doce niveles en
+  mm/h (0,2 · 0,3 · 0,6 · 1,3 · 3 · 6 · 12 · 24 · 50 · 100 · 205 · 420) pasados a dBZ por
+  Marshall-Palmer caen sobre las bandas de color: el nivel 1 en 11,8 dBZ (banda de 12), el 4 en 24,8
+  (banda de 24), el 5 en 30,6 (banda de 30), el 11 clava el 60. Misma física, otra etiqueta. El
+  ajuste de sensibilidad se reproduce tal cual desde el GIF.
+- **Un píxel es un kilómetro**, así que «¿hay eco dentro de R km?» es comparar distancias al cuadrado.
+  No hace falta geometría de ninguna clase.
+- Cadencia de 10 minutos y seis de retraso, que es la ventana con la que se trabaja.
+
+**Lo que no es.** Rain Alarm es accesible —AppleVis dice que VoiceOver lee todo y los botones están
+etiquetados— y cuesta 0,99 €. O sea que quien lo pide ya tiene una opción que funciona: esto no tapa
+un agujero de accesibilidad, así que tiene que aportar otra cosa (estar en la app que ya usan, en
+español, con AEMET de fuente y la misma disciplina de decir de dónde sale cada número).
+
+### Cuánto sonaría: medido, y la sorpresa no está donde parecía
+
+Sobre el barrido de las 11:20 de Barcelona, con los 646 municipios del INE que caen dentro del disco:
+
+| radio | ≥12 dBZ | ≥18 | ≥24 | ≥30 | ≥36 dBZ |
+| --- | --- | --- | --- | --- | --- |
+| 10 km | 72 % | 64 % | 46 % | 33 % | 18 % |
+| 20 km | 80 % | 78 % | 61 % | 51 % | 37 % |
+| 35 km | 86 % | 84 % | 75 % | 70 % | 57 % |
+
+Ese día llovía en casi toda Cataluña (AEMET tenía avisos rojos), así que **ese 86 % no son falsos
+avisos: es que llovía**. Y justo por eso el número es útil, porque enseña dónde está el problema de
+verdad.
+
+Con el radio por defecto de Rain Alarm, un día de lluvia **tres de cada cuatro usuarios entran en la
+condición de aviso**. Eso no se arregla subiendo el umbral ni encogiendo el radio: se arregla con la
+regla de repetición. Con un cron de cinco minutos y sin esa regla, la misma persona recibiría doce
+avisos a la hora durante toda la tarde.
+
+**O sea que la perilla que decide si esto se puede vivir no es el umbral ni el radio: es cuándo NO
+suena.** Mínimo: una vez por episodio y no una por barrido; nada si ya está lloviendo encima; nada
+si el radar no contestó; y algo para la noche.
+
+### Lo que esto convierte en bloqueante
+
+- **La máscara deja de ser un detalle y pasa a ser crítica.** La condición es «hay un píxel de al
+  menos N dentro del círculo», y la costa está pintada del amarillo de 48-54 dBZ. Un solo píxel de
+  costa dentro del radio de alguien es **un aviso permanente, todos los días, para todos los pueblos
+  de la costa**. Lo mismo con los ecos fijos de suelo cerca del radar, que AEMET avisa de que los hay.
+- **La máscara hay que aprenderla, no deducirla.** No basta con quitar el amarillo: hay que marcar
+  los píxeles que tienen eco en una fracción alta de las imágenes a lo largo de semanas. Eso exige
+  **empezar a guardar barridos ya**, y es además lo único que permitirá después juzgar si un aviso
+  habría acertado (AEMET solo sirve la última imagen: lo que no se guarde, se pierde).
+- **El ancla de cada radar** sigue siendo lo que impide convertir un píxel en un lugar.
+- **El cron**, de 20 minutos a 5.
+
 ### Lo fiable que es la fuente
 
 En media hora de sondeo cada minuto y medio: **un 503 de nueve descargas**, y la composición nacional
@@ -358,13 +424,6 @@ Para un aviso que vale por llegar a tiempo, hay que decidir qué se hace cuando 
 callarse es la respuesta correcta, pero hay que escribirlo.
 
 ### Lo que sigue sin decidir
-
-**Qué se promete.** Hay un término medio que conviene ver, porque no es trampa: el **desplazamiento
-entre dos fotogramas también es una medida**. «El eco que a las 10:50 estaba a 18 km y a las 11:00
-está a 13 km» son dos observaciones; «a este paso te llega en unos veinte minutos» es una división,
-no un modelo. Lo que no se puede es que el texto lo disfrace de certeza: «a este paso» no es «va a
-llover a las 11:20», porque una célula se para, se desvía o se deshace. Decidir esto es decidir el
-texto.
 
 **Qué radar manda.** Sin composición nacional hay que elegir el regional que toca para cada usuario,
 y contestar qué pasa fuera de cobertura o en los huecos entre discos. Es la misma forma de problema
