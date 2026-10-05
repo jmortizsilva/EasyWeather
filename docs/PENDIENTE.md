@@ -204,8 +204,8 @@ con la costa dibujada a dos o tres píxeles sobre distancias de 150-250 km — p
 el error de la propia suposición, así que no es una medida de la proyección, es un techo. A los
 20-30 km que importan para el aviso, el error queda muy por debajo del kilómetro con cualquier
 aproximación razonable. Las coordenadas de los quince emplazamientos no aparecen en la API ni en la
-imagen, y hay que sacarlas de algún sitio o deducirlas de la costa que cada imagen dibuja. **Es el
-único cabo suelto que impide convertir un píxel en un lugar.**
+imagen, y hay que sacarlas de algún sitio o deducirlas de la costa que cada imagen dibuja. Lo
+segundo es lo que funcionó, y está medido más abajo.
 
 De buscarlo salieron siete nombres de emplazamiento —Níjar (Almería), Aguión (Asturias), Llucmajor
 (Illes Balears), Corbera (Barcelona), Sierra de Fuentes (Cáceres), Cerceda (A Coruña) y Autilla del
@@ -214,10 +214,52 @@ directamente. El único verificado es Corbera, y porque encajó con la costa dib
 radares ni eso. AEMET no publica los emplazamientos, y España no participa en OPERA, que es donde
 estarían si participara.
 
-Hay una salida que no depende de encontrar la lista: **los discos de radares vecinos se solapan**, y
-en el solape los dos ven el mismo eco. Correlacionando dos imágenes simultáneas sale la posición
-relativa de sus centros, y con un ancla verificada (Corbera) se encadena al resto. Es más trabajo,
-pero no depende de que nadie publique nada.
+**Y resulta que no hay que encontrar la lista: el anclaje se busca a ciegas contra la costa que la
+propia imagen dibuja.** Medido sobre Barcelona el 2026-10-05:
+
+1. Se marca qué píxel es mar inundando desde un punto que es mar seguro (200 km al sureste del
+   centro) y parándose en la línea de costa dibujada. Para Barcelona sale el 60,3 % del disco, que es
+   lo que tiene que ser.
+2. Se proyectan los 8.132 municipios del INE que ya viajan en la app (distancia y rumbo desde el
+   centro candidato, 1 px = 1 km) y se exige lo único que es cierto sin excepción: **un pueblo cae en
+   tierra**.
+3. Se prueban 1.681 centros candidatos en una cuadrícula de 80 × 80 km y gana el que menos pueblos
+   ahoga.
+
+El ganador sale **41,42 N / 1,88 E, a 2,2 km de Corbera**, con **un municipio en el mar de 1.356**
+(0,07 %). O sea que el emplazamiento no hay que buscarlo en ningún sitio: lo dice la imagen, y por eso
+el camino de correlacionar discos vecinos ya no hace falta.
+
+**Y la comprobación tiene dientes, que es lo que la hace valer.** Desplazando el anclaje a mano, los
+pueblos que caen en el agua pasan de 0,7 % —y los nueve son de los que están literalmente a pie de
+agua: Deià, Estellencs, L'Escala— a 3,0 % con 5 km, 6,4 % con 10, 14,9 % con 20 y 29,0 % con 40.
+**Hacia el este es mucho menos sensible** (5 km da 1,0 %), porque la costa catalana corre en esa misma
+diagonal y moverse a lo largo de ella no mete a nadie en el agua: cada radar necesita su sensibilidad
+en las dos direcciones, no una cifra sola.
+
+Un detalle del método, por si se retoma: la inundación se escapa por el borde del disco cuando el
+borde pasa por tierra (en Barcelona, por el norte), así que algún pueblo de interior cuenta como
+«mar» —Guils de Cerdanya— sin que el anclaje tenga nada que ver. Eso hace la prueba algo más laxa,
+no más permisiva en la dirección peligrosa, y se arregla cerrando el borde o exigiendo además
+distancia mínima a la costa dibujada.
+
+**Lo que el anclaje no arregla**, y conviene tenerlo escrito antes de prometer el aviso:
+
+- **La posición de la propia persona.** La app la actualiza al salir de una geovalla de 3 km, así que
+  su coordenada guardada puede estar vieja unos kilómetros. Con un radio de 35 km es ruido; con uno de
+  5 km, no.
+- **El haz sube con la distancia.** A 200 km va a kilómetros de altura y puede ver lluvia que se
+  evapora antes de llegar al suelo. A cada persona hay que leerle el radar **más cercano**, no
+  cualquiera que la cubra.
+- **Quien está en el borde del disco** tiene parte de su círculo fuera de cobertura, y eso tiene que
+  contestar «no lo sé», nunca «no llueve». El código ya distingue `FUERA_DE_COBERTURA` de `SIN_ECO`.
+- **Canarias va con un solo radar**, en Las Palmas. Hay que comprobar isla por isla quién queda
+  dentro; las occidentales probablemente no.
+
+**APARCADO el 2026-10-05.** Queda por hacer los catorce radares restantes, cada uno con su búsqueda a
+ciegas y su tabla de sensibilidad, y dejarlo commiteado como prueba automática —una por radar, para
+que un anclaje equivocado no pueda colarse en silencio—. El script de la comprobación de Barcelona no
+se guardó: son unas setenta líneas y se reescriben con lo que hay aquí.
 
 **Las dos trampas que ya se ven, antes de escribir nada:**
 
@@ -419,7 +461,8 @@ si el radar no contestó; y algo para la noche.
   los píxeles que tienen eco en una fracción alta de las imágenes a lo largo de semanas. Eso exige
   **empezar a guardar barridos ya**, y es además lo único que permitirá después juzgar si un aviso
   habría acertado (AEMET solo sirve la última imagen: lo que no se guarde, se pierde).
-- **El ancla de cada radar** sigue siendo lo que impide convertir un píxel en un lugar.
+- **El ancla de cada radar.** Ya no es un problema sin solución —se busca a ciegas contra la costa
+  dibujada, ver arriba—, pero de los quince solo está medido Barcelona.
 - **El cron**, de 20 minutos a 5.
 
 ### Lo fiable que es la fuente
