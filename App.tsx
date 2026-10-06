@@ -1,7 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { NativeSyntheticEvent } from 'react-native';
+import { NativeSyntheticEvent, useWindowDimensions } from 'react-native';
 import { Tabs, TabSelectedEvent } from 'react-native-screens';
 import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
@@ -74,6 +74,9 @@ export default function App() {
   // Comprueba updates al abrir y al volver a primer plano, y avisa de novedades tras actualizar.
   useActualizaciones();
 
+  // Tamano de letra del sistema. Se usa como `key` de Navegacion: ver el comentario de abajo.
+  const { fontScale } = useWindowDimensions();
+
   return (
     // GestureHandlerRootView es obligatorio para react-native-gesture-handler (v2) y tiene que
     // envolverlo TODO: sin él, el deslizamiento de las filas de "Mis lugares" no llega a activarse.
@@ -84,8 +87,23 @@ export default function App() {
             <NotificationsProvider>
               {/* Envuelve a Navegacion, no al reves: las pantallas de dentro preguntan por la
                   pestaña activa (useAlEntrarEnPestana) y "Mis lugares" pide saltar a Hoy. */}
+              {/* La `key` con el tamano de letra NO es un apano decorativo: sin ella, subir el
+                  tamano con la app abierta la deja ILEGIBLE hasta cerrarla y abrirla. Medido el
+                  2026-10-06 con el puente, a escala 3,571 (el maximo de iOS): el texto se dibuja
+                  grande pero las cajas se quedan medidas para el tamano viejo, y las letras salen
+                  cortadas por la mitad. Tras relanzar, la misma pantalla se ve perfecta.
+
+                  Y no es que React Native no se entere: avisa a JavaScript (RCTDeviceInfo emite
+                  `didUpdateDimensions` con el fontScale nuevo) y recoloca la superficie. Lo que no
+                  escucha ese cambio es react-native-screens 4.26.2, que es quien hospeda estas
+                  pantallas en un UITabBarController nativo. Cambiar la key vuelve a montar el
+                  arbol, que es lo que fuerza a medir de nuevo.
+
+                  Va en Navegacion y no mas arriba a proposito: PestanasProvider queda fuera, asi
+                  que la pestaña en la que estabas sobrevive al remontaje. Pasa una vez cada mucho,
+                  y quien sube la letra prefiere un parpadeo a una pantalla que no puede leer. */}
               <PestanasProvider>
-                <Navegacion />
+                <Navegacion key={fontScale} />
               </PestanasProvider>
             </NotificationsProvider>
           </PlacesProvider>
