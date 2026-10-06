@@ -11,6 +11,10 @@
  * servicio».
  */
 
+import Constants from 'expo-constants';
+import { Appearance, DevSettings, Dimensions, NativeModules, PixelRatio } from 'react-native';
+import { captureScreen } from 'react-native-view-shot';
+
 import { ejecutarAccion, listarAcciones } from './automatizacion';
 import { navegarPorPuente } from './navegacion';
 import { registrarServicio } from './puente';
@@ -20,13 +24,14 @@ export function registrarServiciosDeDesarrollo(): void {
   /*
    * Una foto de la pantalla que tenga el móvil ahora mismo.
    *
-   * La librería se carga aquí dentro y no arriba a propósito: es un módulo
-   * nativo, y una build anterior a haberlo instalado reventaría al arrancar la
-   * app solo por tener el import. Cargándolo al pedir la captura, en esas builds
-   * el puente contesta que no puede y todo lo demás sigue funcionando.
+   * `comun/` carga la librería DENTRO de la función, para que una build anterior
+   * a haberla instalado no reviente al arrancar solo por tener el import. Aquí
+   * no se puede: medido el 2026-10-06, el `import()` dinámico devuelve el módulo
+   * sin resolver en este Metro («undefined is not a function»), y lo mismo le
+   * pasa a `react-native`. Como el módulo ya está en el binario desde la build
+   * de desarrollo `7f254415`, el import normal es seguro.
    */
   registrarServicio('pantalla', async () => {
-    const { captureScreen } = await import('react-native-view-shot');
     return {
       formato: 'png',
       base64: await captureScreen({ format: 'png', result: 'base64' }),
@@ -81,4 +86,39 @@ export function registrarServiciosDeDesarrollo(): void {
   });
 
   // ---- Los servicios propios de la app van a partir de aquí.
+
+  /*
+   * Qué está pasando en el aparato ahora mismo. Nació para diagnosticar: una captura decía que las
+   * pantallas se rompían con la letra grande y hacía falta saber por cuánto multiplica iOS de
+   * verdad, en vez de deducirlo mirando píxeles.
+   */
+  registrarServicio('entorno', () => {
+    const ventana = Dimensions.get('window');
+    return {
+      escalaDeLetra: PixelRatio.getFontScale(),
+      densidad: PixelRatio.get(),
+      ventana: { ancho: ventana.width, alto: ventana.height },
+      tema: Appearance.getColorScheme(),
+      // Qué binario es este. Sirve para no confundir la app de la Store con la de pruebas, y para
+      // saber si un módulo nativo está DENTRO de la build o solo en el package.json.
+      app: Constants.expoConfig?.name,
+      identificador: Constants.expoConfig?.ios?.bundleIdentifier,
+      hostUri: Constants.expoConfig?.hostUri,
+      tieneViewShot: Boolean(NativeModules.RNViewShot),
+      nativosParecidos: Object.keys(NativeModules).filter((k) => /shot|view/i.test(k)),
+    };
+  });
+
+  /*
+   * Recarga el bundle, como la «r» de Metro.
+   *
+   * Hace falta para distinguir un fallo de dibujo de uno de medida: si una pantalla se ve mal tras
+   * cambiar un ajuste del sistema con la app abierta, pero bien tras recargar, lo que falla es que
+   * no se vuelve a medir, no la disposición.
+   */
+  registrarServicio('recargar', () => {
+    // Un respiro para que salga la respuesta antes de que el puente se caiga con la recarga.
+    setTimeout(() => DevSettings.reload(), 300);
+    return { recargando: true };
+  });
 }
