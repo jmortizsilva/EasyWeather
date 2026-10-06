@@ -16,7 +16,13 @@ La app se conecta sola y reintenta cada tres segundos, así que el orden da igua
 
 ```bash
 curl http://127.0.0.1:8790/estado      # ¿hay móvil?
+node herramientas/comprobar-puente.mjs # repasa todo de un tirón y dice qué está roto
 ```
+
+`comprobar-puente.mjs` recorre las piezas en orden —conexión, las tres pestañas, las seis acciones,
+lo que tiene que contestar diciéndolo— y separa lo que está **mal** de lo que está **pendiente de
+build**. Se pasa después de tocar cualquier cosa del puente, y en los pasos visibles avisa de que hay
+que mirar el móvil, porque eso no lo puede comprobar él.
 
 > **No se añade un `npm run puente`.** La regla de `comun/` es por la huella nativa; aquí
 > `runtimeVersion` es la cadena fija `"1.5.0"` y no la política `fingerprint`, así que no habría
