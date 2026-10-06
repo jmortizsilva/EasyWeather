@@ -11,6 +11,7 @@ import { Place } from '../types';
 import { lugarDesdeUbicacion, yaGuardado } from '../utils/guardarUbicacion';
 import { vibrarConfirmacion } from '../utils/haptica';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
+import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import SearchScreen from './SearchScreen';
 
 export default function PlacesScreen() {
@@ -85,6 +86,13 @@ export default function PlacesScreen() {
     setBuscando(false);
     setPrevisualizando(undefined);
   };
+
+  // Para el puente de desarrollo: la busqueda no es una pestana, asi que solo se llega con esto.
+  // Ver docs/pantallas.txt. En una build publicada no registra nada.
+  useAccionesDeDesarrollo({
+    abrirBusqueda: () => setBuscando(true),
+    cerrarBusqueda,
+  });
 
   // El gesto de escape y el botón Atrás del sistema cierran lo de más arriba, no todo de golpe.
   const cerrarLoDeArriba = () => {

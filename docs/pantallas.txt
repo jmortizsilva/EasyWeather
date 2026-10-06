@@ -1,0 +1,32 @@
+# Todas las pantallas de EasyWeather, para las tandas de capturas del puente.
+#
+#   node ../../comun/herramientas/puente/servidor/tanda.mjs docs/pantallas.txt --condicion texto-grande
+#
+# Una linea por pantalla: pestana, nombre corto de la captura y, si hace falta llegar a un estado,
+# las acciones registradas que lo producen (src/desarrollo/automatizacion.ts).
+#
+# OJO: aqui la primera columna NO es una ruta, es la clave de la PESTANA (hoy, lugares, avisos).
+# Esta app no usa Expo Router; el porque esta en src/desarrollo/navegacion.ts.
+#
+# Los estados cuentan como pantallas: lista vacia, cargando, error, hoja abierta. Al anadir una
+# pantalla o un estado, se anade aqui.
+
+hoy         hoy
+lugares     lugares
+lugares     lugares-busqueda        abrirBusqueda
+lugares     lugares-tras-cerrar     cerrarBusqueda
+avisos      avisos
+avisos      avisos-temperatura      abrirTemperatura
+avisos      avisos-resumenes        cerrarSeccion abrirResumenes
+avisos      avisos-oficiales        cerrarSeccion abrirOficiales
+avisos      avisos-tras-cerrar      cerrarSeccion
+
+# Lo que la tanda NO alcanza, y hay que mirar con el movil en la mano:
+#
+# - "Hoy" sin ubicacion todavia, cargando o con error de red: dependen de permisos y de la red, no
+#   de un estado que se pueda pedir. La captura de "hoy" sale con lo que haya.
+# - La vista previa de un lugar (dentro de la busqueda) necesita un resultado concreto elegido.
+# - Las capas de un nivel mas hondo: el editor de un resumen y la lista de fenomenos, dentro de sus
+#   hojas. Harian falta acciones nuevas en AvisosResumen y Fenomenos.
+# - Los dialogos nativos del sistema (permiso de ubicacion, de notificaciones) pueden no salir en la
+#   captura: la libreria fotografia la ventana de la app.

@@ -17,7 +17,8 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleDevelopmentRegion": "es",
         "CFBundleLocalizations": ["es"],
-        "CFBundleAllowMixedLocalizations": true
+        "CFBundleAllowMixedLocalizations": true,
+        "NSLocalNetworkUsageDescription": "Para mandar capturas e informes de diagnostico a tu ordenador mientras se prueba la app en desarrollo."
       }
     },
     "android": {

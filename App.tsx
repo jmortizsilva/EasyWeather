@@ -6,6 +6,8 @@ import { Tabs, TabSelectedEvent } from 'react-native-screens';
 import AvisosIndexScreen from './src/screens/avisos/AvisosIndexScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import PlacesScreen from './src/screens/PlacesScreen';
+import { useNavegacionDelPuente } from './src/desarrollo/navegacion';
+import { usePuenteDeDesarrollo } from './src/desarrollo/usePuente';
 import { ClavePestana, PESTANAS } from './src/navegacion/pestanas';
 import { PestanasProvider, usePestanas } from './src/navegacion/PestanasContext';
 import { NotificationsProvider } from './src/state/NotificationsContext';
@@ -29,7 +31,13 @@ const PANTALLAS: Record<ClavePestana, () => React.JSX.Element> = {
 // mismo interruptor del iPhone y no pueden desparejarse.
 function Navegacion() {
   const { colores, tema } = useTema();
-  const { peticion, alSeleccionarNativo } = usePestanas();
+  const { peticion, alSeleccionarNativo, irA } = usePestanas();
+
+  // Puente de desarrollo (src/desarrollo/): capturas, rastro de accesibilidad y servicios desde la
+  // terminal del ordenador. En una build publicada las dos llamadas no hacen nada: __DEV__ es falso
+  // y hostUri no existe. Va aqui y no en App porque necesita el irA de PestanasProvider.
+  usePuenteDeDesarrollo();
+  useNavegacionDelPuente(irA);
 
   return (
     <>

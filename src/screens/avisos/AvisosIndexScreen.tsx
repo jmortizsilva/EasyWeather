@@ -5,6 +5,7 @@ import EstadoUbicacion from '../../components/EstadoUbicacion';
 import { useNotifications } from '../../state/NotificationsContext';
 import { useColores } from '../../theme/ThemeContext';
 import { formatTime } from '../../utils/ajustesAvisos';
+import { useAccionesDeDesarrollo } from '../../desarrollo/automatizacion';
 import AvisoTemperatura from './AvisoTemperatura';
 import AvisosOficiales from './AvisosOficiales';
 import AvisosResumen from './AvisosResumen';
@@ -60,6 +61,16 @@ export default function AvisosIndexScreen() {
   };
 
   const cerrar = () => setAbierta(undefined);
+
+  // Para el puente de desarrollo: abrir cada seccion desde el ordenador, sin tocar el movil (ver
+  // docs/pantallas.txt). Son las mismas funciones que llaman las filas, no un toque simulado. En
+  // una build publicada no registra nada.
+  useAccionesDeDesarrollo({
+    abrirTemperatura: () => setAbierta('temperatura'),
+    abrirResumenes: () => setAbierta('resumenes'),
+    abrirOficiales: () => setAbierta('oficiales'),
+    cerrarSeccion: cerrar,
+  });
 
   // Sin ningun aviso encendido la ubicacion no se usa, y el estado del seguimiento sobra.
   const algunAvisoActivo =

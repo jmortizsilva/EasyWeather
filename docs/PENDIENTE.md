@@ -516,6 +516,32 @@ Queda por decidir si se publica tal cual o adjuntando la lista completa de los 4
 
 ---
 
+## El puente de desarrollo, a medio instalar
+
+Instalado el 2026-10-06 (ver [REVISAR-ACCESIBILIDAD.md](REVISAR-ACCESIBILIDAD.md)): servicios,
+navegación por pestañas, acciones en las dos pantallas con capas y `docs/pantallas.txt`. Funciona ya
+con la build que haya puesta.
+
+**Falta una build de desarrollo para que haya capturas**, que es lo que de verdad hace falta para
+revisar la accesibilidad. En esa build entran tres cosas que ya están declaradas y no hacen nada
+hasta entonces:
+
+- `react-native-view-shot`, que es nativo. Hasta que entre, el servicio `pantalla` contesta
+  `{"ok":false}` y todo lo demás sigue.
+- `NSLocalNetworkUsageDescription` en `app.json`, para que el permiso de red local diga algo con
+  sentido en vez del texto genérico de Expo.
+- `expo-constants`, que el puente importaba sin estar declarado. Al declararlo con `npx expo install`
+  subió de 57.0.13 a 57.0.21 (parche dentro del SDK 57). Es JS contra un nativo que ya está en el
+  binario, pero conviene mirarlo la primera vez que se abra la app con esa build.
+
+Conviene juntar esa build con el módulo nativo de cambios significativos de ubicación, que también
+está esperando: una build cuesta y hay pocas.
+
+**Y el rastro de accesibilidad sigue vacío.** El servicio existe, pero no hay nadie llamando a
+`anotarSuceso`: esta app no tiene un `src/accesibilidad/` propio con las funciones de anuncio y foco
+centralizadas (paso 5 del README del puente). Mientras no lo tenga, el rastro devuelve una lista
+vacía, y eso no es un fallo del puente.
+
 ## Y una deuda de higiene
 
 Quedan desplegados el **Worker de Cloudflare** y su base D1 vacía, de antes de la migración al

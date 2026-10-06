@@ -1,0 +1,94 @@
+# Revisar la accesibilidad de EasyWeather con el puente
+
+Cómo se hace **en esta app**. Lo general —qué es el puente, los tres frenos que impiden que llegue
+a una build publicada, las ocho condiciones del sistema y la lista de qué mirar en cada captura—
+está en [`comun/herramientas/puente/README.md`](../../../comun/herramientas/puente/README.md), y no
+se repite aquí. Esto es solo lo que cambia por ser esta app.
+
+## Arrancar
+
+```bash
+node ../../comun/herramientas/puente/servidor/servidor.mjs   # una terminal, se deja abierta
+npm start                                                    # otra: la app en desarrollo
+```
+
+La app se conecta sola y reintenta cada tres segundos, así que el orden da igual.
+
+```bash
+curl http://127.0.0.1:8790/estado      # ¿hay móvil?
+```
+
+> **No se añade un `npm run puente`.** La regla de `comun/` es por la huella nativa; aquí
+> `runtimeVersion` es la cadena fija `"1.5.0"` y no la política `fingerprint`, así que no habría
+> riesgo, pero el guion tampoco hace falta y la costumbre se mantiene igual en los dos proyectos.
+
+## Lo que aquí es distinto: se navega por PESTAÑAS, no por rutas
+
+Esta app no usa Expo Router (la migración está aplazada; ver PENDIENTE.md). Navega con
+`PestanasContext`, así que el servicio `navegar` espera **la clave de la pestaña**, no una ruta:
+
+```bash
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"navegar","parametros":{"ruta":"avisos"}}'
+```
+
+Las tres son `hoy`, `lugares` y `avisos`. El porqué y cómo se inyecta la navegación está en
+[`src/desarrollo/navegacion.ts`](../src/desarrollo/navegacion.ts).
+
+Y **`volver` no existe de verdad**: no hay pila de navegación. Contesta diciéndolo y listando las
+acciones, en vez de callarse y dejar pensando que la orden se ejecutó.
+
+## Todo lo demás se abre con acciones
+
+La búsqueda vive dentro de «Mis lugares» y las tres secciones de avisos dentro de «Avisos»: se abren
+con estado local, no navegando. Por eso hay acciones registradas:
+
+| Acción | Qué abre | Dónde está registrada |
+|---|---|---|
+| `abrirBusqueda` / `cerrarBusqueda` | La hoja de búsqueda | `src/screens/PlacesScreen.tsx` |
+| `abrirTemperatura` | Aviso de temperatura | `src/screens/avisos/AvisosIndexScreen.tsx` |
+| `abrirResumenes` | Resúmenes | idem |
+| `abrirOficiales` | Avisos oficiales de AEMET | idem |
+| `cerrarSeccion` | Cierra la hoja que haya abierta | idem |
+
+```bash
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"acciones"}'                      # las de la pestaña que está delante
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"accion","parametros":{"nombre":"abrirTemperatura"}}'
+```
+
+Son **las mismas funciones que llaman las filas**, no un toque simulado: sirven para llegar al
+estado y fotografiarlo, no para comprobar que el toque funciona.
+
+## La tanda
+
+`docs/pantallas.txt` es la definición de «todas las pantallas» de esta app, estados incluidos. Se
+actualiza al añadir una.
+
+```bash
+node ../../comun/herramientas/puente/servidor/tanda.mjs docs/pantallas.txt --condicion normal
+node ../../comun/herramientas/puente/servidor/tanda.mjs docs/pantallas.txt --condicion texto-grande
+node ../../comun/herramientas/puente/servidor/tanda.mjs docs/pantallas.txt --condicion oscuro
+```
+
+Una tanda por condición; quien tiene el móvil solo cambia el ajuste del sistema entre tanda y tanda.
+Si solo hay tiempo para una además de la normal, **texto grande + modo oscuro**.
+
+Al final, lo encontrado se escribe en `docs/` con fecha: qué se revisó, qué salió, qué se arregló y
+qué se dejó pendiente con su motivo.
+
+## El rastro, que es lo que la captura no enseña
+
+El servicio `rastro` devuelve qué se anunció y a dónde fue el foco, en orden y con milisegundos.
+**Hoy devuelve siempre una lista vacía**, y eso no es un fallo del puente: hay que llamar a
+`anotarSuceso` desde las funciones que anuncian y mueven el foco (paso 5 del README de `comun/`).
+Esta app todavía no tiene un `src/accesibilidad/` propio con esas funciones centralizadas; mientras
+no lo tenga, el rastro no se llena.
+
+## Lo que falta para que haya capturas
+
+**Una build de desarrollo nueva.** `react-native-view-shot` es un módulo nativo: está instalado y el
+código lo llama, pero hasta que no entre en una build el servicio `pantalla` contestará
+`{"ok":false}` con el error del módulo que no está. Lo demás —`navegar`, `acciones`, `accion`,
+`rastro`, los informes— funciona ya con la build que haya.
+
+En la misma build entra el texto de `NSLocalNetworkUsageDescription`, ya declarado en `app.json`.
+Sin él, el cliente de desarrollo de Expo muestra uno genérico; no impide que el puente funcione.
