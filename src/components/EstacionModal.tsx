@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from 'react-native';
+import { MarcaElegida } from './MarcaElegida';
 import { getEstaciones } from '../services/observacion';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
@@ -124,7 +125,10 @@ export default function EstacionModal({ visible, place, elevacion, onClose }: Pr
                 accessibilityRole="button"
                 accessibilityState={{ selected: !elegida }}
                 accessibilityLabel={filaAuto.spoken}>
-                <Text style={styles.filaTitulo}>{filaAuto.titulo}</Text>
+                <Text style={styles.filaTitulo}>
+                  <MarcaElegida elegida={!elegida} />
+                  {filaAuto.titulo}
+                </Text>
                 <Text style={styles.filaDetalle}>{filaAuto.detalle}</Text>
               </Pressable>
 
@@ -139,7 +143,10 @@ export default function EstacionModal({ visible, place, elevacion, onClose }: Pr
                     accessibilityRole="button"
                     accessibilityState={{ selected: esLaElegida }}
                     accessibilityLabel={fila.spoken}>
-                    <Text style={styles.filaTitulo}>{fila.titulo}</Text>
+                    <Text style={styles.filaTitulo}>
+                      <MarcaElegida elegida={esLaElegida} />
+                      {fila.titulo}
+                    </Text>
                     <Text style={styles.filaDetalle}>{fila.detalle}</Text>
                   </Pressable>
                 );

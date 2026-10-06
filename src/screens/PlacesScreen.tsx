@@ -11,6 +11,7 @@ import { Place } from '../types';
 import { lugarDesdeUbicacion, yaGuardado } from '../utils/guardarUbicacion';
 import { vibrarConfirmacion } from '../utils/haptica';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
+import { MarcaElegida } from '../components/MarcaElegida';
 import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import SearchScreen from './SearchScreen';
 
@@ -131,7 +132,10 @@ export default function PlacesScreen() {
               accessibilityRole="button"
               accessibilityLabel={hablado}
               accessibilityState={{ selected: activeId === CURRENT_LOCATION_ID }}>
-              <Text style={styles.rowTitle}>📍 {nombre}</Text>
+              <Text style={styles.rowTitle}>
+                <MarcaElegida elegida={activeId === CURRENT_LOCATION_ID} />
+                📍 {nombre}
+              </Text>
               {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
             </Pressable>
           );
@@ -208,7 +212,10 @@ export default function PlacesScreen() {
                       void removePlace(place.id);
                     }
                   }}>
-                  <Text style={styles.rowTitle}>{place.name}</Text>
+                  <Text style={styles.rowTitle}>
+                    <MarcaElegida elegida={activeId === place.id} />
+                    {place.name}
+                  </Text>
                   {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
                 </Pressable>
               </Swipeable>
