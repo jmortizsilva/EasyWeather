@@ -18,6 +18,7 @@ import { captureScreen } from 'react-native-view-shot';
 import { ejecutarAccion, listarAcciones } from './automatizacion';
 import { navegarPorPuente } from './navegacion';
 import { registrarServicio } from './puente';
+import { leerMedidas } from './medidas';
 import { leerRastro, limpiarRastro } from './rastro';
 
 export function registrarServiciosDeDesarrollo(): void {
@@ -92,6 +93,9 @@ export function registrarServiciosDeDesarrollo(): void {
    * pantallas se rompían con la letra grande y hacía falta saber por cuánto multiplica iOS de
    * verdad, en vez de deducirlo mirando píxeles.
    */
+  // Alturas reales de los trozos instrumentados con anotarMedida. Ver medidas.ts.
+  registrarServicio('medidas', () => leerMedidas());
+
   registrarServicio('entorno', () => {
     const ventana = Dimensions.get('window');
     return {

@@ -81,6 +81,32 @@ Si solo hay tiempo para una además de la normal, **texto grande + modo oscuro**
 Al final, lo encontrado se escribe en `docs/` con fecha: qué se revisó, qué salió, qué se arregló y
 qué se dejó pendiente con su motivo.
 
+## Medir, cuando la captura no basta
+
+Una captura dice QUE algo no cabe, pero no CUÁNTO ocupa cada cosa. Para eso están dos servicios:
+
+```bash
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"entorno"}'   # escala de letra, ventana, tema, qué binario es
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"medidas"}'   # alturas reales de lo que se haya instrumentado
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json"      -d '{"servicio":"recargar"}'  # recarga el bundle, como la «r» de Metro
+```
+
+`medidas` empieza vacío: se llena colgando un `onLayout` de lo que se quiera medir.
+
+```tsx
+import { anotarMedida } from '../desarrollo/medidas';
+
+<View onLayout={(e) => anotarMedida('cabecera', e.nativeEvent.layout)}>
+```
+
+Se quita al terminar el diagnóstico; no se deja puesto en las pantallas. Así se resolvió el
+2026-10-06 por qué «Hoy» se quedaba sin contenido con la letra al máximo: la cabecera medía 850
+puntos de los 874 de la pantalla, y 724 eran del título.
+
+**Y una trampa de este mismo servicio**: tras un Fast Refresh las medidas pueden ser VIEJAS. Al
+cambiar algo que afecta a cómo se mide el texto, usar `recargar` antes de creerse un número. El
+mismo título daba 724 puntos recién editado y 162 tras recargar.
+
 ## El rastro, que es lo que la captura no enseña
 
 El servicio `rastro` devuelve qué se anunció y a dónde fue el foco, en orden y con milisegundos.
