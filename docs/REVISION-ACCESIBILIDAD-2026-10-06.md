@@ -143,6 +143,17 @@ Con los ajustes **medidos** por el servicio `entorno`, no recordados.
   «Desactivado» también— pero no hay nada cortado, nada montado y todo se desplaza. Era la
   condición con más posibilidades de destapar un ancho calculado a ojo, y no hay ninguno.
 
+- **Inversión de colores inteligente** (2026-10-07): **NO se puede verificar con capturas**, y está
+  comprobado, no supuesto. Con `coloresInvertidos: true` medido en el aparato, la captura sale sin
+  invertir: la inversión la aplica el compositor del sistema al pintar, y `captureScreen`
+  fotografía la jerarquía de vistas, que no está invertida.
+
+  Por código sí se puede cerrar: lo único que una app debe hacer con la inversión es marcar sus
+  imágenes con `accessibilityIgnoresInvertColors`, para que una foto o un logotipo no salgan en
+  negativo. **Esta app no tiene ni una imagen** —ni un `<Image>`, ni un PNG—, así que no hay nada
+  que marcar. Los emoji y los iconos de la barra los dibuja el sistema y se comportan igual en
+  todas las apps.
+
 **Y una lección operativa que costó una tanda**: el ajuste del sistema **tarda un momento en llegar
 a la app**. La primera tanda de «reducir transparencia» se lanzó con `entorno` diciendo todavía
 `false`, se tiró y se repitió. O sea que no basta con medir: hay que medir **y comprobar que
