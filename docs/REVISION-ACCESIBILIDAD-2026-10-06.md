@@ -139,17 +139,40 @@ Con los ajustes **medidos** por el servicio `entorno`, no recordados.
   opaco y el contenido deja de transparentarse por debajo. Ningún defecto nuevo; si acaso se lee
   mejor. El resto de la pantalla, idéntico, por lo mismo de antes.
 
+- **Texto en negrita** (`negrita`): todo engorda y ocupa más sitio —«Avisos» pasa a dos líneas,
+  «Desactivado» también— pero no hay nada cortado, nada montado y todo se desplaza. Era la
+  condición con más posibilidades de destapar un ancho calculado a ojo, y no hay ninguno.
+
 **Y una lección operativa que costó una tanda**: el ajuste del sistema **tarda un momento en llegar
 a la app**. La primera tanda de «reducir transparencia» se lanzó con `entorno` diciendo todavía
 `false`, se tiró y se repitió. O sea que no basta con medir: hay que medir **y comprobar que
 coincide con la condición pedida** antes de capturar, y si no coincide, esperar y volver a medir.
+
+**Y hay un caso peor, que costó cuatro intentos con la negrita**: el interruptor puede quedarse
+pegado en el valor viejo y no llegar nunca. Los siete valores los guarda un módulo NATIVO que los
+lee **al arrancar la app** (`RCTAccessibilityManager.mm:93-101`) y después solo los actualiza con la
+notificación del sistema. Si la app se la pierde, ahí se queda. **Y el servicio `recargar` no basta:
+reinicia el JavaScript, no el módulo nativo.** Hace falta cerrar la app del todo y abrirla.
+
+Para el tamaño de letra `recargar` sí vale —está comprobado que vuelve a medir la disposición—.
+Para estos siete interruptores, no.
 
 ## Lo que esta revisión NO cubre
 
 - **El final del desplazamiento.** La barra de pestañas flota sobre el contenido, que es lo normal en
   iOS 26 a media lista, pero no se ha podido fotografiar si la última fila despeja la barra:
   `pantallas.txt` no sabe decir «desplazado hasta abajo».
-- **Las condiciones que quedan**: negrita, formas de botón y diferenciar sin color.
+- **«Formas de botón» y «diferenciar sin color» NO se verificaron en el aparato**, y no por
+  descuido: React Native solo sabe leer siete interruptores y esos dos no están. Verificarlos
+  sería volver a fiarse de lo que alguien recuerde, que hoy ha fallado dos veces.
+
+  En su lugar se repasó **por código** lo que esas dos condiciones buscan: que nada dependa solo
+  del color. De ahí salió el «Listo» de la búsqueda, que era azul y nada más, y de ahí salió
+  antes la marca de la fila elegida. El nivel de los avisos de AEMET ya estaba bien: va escrito
+  con letras en el título.
+
+  Y una trampa que conviene no olvidar: **«Formas de botón» no habría arreglado el «Listo»**, porque
+  ese ajuste subraya los controles del sistema y ese es un `Pressable` propio.
 - **El contraste calculado.** Se ha mirado, no medido con la fórmula de WCAG.
 - **Qué dice VoiceOver.** El servicio `rastro` sigue vacío: falta llamar a `anotarSuceso` desde las
   funciones que anuncian y mueven el foco. Eso es trabajo aparte.
