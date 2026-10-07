@@ -328,10 +328,17 @@ const crearEstilos = (c: Paleta) =>
       justifyContent: 'center',
       paddingHorizontal: 12,
     },
+    // Subrayado, no solo color, por lo mismo que las atribuciones de PrevisionLugar y AvisosModal:
+    // un control que solo se distingue por ser azul depende del color para decir que es pulsable.
+    //
+    // Y aqui NO basta con el ajuste «Formas de botón» de iOS, que es lo que uno esperaria: ese
+    // ajuste subraya los controles DEL SISTEMA, y esto es un Pressable propio. Comprobado el
+    // 2026-10-07 al repasar que nada dependa solo del color.
     cancelText: {
       color: c.acento,
       fontSize: 17,
       fontWeight: '600',
+      textDecorationLine: 'underline',
     },
     card: {
       backgroundColor: c.tarjeta,
