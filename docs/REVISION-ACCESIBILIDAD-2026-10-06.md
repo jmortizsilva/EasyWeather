@@ -10,6 +10,16 @@ multiplica por **3,571** (medido con el servicio `entorno`, no supuesto), sobre 
 
 **Con qué**: build de desarrollo `7f254415` (commit `cd8511c`) en un iPhone real.
 
+> **Corrección del 2026-10-07.** Las tres tandas se hicieron con **«aumentar contraste»
+> ENCENDIDO** y con **VoiceOver corriendo**, sin saberlo. O sea que lo que este informe llama
+> «normal» no es el estado por defecto, y la condición «aumentar contraste» ya está cubierta por
+> todas ellas. Lo que no se ha visto nunca es la app con ese ajuste apagado, que es como la tiene
+> la mayoría.
+>
+> Se descubrió al ampliar el servicio `entorno` para que **pregunte** los interruptores en vez de
+> fiarse de lo que alguien recuerde. Una condición que no se puede comprobar no es una condición,
+> es una suposición; a partir de ahora cada tanda anota el estado medido.
+
 ---
 
 ## Lo que se encontró y se arregló
@@ -115,8 +125,9 @@ de la app entera. Queda escrito para que sea una decisión y no un olvido.
 - **El final del desplazamiento.** La barra de pestañas flota sobre el contenido, que es lo normal en
   iOS 26 a media lista, pero no se ha podido fotografiar si la última fila despeja la barra:
   `pantallas.txt` no sabe decir «desplazado hasta abajo».
-- **Las cinco condiciones restantes**: contraste aumentado, negrita, formas de botón, reducir
-  transparencia y diferenciar sin color.
+- **Las condiciones restantes**: negrita, formas de botón, reducir transparencia, diferenciar sin
+  color —y **el estado por defecto**, con «aumentar contraste» apagado, que resulta que nunca se
+  miró. «Aumentar contraste» en cambio ya está cubierto: estuvo encendido todo el rato.
 - **El contraste calculado.** Se ha mirado, no medido con la fórmula de WCAG.
 - **Qué dice VoiceOver.** El servicio `rastro` sigue vacío: falta llamar a `anotarSuceso` desde las
   funciones que anuncian y mueven el foco. Eso es trabajo aparte.

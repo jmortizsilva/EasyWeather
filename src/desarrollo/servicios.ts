@@ -12,7 +12,14 @@
  */
 
 import Constants from 'expo-constants';
-import { Appearance, DevSettings, Dimensions, NativeModules, PixelRatio } from 'react-native';
+import {
+  AccessibilityInfo,
+  Appearance,
+  DevSettings,
+  Dimensions,
+  NativeModules,
+  PixelRatio,
+} from 'react-native';
 import { captureScreen } from 'react-native-view-shot';
 
 import { ejecutarAccion, listarAcciones } from './automatizacion';
@@ -96,8 +103,29 @@ export function registrarServiciosDeDesarrollo(): void {
   // Alturas reales de los trozos instrumentados con anotarMedida. Ver medidas.ts.
   registrarServicio('medidas', () => leerMedidas());
 
-  registrarServicio('entorno', () => {
+  registrarServicio('entorno', async () => {
     const ventana = Dimensions.get('window');
+
+    /*
+     * Los interruptores de accesibilidad, PREGUNTADOS y no recordados.
+     *
+     * El 2026-10-06 se dio por buena una tanda entera creyendo que «aumentar contraste» estaba
+     * apagado, y llevaba encendido todo el rato: la referencia «normal» no era la de por defecto.
+     * Una condición que no se puede comprobar no es una condición, es una suposición.
+     *
+     * «Aumentar contraste» se llama aquí isDarkerSystemColorsEnabled: comprobado en
+     * RCTAccessibilityManager.mm, que lee UIAccessibilityDarkerSystemColorsEnabled().
+     */
+    const [lector, negrita, contraste, transparencia, movimiento, grises, invertido] =
+      await Promise.all([
+        AccessibilityInfo.isScreenReaderEnabled(),
+        AccessibilityInfo.isBoldTextEnabled(),
+        AccessibilityInfo.isDarkerSystemColorsEnabled(),
+        AccessibilityInfo.isReduceTransparencyEnabled(),
+        AccessibilityInfo.isReduceMotionEnabled(),
+        AccessibilityInfo.isGrayscaleEnabled(),
+        AccessibilityInfo.isInvertColorsEnabled(),
+      ]);
     return {
       escalaDeLetra: PixelRatio.getFontScale(),
       densidad: PixelRatio.get(),
@@ -109,7 +137,15 @@ export function registrarServiciosDeDesarrollo(): void {
       identificador: Constants.expoConfig?.ios?.bundleIdentifier,
       hostUri: Constants.expoConfig?.hostUri,
       tieneViewShot: Boolean(NativeModules.RNViewShot),
-      nativosParecidos: Object.keys(NativeModules).filter((k) => /shot|view/i.test(k)),
+      ajustes: {
+        lectorDePantalla: lector,
+        textoEnNegrita: negrita,
+        aumentarContraste: contraste,
+        reducirTransparencia: transparencia,
+        reducirMovimiento: movimiento,
+        escalaDeGrises: grises,
+        coloresInvertidos: invertido,
+      },
     };
   });
 
