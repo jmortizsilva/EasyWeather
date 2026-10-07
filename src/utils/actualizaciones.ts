@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Updates from 'expo-updates';
 import { useCallback, useEffect, useRef } from 'react';
-import { AccessibilityInfo, Alert, AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
+import { anunciar } from '../accesibilidad/anuncios';
 import { NOVEDADES } from '../novedades';
 import { decidirAvisoNovedades, INCRUSTADO } from './actualizaciones-logica';
 
@@ -10,11 +11,11 @@ const STORAGE_ULTIMO_UPDATE = 'tiempo.updates.lastId';
 async function instalarActualizacion(): Promise<void> {
   try {
     // Anuncio inmediato: durante la descarga no hay Alert, solo esto para VoiceOver.
-    AccessibilityInfo.announceForAccessibility('Descargando la actualización.');
+    anunciar('Descargando la actualización.');
     await Updates.fetchUpdateAsync();
     await Updates.reloadAsync();
   } catch {
-    AccessibilityInfo.announceForAccessibility('No se ha podido instalar la actualización.');
+    anunciar('No se ha podido instalar la actualización.');
     Alert.alert(
       'Actualización',
       'No se ha podido instalar la actualización. Se reintentará más tarde.',

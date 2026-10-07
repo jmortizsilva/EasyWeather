@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { moverFoco } from '../accesibilidad/foco';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
@@ -78,7 +79,9 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
       return;
     }
     focoPuestoEn.current = place.id;
-    AccessibilityInfo.sendAccessibilityEvent(tituloRef.current, 'focus');
+    // `moverFoco` y no `devolverFoco`: esta llega desde onLayout, cuando la vista ya existe, y
+    // no debe esperar nada. Ver el comentario de arriba y src/accesibilidad/foco.ts.
+    moverFoco(tituloRef.current, 'titulo de la vista previa');
   };
 
   // Se vibra porque VoiceOver no anuncia nada al desaparecer la hoja, y sin confirmación no se

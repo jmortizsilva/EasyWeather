@@ -9,7 +9,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AccessibilityInfo, Alert, AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
+import { anunciar } from '../accesibilidad/anuncios';
 import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
 import { eleccionAplicable, EstacionElegida, MotivoSinDato } from '../utils/estaciones';
@@ -503,10 +504,10 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     if (!message.trim()) {
       return;
     }
-    // queue: true (iOS) encola el anuncio tras el que esté sonando —p. ej. la activación del botón
-    // al seleccionar un lugar en el ajustable—. Con announceForAccessibility a secas, el anuncio
+    // `anunciar` encola el anuncio tras el que esté sonando —p. ej. la activación del botón al
+    // seleccionar un lugar en el ajustable—. Con announceForAccessibility a secas, el anuncio
     // competía con esa activación y VoiceOver lo descartaba a veces ("no siempre lo dice").
-    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
+    anunciar(message);
   }, [message]);
 
   // Mantiene al día la temperatura de todos los lugares. Se fuerza cuando aparece uno sin dato

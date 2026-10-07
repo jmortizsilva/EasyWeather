@@ -9,7 +9,8 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AccessibilityInfo, Alert, AppState } from 'react-native';
+import { Alert, AppState } from 'react-native';
+import { anunciar } from '../accesibilidad/anuncios';
 import {
   AvisosOficialesAlert,
   NotificationSettings,
@@ -152,8 +153,9 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   // un aviso visible en pantalla y una vibracion. La vibracion es el canal mas fiable: el anuncio de
   // VoiceOver se pierde a veces al competir con el gesto, y no todos ven el banner.
   const notify = useCallback((text: string, kind: 'ok' | 'error' = 'ok') => {
-    // queue: true (iOS) encola el anuncio para que no lo pise el sonido de activar el botón.
-    AccessibilityInfo.announceForAccessibilityWithOptions(text, { queue: true });
+    // `anunciar` encola (queue: true) para que no lo pise el sonido de activar el botón, y deja
+    // rastro para el puente. Ver src/accesibilidad/anuncios.ts.
+    anunciar(text);
     if (kind === 'error') {
       vibrarError();
     } else {
