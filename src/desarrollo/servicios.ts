@@ -20,7 +20,6 @@ import {
   NativeModules,
   PixelRatio,
 } from 'react-native';
-import { captureScreen } from 'react-native-view-shot';
 
 import { ejecutarAccion, listarAcciones } from './automatizacion';
 import { navegarPorPuente } from './navegacion';
@@ -32,17 +31,25 @@ export function registrarServiciosDeDesarrollo(): void {
   /*
    * Una foto de la pantalla que tenga el móvil ahora mismo.
    *
-   * `comun/` carga la librería DENTRO de la función, para que una build anterior
-   * a haberla instalado no reviente al arrancar solo por tener el import. Aquí
-   * no se puede: medido el 2026-10-06, el `import()` dinámico devuelve el módulo
-   * sin resolver en este Metro («undefined is not a function»), y lo mismo le
-   * pasa a `react-native`. Como el módulo ya está en el binario desde la build
-   * de desarrollo `7f254415`, el import normal es seguro.
+   * La librería se carga DENTRO de la función, y con `require`, no con `import`.
+   * Los tres detalles importan y cada uno viene de un susto distinto:
+   *
+   *   - Dentro y no arriba, como manda `comun/`: resuelve su módulo nativo con
+   *     `TurboModuleRegistry.getEnforcing`, que **lanza** si no está. Con el
+   *     import arriba, una build sin el módulo —la 19, la beta— no abriría.
+   *     Cargarlo aquí convierte eso en un `{ok:false}` del puente.
+   *   - `require` y no `import()`: medido el 2026-10-06, el `import()` dinámico
+   *     devuelve el módulo sin resolver en este Metro. `require` sí funciona y
+   *     también es perezoso.
+   *   - Y por eso el paquete tiene que estar instalado igualmente: sin él no hay
+   *     tipos y `tsc` no pasa.
    */
   registrarServicio('pantalla', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const vs = require('react-native-view-shot') as typeof import('react-native-view-shot');
     return {
       formato: 'png',
-      base64: await captureScreen({ format: 'png', result: 'base64' }),
+      base64: await vs.captureScreen({ format: 'png', result: 'base64' }),
     };
   });
 
