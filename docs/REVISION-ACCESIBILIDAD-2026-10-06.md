@@ -115,19 +115,41 @@ de la app entera. Queda escrito para que sea una decisión y no un olvido.
   arreglar nada roto.
 - **Palabras partidas a la mitad** («Aviso de tempe / ratura», «temperatur / a»). A 121 puntos la
   palabra no cabe en una línea de 370; iOS hace lo mismo. Se lee.
-- **El número grande se parte en dos** («17,» y «9º»): 54 puntos × 3,571 = 193. Se lee y se
-  desplaza. Es la misma decisión que la del título y está sin tomar.
+- **El número grande se parte en dos** («17,» y «9º»): 54 puntos × 3,571 = 193. **Decidido el
+  2026-10-07: se deja sin tope.** Y la regla que sale de ahí, que vale para la próxima vez:
+
+  > **Se pone tope cuando algo se vuelve inalcanzable, no cuando se vuelve feo.**
+
+  Con el título de «Hoy» había bloqueo: la cabecera es fija y el contenido no se podía alcanzar de
+  ninguna manera. Con el número no lo hay: se parte en dos líneas, se lee y se desplaza. Y quien
+  sube la letra al máximo lo hace precisamente para leer esa temperatura; hacérsela pequeña para
+  que quede elegante es el intercambio que no interesa.
 - **Modo oscuro: nada que señalar.** Ningún color fijo que no cambie, ningún texto oscuro sobre
   fondo oscuro, la barra de pestañas se adapta sola (es el material del sistema).
+
+## Condiciones del 2026-10-07
+
+Con los ajustes **medidos** por el servicio `entorno`, no recordados.
+
+- **Estado por defecto** (`ax5-claro-sincontraste`), con «aumentar contraste» apagado: la referencia
+  que faltaba. **Apagarlo no cambia casi nada en esta app**, y tiene explicación: los colores salen
+  de `colores.ts`, no de los semánticos del sistema. Lo único que cambia es la barra de pestañas,
+  que es material del sistema.
+- **Reducir transparencia** (`sin-transparencia`): la barra de pestañas pasa de cristal a blanco
+  opaco y el contenido deja de transparentarse por debajo. Ningún defecto nuevo; si acaso se lee
+  mejor. El resto de la pantalla, idéntico, por lo mismo de antes.
+
+**Y una lección operativa que costó una tanda**: el ajuste del sistema **tarda un momento en llegar
+a la app**. La primera tanda de «reducir transparencia» se lanzó con `entorno` diciendo todavía
+`false`, se tiró y se repitió. O sea que no basta con medir: hay que medir **y comprobar que
+coincide con la condición pedida** antes de capturar, y si no coincide, esperar y volver a medir.
 
 ## Lo que esta revisión NO cubre
 
 - **El final del desplazamiento.** La barra de pestañas flota sobre el contenido, que es lo normal en
   iOS 26 a media lista, pero no se ha podido fotografiar si la última fila despeja la barra:
   `pantallas.txt` no sabe decir «desplazado hasta abajo».
-- **Las condiciones restantes**: negrita, formas de botón, reducir transparencia, diferenciar sin
-  color —y **el estado por defecto**, con «aumentar contraste» apagado, que resulta que nunca se
-  miró. «Aumentar contraste» en cambio ya está cubierto: estuvo encendido todo el rato.
+- **Las condiciones que quedan**: negrita, formas de botón y diferenciar sin color.
 - **El contraste calculado.** Se ha mirado, no medido con la fórmula de WCAG.
 - **Qué dice VoiceOver.** El servicio `rastro` sigue vacío: falta llamar a `anotarSuceso` desde las
   funciones que anuncian y mueven el foco. Eso es trabajo aparte.
