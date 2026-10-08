@@ -3,6 +3,11 @@
 Las reglas generales de iOS/RN están en el CLAUDE.md de la carpeta padre. Aquí solo lo
 específico de esta app.
 
+> **El proyecto se traslada a un Mac (2026-10-08).** Qué no viaja con `git clone` —la memoria,
+> las claves de SSH, la sesión de EAS—, en qué estado está cada repositorio y qué cambia al poder
+> compilar en local: [TRASLADO-AL-MAC.md](docs/TRASLADO-AL-MAC.md). Leerlo antes de compilar o
+> desplegar desde una máquina nueva.
+
 ## Notificaciones push: servidor propio (`api.jmortiz.es`)
 
 Los avisos (temperatura y resumen) que deben llegar **con la app cerrada** no se programan en el
