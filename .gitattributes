@@ -1,0 +1,16 @@
+# Los mismos bytes en todas las maquinas.
+#
+# Existe porque el proyecto se desarrolla en Windows y en Mac a la vez. El repositorio ya guardaba
+# LF (lo normalizaba `core.autocrlf` de Windows al commitear), pero la COPIA DE TRABAJO no: en
+# Windows salia CRLF y en el Mac LF. Dos efectos, medidos el 2026-10-09:
+#
+#   - `expo export` daba un bundle distinto en cada maquina con el mismo codigo
+#     (e80e3332... en el Mac, aa10f605... en Windows). No afecta a como funciona la app, pero
+#     impide usar el hash para comparar dos maquinas, que es la comprobacion mas barata que hay.
+#   - Buscar y reemplazar con cadenas de varias lineas fallaba EN SILENCIO en Windows: el texto
+#     buscado llevaba LF y el fichero CRLF, asi que no casaba y la edicion no se aplicaba sin dar
+#     ningun error. Paso varias veces los dias 6 y 7 de octubre.
+#
+# `text=auto` deja que git detecte que es binario y no lo toque; `eol=lf` fija el final de linea de
+# la copia de trabajo en las dos plataformas.
+* text=auto eol=lf
