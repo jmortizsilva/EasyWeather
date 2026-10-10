@@ -58,6 +58,11 @@ Es la parte que se olvida, porque todo lo demás lo trae `git clone` y parece qu
 
 ## 4. Lo que cambia por tener Mac
 
+> **Esto se escribió antes de compilar. Ya se ha compilado, el 2026-10-09**, y lo que se
+> aprendió haciéndolo está en [COMPILAR-EN-EL-MAC.md](COMPILAR-EN-EL-MAC.md): la firma sin
+> pantalla, el perfil con push, la trampa del identificador y lo que todavía no arranca en el
+> iPhone. Donde los dos documentos hablen de lo mismo, manda ese.
+
 ### Compilar: tres niveles
 
 1. `npx expo run:ios --device` — la build de desarrollo, en minutos en vez de en una cola.

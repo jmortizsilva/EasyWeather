@@ -7,6 +7,12 @@ específico de esta app.
 > las claves de SSH, la sesión de EAS—, en qué estado está cada repositorio y qué cambia al poder
 > compilar en local: [TRASLADO-AL-MAC.md](docs/TRASLADO-AL-MAC.md). Leerlo antes de compilar o
 > desplegar desde una máquina nueva.
+>
+> **Y ya se ha compilado en el Mac (2026-10-09)**: cómo se firma sin pantalla ni cuenta en
+> Xcode, por qué el perfil automático no admite push, la trampa del identificador de pruebas y
+> lo que todavía no arranca en el iPhone, en
+> [COMPILAR-EN-EL-MAC.md](docs/COMPILAR-EN-EL-MAC.md). **Leerlo antes de compilar en local**: cada
+> cosa que hay ahí costó un error con un mensaje que no se parecía a su causa.
 
 ## Notificaciones push: servidor propio (`api.jmortiz.es`)
 

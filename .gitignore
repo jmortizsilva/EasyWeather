@@ -51,3 +51,7 @@ yarn-error.*
 
 # Informes de fallo del iPhone: llevan datos del aparato y el repositorio es publico.
 *.ips
+
+# Salida de herramientas/compilar-simulador.sh (DerivedData dentro del proyecto, para que la
+# ruta de la app compilada sea predecible).
+/.build-simulador
