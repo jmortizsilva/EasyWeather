@@ -50,7 +50,8 @@
           "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona.",
           "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta."
         }
-      ]
+      ],
+      "./plugins/ciclo-de-vida-por-escenas"
     ],
     "extra": {
       "eas": {
