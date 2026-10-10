@@ -25,7 +25,7 @@ build**. Se pasa después de tocar cualquier cosa del puente, y en los pasos vis
 que mirar el móvil, porque eso no lo puede comprobar él.
 
 > **No se añade un `npm run puente`.** La regla de `comun/` es por la huella nativa; aquí
-> `runtimeVersion` es la cadena fija `"1.5.0"` y no la política `fingerprint`, así que no habría
+> `runtimeVersion` es una cadena fija y no la política `fingerprint`, así que no habría
 > riesgo, pero el guion tampoco hace falta y la costumbre se mantiene igual en los dos proyectos.
 
 ## Lo que aquí es distinto: se navega por PESTAÑAS, no por rutas
