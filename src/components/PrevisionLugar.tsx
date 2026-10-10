@@ -20,6 +20,7 @@ import { describirObservacion } from '../utils/observacionTexto';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 import { useDesplazableDePuente } from '../desarrollo/desplazables';
+import { useLetraGrande } from '../theme/letraGrande';
 
 // La previsión de UN lugar. La usan la pantalla Hoy (una por página del carrusel) y la vista
 // previa de un lugar buscado, para que las dos muestren y lean exactamente lo mismo.
@@ -84,6 +85,7 @@ export function PaginaLugar({
   ocultarActualizar = false,
 }: PaginaProps) {
   const refDesplazable = useDesplazableDePuente('hoy', esActiva);
+  const letraGrande = useLetraGrande();
   const forecast = prevision?.forecast;
   const currentInfo = describeWeatherCode(forecast?.current?.weatherCode);
   const today = forecast?.days[0];
@@ -219,11 +221,13 @@ export function PaginaLugar({
             {todayDetails.map((line) => (
               <View
                 key={line.title}
-                style={styles.detailRow}
+                style={[styles.detailRow, letraGrande && styles.detailRowApilado]}
                 accessible
                 accessibilityLabel={`${line.title}: ${line.spoken}`}>
                 <Text style={styles.detailTitle}>{line.title}</Text>
-                <Text style={styles.detailValue}>{line.value}</Text>
+                <Text style={[styles.detailValue, letraGrande && styles.detailValueApilado]}>
+                  {line.value}
+                </Text>
               </View>
             ))}
           </View>
@@ -445,6 +449,16 @@ export const crearEstilos = (c: Paleta) =>
       fontWeight: '600',
       flexShrink: 1,
       textAlign: 'right',
+    },
+    // Con la letra grande, nombre arriba y valor debajo: en fila, el valor se quedaba con el hueco
+    // que deja el nombre y acababa en una columna de una letra (revisión del 2026-10-10).
+    detailRowApilado: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: 2,
+    },
+    detailValueApilado: {
+      textAlign: 'left',
     },
     buttonPrimary: {
       borderRadius: 12,

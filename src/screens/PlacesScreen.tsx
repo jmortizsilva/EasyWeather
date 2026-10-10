@@ -15,6 +15,7 @@ import { MarcaElegida } from '../components/MarcaElegida';
 import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import SearchScreen from './SearchScreen';
 import { useDesplazableDePuente } from '../desarrollo/desplazables';
+import { TOPE_TITULO } from '../theme/letraGrande';
 
 export default function PlacesScreen() {
   const refDesplazable = useDesplazableDePuente('lugares');
@@ -112,7 +113,7 @@ export default function PlacesScreen() {
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Mis lugares">
-      <Text style={styles.title} accessibilityRole="header">
+      <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
         Mis lugares
       </Text>
 

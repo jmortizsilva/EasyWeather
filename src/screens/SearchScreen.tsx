@@ -20,6 +20,7 @@ import { mezclarMunicipios } from '../utils/municipios';
 import { ordenarPorCercania } from '../utils/ordenarResultados';
 import { describirResultados } from '../utils/resultadosBusqueda';
 import { useDesplazableDePuente } from '../desarrollo/desplazables';
+import { TOPE_TITULO, useLetraGrande } from '../theme/letraGrande';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -34,6 +35,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
   const refDesplazable = useDesplazableDePuente('buscar');
   const insets = useSafeAreaInsets();
   const colores = useColores();
+  const letraGrande = useLetraGrande();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const { places, addPlace, removePlace, currentLocationPlace } = usePlaces();
   const [citySearch, setCitySearch] = useState('');
@@ -110,8 +112,8 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
       keyboardDismissMode="on-drag">
       {/* Cabecera con "Cerrar": al ser una hoja modal, tiene que haber una salida visible además
           del gesto de escape de VoiceOver que lleva el contenedor. */}
-      <View style={styles.headerRow}>
-        <Text style={styles.title} accessibilityRole="header">
+      <View style={[styles.headerRow, letraGrande && styles.enColumna]}>
+        <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
           Buscar
         </Text>
         <Pressable
@@ -126,7 +128,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
       {/* Campo y sus botones en la misma fila, para que el orden de VoiceOver sea
           campo -> Listo -> Borrar: lo primero que se encuentra tras escribir es cerrar el teclado,
           que es lo que hay que hacer antes de recorrer los resultados. */}
-      <View style={styles.searchRow}>
+      <View style={[styles.searchRow, letraGrande && styles.enColumna]}>
         {/* Campo NO controlado (defaultValue, no value) a proposito: al dictar, el texto salia
             duplicado. Reescribir el texto desde JavaScript mientras iOS inserta el resultado del
             dictado lo duplica, y React Native solo protege de eso en la arquitectura vieja
@@ -141,7 +143,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           onChangeText={setCitySearch}
           placeholder="Busca una ciudad o pueblo"
           placeholderTextColor={colores.textoTenue}
-          style={styles.input}
+          style={[styles.input, letraGrande && styles.inputAnchoEntero]}
           accessibilityLabel="Buscar lugar"
           accessibilityHint="Escribe el nombre de una ciudad o pueblo. Los resultados salen debajo según escribes; con Listo o con la tecla Buscar del teclado lo cierras y se recorren más cómodos"
           // Tecla "Buscar" en el teclado (en vez de Intro); al pulsarla se cierra el teclado y
@@ -307,6 +309,17 @@ const crearEstilos = (c: Paleta) =>
       color: c.textoPrimario,
       fontSize: 17,
       fontWeight: '600',
+    },
+    // Con la letra grande, lo que iba en fila pasa a columna, en el mismo orden (que es el de
+    // VoiceOver): el título partía en «Bu / sc / ar» al lado de «Cerrar», y el campo encogía hasta
+    // dejar su texto más pequeño que con la letra de serie (revisión del 2026-10-10).
+    enColumna: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+    },
+    inputAnchoEntero: {
+      flex: 0,
+      alignSelf: 'stretch',
     },
     searchRow: {
       flexDirection: 'row',

@@ -16,6 +16,7 @@ import { buildDayDetails, formatFullDate } from '../utils/dayDetails';
 import { filaHora } from '../utils/horaTexto';
 import { describeWeatherCode } from '../utils/weatherCodes';
 import { useDesplazableDePuente } from '../desarrollo/desplazables';
+import { useLetraGrande } from '../theme/letraGrande';
 
 interface Props {
   visible: boolean;
@@ -34,6 +35,7 @@ export default function DayDetailModal({
   showSummary = true,
 }: Props) {
   const refDesplazable = useDesplazableDePuente('dia');
+  const letraGrande = useLetraGrande();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const [hours, setHours] = useState<HourlyForecast[]>([]);
@@ -60,6 +62,30 @@ export default function DayDetailModal({
   const skyInfo = describeWeatherCode(day?.weatherCode);
   const details = day ? buildDayDetails(day) : [];
 
+  // Con la letra grande la cabecera va DENTRO del desplazamiento, y «Cerrar» debajo del título: fija,
+  // se comía media hoja («Domin / go, 11 / de / octubr / e», revisión del 2026-10-10). «Cerrar» no
+  // se queda fijo arriba aparte porque VoiceOver lo encontraría antes que el título, y el orden de
+  // siempre es título, cielo, Cerrar. Para cerrar sin subir está el gesto de escape.
+  const cabecera = (
+    <View style={[styles.headerRow, letraGrande && styles.headerRowApilada]}>
+      <View style={[styles.headerText, letraGrande && styles.headerTextApilado]}>
+        <Text style={styles.title} accessibilityRole="header">
+          {day ? formatFullDate(day.date) : 'Detalle del día'}
+        </Text>
+        <Text style={styles.subtitle}>
+          {skyInfo.emoji} {skyInfo.label}
+        </Text>
+      </View>
+      <Pressable
+        style={styles.closeButton}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar detalle del día">
+        <Text style={styles.closeText}>Cerrar</Text>
+      </Pressable>
+    </View>
+  );
+
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       {/* onAccessibilityEscape: gesto de escape de VoiceOver (frotar con dos dedos,
@@ -69,25 +95,10 @@ export default function DayDetailModal({
       <View style={styles.backdrop} onAccessibilityEscape={onClose}>
         <View style={styles.sheet} accessibilityViewIsModal onAccessibilityEscape={onClose}>
           <View style={styles.grabber} importantForAccessibility="no" />
-          <View style={styles.headerRow}>
-            <View style={styles.headerText}>
-              <Text style={styles.title} accessibilityRole="header">
-                {day ? formatFullDate(day.date) : 'Detalle del día'}
-              </Text>
-              <Text style={styles.subtitle}>
-                {skyInfo.emoji} {skyInfo.label}
-              </Text>
-            </View>
-            <Pressable
-              style={styles.closeButton}
-              onPress={onClose}
-              accessibilityRole="button"
-              accessibilityLabel="Cerrar detalle del día">
-              <Text style={styles.closeText}>Cerrar</Text>
-            </Pressable>
-          </View>
+          {!letraGrande && cabecera}
 
           <ScrollView ref={refDesplazable}>
+            {letraGrande && cabecera}
             {showSummary && (
               <>
                 <Text style={styles.sectionHeader} accessibilityRole="header">
@@ -96,11 +107,13 @@ export default function DayDetailModal({
                 {details.map((line) => (
                   <View
                     key={line.title}
-                    style={styles.detailRow}
+                    style={[styles.detailRow, letraGrande && styles.detailRowApilado]}
                     accessible
                     accessibilityLabel={`${line.title}: ${line.spoken}`}>
                     <Text style={styles.detailTitle}>{line.title}</Text>
-                    <Text style={styles.detailValue}>{line.value}</Text>
+                    <Text style={[styles.detailValue, letraGrande && styles.detailValueApilado]}>
+                      {line.value}
+                    </Text>
                   </View>
                 ))}
               </>
@@ -124,17 +137,21 @@ export default function DayDetailModal({
                 return (
                   <View
                     key={item.time}
-                    style={styles.hourRow}
+                    style={[styles.hourRow, letraGrande && styles.hourRowGrande]}
                     accessible
                     accessibilityLabel={fila.spoken}>
-                    <Text style={styles.hourTime} numberOfLines={1}>
+                    <Text
+                      style={[styles.hourTime, letraGrande && styles.anchoLibre]}
+                      numberOfLines={letraGrande ? undefined : 1}>
                       {fila.hora}
                     </Text>
                     <Text style={styles.hourIcon}>{fila.emoji}</Text>
-                    <Text style={styles.hourTemp} numberOfLines={1}>
+                    <Text
+                      style={[styles.hourTemp, letraGrande && styles.anchoLibre]}
+                      numberOfLines={letraGrande ? undefined : 1}>
                       {fila.temperatura}
                     </Text>
-                    <View style={styles.hourMeta}>
+                    <View style={[styles.hourMeta, letraGrande && styles.hourMetaGrande]}>
                       <Text style={styles.hourMetaText}>{fila.lluvia}</Text>
                       <Text style={styles.hourMetaText}>{fila.viento}</Text>
                       {/* El rumbo va en su propia línea: "Viento 12 km/h del noroeste" seguido no
@@ -190,6 +207,13 @@ const crearEstilos = (c: Paleta) =>
       flex: 1,
       gap: 2,
     },
+    headerRowApilada: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+    },
+    headerTextApilado: {
+      flex: 0,
+    },
     title: {
       color: c.texto,
       fontSize: 22,
@@ -239,6 +263,16 @@ const crearEstilos = (c: Paleta) =>
       flexShrink: 1,
       textAlign: 'right',
     },
+    // Con la letra grande, nombre arriba y valor debajo: en fila, el valor se quedaba con el hueco
+    // que deja el nombre y acababa en una columna de una letra (revisión del 2026-10-10).
+    detailRowApilado: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
+      gap: 2,
+    },
+    detailValueApilado: {
+      textAlign: 'left',
+    },
     note: {
       color: c.textoTenue,
       fontSize: 15,
@@ -281,6 +315,24 @@ const crearEstilos = (c: Paleta) =>
     hourMeta: {
       alignItems: 'flex-end',
       gap: 2,
+    },
+    // Con la letra grande no hay anchos fijos ni una sola línea: la hora salía como «3…» y la
+    // temperatura como «1…», y el viento se salía por la derecha (revisión del 2026-10-10). La
+    // hora, el icono y la temperatura quedan arriba y la lluvia y el viento bajan a su línea.
+    hourRowGrande: {
+      flexWrap: 'wrap',
+      justifyContent: 'flex-start',
+      columnGap: 12,
+      rowGap: 4,
+    },
+    anchoLibre: {
+      width: 'auto',
+      flexShrink: 1,
+      textAlign: 'left',
+    },
+    hourMetaGrande: {
+      flexBasis: '100%',
+      alignItems: 'flex-start',
     },
     hourMetaText: {
       color: c.textoMeta,

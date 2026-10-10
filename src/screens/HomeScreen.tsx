@@ -17,22 +17,16 @@ import { crearEstilos, PaginaLugar } from '../components/PrevisionLugar';
 import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
 import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import { useColores } from '../theme/ThemeContext';
+import { TOPE_TITULO } from '../theme/letraGrande';
 import { DayForecast, Place } from '../types';
 import { claveDeLugares, paginaQueTocaMostrar } from '../utils/paginasLugar';
 
-/**
- * Tope de crecimiento del titulo de la pantalla.
- *
+/*
  * La cabecera es FIJA: no se desliza con las paginas. Sin tope, con los tamanos de accesibilidad
  * al maximo (x3,571) un nombre largo como «Carabanchel, Madrid» ocupa las cuatro lineas y la
- * pantalla entera, y del tiempo no se ve nada. Medido con el puente el 2026-10-06.
- *
- * Es lo mismo que hace Apple con sus titulos grandes: crecen, pero con tope. El precio esta
- * asumido y conviene no olvidarlo: a quien pida el tamano maximo, este texto concreto le queda
- * por debajo de lo que pidio. Se limita SOLO el titulo, que es el que puede ser largo de verdad;
- * el resto de la pantalla escala sin tope.
+ * pantalla entera, y del tiempo no se ve nada. Medido con el puente el 2026-10-06. Cuanto, en
+ * TOPE_TITULO (theme/letraGrande.ts), compartido con los demas titulos grandes.
  */
-const TOPE_TITULO = 2;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();

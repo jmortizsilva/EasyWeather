@@ -11,6 +11,7 @@ import AvisosOficiales from './AvisosOficiales';
 import AvisosResumen from './AvisosResumen';
 import { crearEstilos } from './estilos';
 import { useDesplazableDePuente } from '../../desarrollo/desplazables';
+import { TOPE_TITULO } from '../../theme/letraGrande';
 
 // La pestaña Avisos es un indice, no un formulario. Antes era una sola pantalla con las tres cosas
 // seguidas —temperatura, resumenes y avisos oficiales—, y con VoiceOver llegar a la ultima eran
@@ -89,7 +90,7 @@ export default function AvisosIndexScreen() {
         accessibilityLabel="Pantalla Avisos"
         accessibilityElementsHidden={abierta !== undefined}
         importantForAccessibility={abierta !== undefined ? 'no-hide-descendants' : 'auto'}>
-        <Text style={styles.title} accessibilityRole="header">
+        <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
           Avisos
         </Text>
 

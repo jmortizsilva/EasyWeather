@@ -90,14 +90,21 @@ export const dayRowStyles = StyleSheet.create({
   },
   dayRight: {
     flexDirection: 'row',
+    // Sin esto, con la letra grande la lluvia se salía por la derecha y no se veía (revisión del
+    // 2026-10-10). Así baja a la línea siguiente cuando no cabe; con la letra de serie cabe y no
+    // cambia nada.
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: 12,
+    columnGap: 12,
+    rowGap: 4,
   },
   daySky: {
     fontSize: 18,
   },
   dayTemp: {
     fontSize: 17,
+    // Al máximo, «11,8° / 23,6°» no cabe ni sola en la línea: que se parta en vez de cortarse.
+    flexShrink: 1,
   },
   dayMeta: {
     fontSize: 15,

@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useColores } from '../../theme/ThemeContext';
+import { TOPE_TITULO } from '../../theme/letraGrande';
 import { crearEstilos } from './estilos';
 
 // Cabecera de una subpantalla de Avisos: el boton de volver ARRIBA A LA IZQUIERDA y primero en el
@@ -41,7 +42,7 @@ export default function Cabecera({
         {/* El chevron es el de iOS. No se lee: la etiqueta ya dice "Atrás". */}
         <Text style={styles.botonVolverTexto}>‹ Atrás</Text>
       </Pressable>
-      <Text style={styles.title} accessibilityRole="header">
+      <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
         {titulo}
       </Text>
     </View>
