@@ -27,7 +27,7 @@ adivinan:
   intentando traer al frente la ventana del Simulador. El error es decorativo —la app ya está
   compilada, instalada y abierta— pero **se lleva por delante el proceso, y con él Metro**. La
   forma que no toca AppleScript: `npx expo start --dev-client` en un terminal y
-  `xcrun simctl openurl booted "<enlace>"` en otro.
+  `xcrun simctl launch … --initialUrl` en otro (ver §5).
 - **`codesign` no puede usar el llavero.** Es todo el §2.
 
 Y dos cosas de `zsh` que cuestan una hora si no se saben: **una variable no se parte en palabras**
@@ -161,7 +161,7 @@ Y para abrir la app apuntando a ese Metro, desde otro terminal (sin pulsar `i`, 
 AppleScript del §1):
 
 ```bash
-xcrun simctl openurl booted "exp+tiempo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+xcrun simctl launch --terminate-running-process booted com.jmortizsilva.tiempo.dev --initialUrl "http://localhost:8081"
 ```
 
 En el simulador vale `localhost`: comparte la red del Mac.
@@ -171,9 +171,24 @@ revisión del 6 de octubre: las condiciones de accesibilidad se ponen desde el t
 comprobar, en vez de pedirlas a mano y no saber si han llegado.
 
 ```bash
-xcrun simctl ui booted content-size accessibility-extra-extra-extra-large
+xcrun simctl ui booted content_size accessibility-extra-extra-extra-large
 xcrun simctl ui booted appearance dark
 ```
+
+Con **guion bajo**: `content-size` no existe y `simctl` contesta con su ayuda, sin error que se
+vea entre tanta salida. Así se perdió una tanda entera de capturas el 2026-10-10, todas a escala 1.
+Por eso, después de cambiarlo, se mira la escala con el servicio `entorno` del puente.
+
+Dos cosas más del simulador sin pantalla, del mismo día:
+
+- **`simctl openurl` saca un diálogo «¿Abrir en EasyWeather Dev?»** que no se puede pulsar desde
+  la terminal, y se queda encima de la app hasta reiniciar el simulador. Para abrir la app apuntando
+  a Metro sin diálogo: `xcrun simctl launch booted com.jmortizsilva.tiempo.dev --initialUrl
+  "http://localhost:8081"` (lo lee `EXDevLauncherController.m`, `initialUrlFromProcessInfo`).
+- **El menú de bienvenida del cliente de desarrollo** tapa media pantalla en el primer arranque.
+  Se da por visto con
+  `xcrun simctl spawn booted defaults write com.jmortizsilva.tiempo.dev EXDevMenuIsOnboardingFinished -bool YES`.
+
 
 Ver [REVISAR-ACCESIBILIDAD.md](REVISAR-ACCESIBILIDAD.md) para el resto del procedimiento con el
 puente.
@@ -214,7 +229,10 @@ puente.
   el esperado, el plugin para la compilación en vez de dejarlo a medias.
 
   Comprobado en el iPhone con iOS 27.0.1: arranca, carga el código de Metro y la captura por el
-  puente enseña la pantalla Hoy con datos. **Cuando Expo lo conecte de serie** (mirar en cada
+  puente enseña la pantalla Hoy con datos. **Y en la nube también**: la build development de EAS
+  `cd8be13a` (commit `c53d27d`) lleva la escena en su `Info.plist` y arranca igual en el iPhone. Su
+  `Info.plist` dice además con qué compila EAS el SDK 57 a esa fecha: `DTXcode` 2660 y
+  `iphoneos26.5`. Para saber si ha cambiado, se mira ahí, en el `.ipa` descargado. **Cuando Expo lo conecte de serie** (mirar en cada
   subida de SDK), el plugin lanzará al no encontrar lo que busca: es la señal para quitarlo.
 
   **Subir `expo` costó una trampa de npm**: `npx expo install --fix` instala los paquetes en dos

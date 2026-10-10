@@ -8,7 +8,8 @@
 # Uso:  herramientas/compilar-simulador.sh ["iPhone 16 Pro"]
 #
 # Despues:  npx expo start --dev-client          (en un terminal, y se deja)
-#           xcrun simctl openurl booted "exp+tiempo://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
+#           xcrun simctl launch --terminate-running-process booted com.jmortizsilva.tiempo.dev --initialUrl "http://localhost:8081"
+#           (no `simctl openurl`: saca un dialogo de confirmacion que por SSH no se puede pulsar)
 #
 # Cada orden de aqui se ejecuto a mano y funciono el 2026-10-09, pero el guion completo todavia no
 # se ha ejecutado de una pasada. El detalle y el porque de cada paso: docs/COMPILAR-EN-EL-MAC.md
@@ -58,4 +59,4 @@ if ! xcrun simctl list devices booted | grep -q '([0-9A-F-]*) (Booted)'; then
 fi
 
 xcrun simctl install booted "$APP"
-echo "== Instalada. Ahora: npx expo start --dev-client, y abrir con simctl openurl (ver cabecera)"
+echo "== Instalada. Ahora: npx expo start --dev-client, y abrir con simctl launch --initialUrl (ver cabecera)"

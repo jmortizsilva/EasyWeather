@@ -89,7 +89,7 @@ No hay carpeta `ios/` y está en `.gitignore`: los nativos se generan al compila
 ### Lo que de verdad vale, y es por donde empezar
 
 - **Las condiciones de accesibilidad se ponen desde la terminal**, no a mano en Ajustes:
-  `xcrun simctl ui booted content-size accessibility-extra-extra-extra-large` y
+  `xcrun simctl ui booted content_size accessibility-extra-extra-extra-large` y
   `xcrun simctl ui booted appearance dark`. El 2026-10-06 se anularon dos tandas porque un ajuste
   no había llegado todavía al teléfono y no había forma de saberlo. Esto lo vuelve determinista: se
   pone, se lee con el servicio `entorno` del puente, y si no coincide no se sigue. De los siete

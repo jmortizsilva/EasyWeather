@@ -81,6 +81,36 @@ Si solo hay tiempo para una además de la normal, **texto grande + modo oscuro**
 Al final, lo encontrado se escribe en `docs/` con fecha: qué se revisó, qué salió, qué se arregló y
 qué se dejó pendiente con su motivo.
 
+## Lo que queda por debajo de la pantalla
+
+La tanda solo fotografía lo que cabe en la pantalla, y con la letra grande lo roto suele estar
+abajo: así se le escapó a la revisión del 6 de octubre todo lo de la
+[del 10](REVISION-ACCESIBILIDAD-2026-10-10.md). Para eso hay tres servicios, añadidos el
+2026-10-10:
+
+```bash
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json" \
+     -d '{"servicio":"desplazables"}'                                  # qué zonas hay ahora
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json" \
+     -d '{"servicio":"paginaCompleta","parametros":{"nombre":"hoy"}}'  # la zona entera, en base64
+curl -X POST http://127.0.0.1:8790/pedir -H "content-type: application/json" \
+     -d '{"servicio":"desplazar","parametros":{"nombre":"hoy","y":1800}}'
+```
+
+Cada zona se apunta en su pantalla con `useDesplazableDePuente('nombre')`
+([`src/desarrollo/desplazables.ts`](../src/desarrollo/desplazables.ts)). Hay: `hoy` (la página
+del lugar que está delante), `dia`, `estacion`, `avisos-del-lugar`, `lugares`, `buscar`, `avisos`,
+`aviso-temperatura`, `avisos-resumen`, `resumen-editor` y `fenomenos`. Una zona solo existe
+mientras está montada: las ventanas hay que abrirlas antes.
+
+Para las ventanas de «Hoy» hay acciones: `abrirDia` (la ficha de mañana), `abrirHoraAHora` (la de
+hoy), `abrirEstacion`, `abrirAvisosDelLugar` y `cerrarVentana`.
+
+**`paginaCompleta` se deja cosas**: dibuja con `renderInContext`, porque el método normal falla
+con zonas altas, y ese no pinta el texto de los botones ni del campo de búsqueda, entre otras
+cosas. Lo que salga raro ahí se confirma con `desplazar` y una captura normal antes de darlo por
+fallo. Y `desplazar` no frena al final del contenido: una `y` de más enseña un hueco en blanco.
+
 ## Medir, cuando la captura no basta
 
 Una captura dice QUE algo no cabe, pero no CUÁNTO ocupa cada cosa. Para eso están dos servicios:
