@@ -256,10 +256,18 @@ distancia mínima a la costa dibujada.
 - **Canarias va con un solo radar**, en Las Palmas. Hay que comprobar isla por isla quién queda
   dentro; las occidentales probablemente no.
 
-**APARCADO el 2026-10-05.** Queda por hacer los catorce radares restantes, cada uno con su búsqueda a
-ciegas y su tabla de sensibilidad, y dejarlo commiteado como prueba automática —una por radar, para
-que un anclaje equivocado no pueda colarse en silencio—. El script de la comprobación de Barcelona no
-se guardó: son unas setenta líneas y se reescriben con lo que hay aquí.
+**HECHO el 2026-10-10, y con un método mejor que el de la costa.** AEMET dibuja en amarillo también
+los **límites de provincia**, así que se busca el centro con el que cada pueblo del INE cae en el
+recinto de su provincia. Sirve igual en los radares de interior, donde no hay costa, y es más fino:
+con el centro bueno queda fuera menos del 1 % de los pueblos, y movido 5 km, entre el 3 y el 9 %.
+Barcelona sale a 0,3 km de lo medido por la costa; la precisión es de un kilómetro. Los quince están
+en `radares.ts` del servidor (commit `7385ffd`), con la proyección a píxel en `proyeccion.ts` y una
+prueba por radar, `anclaje.test.ts`, que falla si alguno se mueve.
+
+Las dos trampas que salieron: en Baleares y Canarias el primer resultado cayó en mitad del mar
+(con casi ningún pueblo dentro del disco, casi ninguno cae mal), y se arregló exigiendo que ninguno
+caiga en el mar, contando cada isla como recinto aparte. Y Vizcaya se queda en un 3 % por los
+enclaves, como Treviño.
 
 **Las dos trampas que ya se ven, antes de escribir nada:**
 
@@ -461,8 +469,7 @@ si el radar no contestó; y algo para la noche.
   los píxeles que tienen eco en una fracción alta de las imágenes a lo largo de semanas. Eso exige
   **empezar a guardar barridos ya**, y es además lo único que permitirá después juzgar si un aviso
   habría acertado (AEMET solo sirve la última imagen: lo que no se guarde, se pierde).
-- **El ancla de cada radar.** Ya no es un problema sin solución —se busca a ciegas contra la costa
-  dibujada, ver arriba—, pero de los quince solo está medido Barcelona.
+- ~~**El ancla de cada radar.**~~ Resuelto el 2026-10-10 para los quince, ver arriba.
 - **El cron**, de 20 minutos a 5.
 
 ### Lo fiable que es la fuente
