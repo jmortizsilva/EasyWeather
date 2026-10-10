@@ -9,7 +9,7 @@ que hay aquí se ejecutó, y lo que no funcionó está marcado como tal.** Lo ge
 | Destino | Estado |
 |---|---|
 | **Simulador** | Compila, se instala y arranca. Es el camino bueno. |
-| **iPhone de verdad** | Compila y se instala, pero **la app se aborta al arrancar** (`signal 5`). Sin resolver, ver §6. |
+| **iPhone de verdad** | Compila, se instala y arranca desde el 2026-10-10, con el plugin de escenas. Antes se abortaba (`signal 5`): ver §6. |
 
 Para el ciclo corto: `herramientas/compilar-simulador.sh`, que hace de una vez todo lo de §3 y §4.
 
@@ -180,28 +180,49 @@ puente.
 
 ## 6. Lo que queda sin resolver
 
-- **La app se aborta al arrancar en el iPhone.** Se instala bien
-  (`xcrun devicectl device install app`), arranca y muere:
+- **La app se aborta al arrancar en el iPhone, y es iOS 27 exigiendo escenas.** Se instala bien
+  (`xcrun devicectl device install app`), arranca y muere con `App terminated due to signal 5`.
 
-  ```
-  Launched application with com.jmortizsilva.tiempo.dev bundle identifier.
-  App terminated due to signal 5.
-  ```
+  **La causa, encontrada el 2026-10-10 en el informe de fallo del propio teléfono**: el hilo que
+  cae está en `_UIApplicationEvaluateRuntimeIssueForNoSceneLifecycleAdoption`, dentro de UIKit.
+  Apple avisó en 2025 de que, en la versión siguiente a iOS 26, una app compilada con el SDK nuevo
+  que no adopte el ciclo de vida por escenas (`UIScene`) **no arranca**. Eso es justo esto: SDK
+  `iphoneos27.0` en el Mac e iOS 27.0.1 en el teléfono. Encaja con todo lo demás:
 
-  `signal 5` es SIGTRAP: código nativo que se aborta a propósito. **En el simulador la misma
-  compilación no se cae** y no hay informe de fallo en `~/Library/Logs/DiagnosticReports`, así que
-  apunta al aparato y no al código. Lo primero que hay que descartar, y que no se llegó a
-  comprobar, es el **Modo de desarrollador** del iPhone (Ajustes → Privacidad y seguridad), que iOS
-  exige desde la versión 16 para las apps firmadas con certificado de desarrollo; encaja con que la
-  build de EAS de agosto sí funcione, porque aquella es de distribución interna y no lo necesita:
+  - **El simulador no se cae** porque sus runtimes son de iOS 18.2, donde la comprobación no existe.
+  - **Las builds de EAS sí arrancan** (la de la Store, la development `7f254415` del 6 de octubre)
+    porque la imagen de EAS del SDK 57 todavía compila con el SDK de iOS 26. **El día que EAS pase a
+    Xcode 27, o que Apple exija ese SDK para enviar, la app de la Store se caerá igual.**
+  - **El Modo de desarrollador no era**: está activado (`Developer Mode Status: Enabled`).
+
+  Cómo se sacó el informe, sin interfaz gráfica:
 
   ```bash
-  xcrun devicectl device info details --device <udid> | grep -i developer
+  xcrun devicectl device info files --device <udid> --domain-type systemCrashLogs | grep EasyWeather
+  xcrun devicectl device copy from --device <udid> --domain-type systemCrashLogs \
+    --source Retired/EasyWeatherDev-<fecha>.ips --destination <carpeta>/
   ```
 
-  Y si no es eso: **los registros nativos de iOS no van a la salida estándar**, así que
-  `devicectl … launch --console` sale en blanco y Metro ni se entera. Hay que leer el registro del
-  sistema del teléfono o su informe de fallo, y sin interfaz gráfica eso es trabajo aparte.
+  El `.ips` es una línea de JSON de cabecera y luego otro JSON; la pila está en
+  `threads[faultingThread].frames`, con el nombre de la librería en `usedImages`.
+
+  **Arreglado el mismo día.** Expo lo trae desde **`expo` 57.0.27**, con la clase
+  `ExpoAppSceneDelegate`, cuyo comentario dice literalmente que la exige iOS 27. Pero **no se
+  conecta sola**: ni la plantilla nativa del SDK 57 ni los config plugins de 57.0.x la usan. Lo
+  conecta `plugins/ciclo-de-vida-por-escenas.js`: declara la escena en el `Info.plist` y quita del
+  `AppDelegate` la creación de la ventana y el arranque de React Native. Si el `AppDelegate` no es
+  el esperado, el plugin para la compilación en vez de dejarlo a medias.
+
+  Comprobado en el iPhone con iOS 27.0.1: arranca, carga el código de Metro y la captura por el
+  puente enseña la pantalla Hoy con datos. **Cuando Expo lo conecte de serie** (mirar en cada
+  subida de SDK), el plugin lanzará al no encontrar lo que busca: es la señal para quitarlo.
+
+  **Subir `expo` costó una trampa de npm**: `npx expo install --fix` instala los paquetes en dos
+  tandas, y `jest-expo` 57.0.4 ya instalado ataba el preset de pruebas a la 0.86.2 mientras
+  `react-native` 0.86.3 pedía la 0.86.3. Ni borrar `node_modules` lo resolvía, porque el
+  `package-lock.json` volvía a dictar lo mismo. Se arregló borrando del lockfile las entradas de
+  `node_modules/jest-expo` y `node_modules/@react-native/jest-preset` y reinstalando.
+
 - **Los runtimes de simulador instalados son de iOS 18.2** aunque Xcode sea 27.0. Sirven, pero para
   probar algo propio de iOS 27 hay que descargar ese runtime.
 
