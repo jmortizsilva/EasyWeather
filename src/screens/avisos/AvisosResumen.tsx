@@ -11,6 +11,7 @@ import Cabecera from './Cabecera';
 import { crearEstilos } from './estilos';
 import { PlaceOption, placeName, usePlaceOptions } from './lugares';
 import SwitchRow from './SwitchRow';
+import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
 // Editor de un aviso de resumen. Mantiene su propio borrador; nada se guarda hasta pulsar Guardar.
 //
@@ -32,6 +33,7 @@ function SummaryEditor({
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
+  const refDesplazable = useDesplazableDePuente('resumen-editor');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -53,6 +55,7 @@ function SummaryEditor({
   return (
     <View style={styles.capa} accessibilityViewIsModal onAccessibilityEscape={onClose}>
       <ScrollView
+        ref={refDesplazable}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel={isNew ? 'Nuevo aviso de resumen' : 'Editar aviso de resumen'}
         style={styles.hoja}>
@@ -163,6 +166,7 @@ function SummaryEditor({
 }
 
 export default function AvisosResumen({ onCerrar }: { onCerrar: () => void }) {
+  const refDesplazable = useDesplazableDePuente('avisos-resumen');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -175,6 +179,7 @@ export default function AvisosResumen({ onCerrar }: { onCerrar: () => void }) {
   return (
     <View style={styles.hoja}>
       <ScrollView
+        ref={refDesplazable}
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel="Avisos de resumen"

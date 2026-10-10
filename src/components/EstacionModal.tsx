@@ -16,6 +16,7 @@ import { Place } from '../types';
 import { EstacionCandidata, filaAutomatica, filaEstacion } from '../utils/estaciones';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { vibrarConfirmacion } from '../utils/haptica';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 // Elegir la estacion de AEMET de un lugar. Se abre tocando la linea de la medicion.
 //
@@ -35,6 +36,7 @@ interface Props {
 }
 
 export default function EstacionModal({ visible, place, elevacion, onClose }: Props) {
+  const refDesplazable = useDesplazableDePuente('estacion');
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const { estacionPorLugar, elegirEstacion } = usePlaces();
@@ -118,7 +120,7 @@ export default function EstacionModal({ visible, place, elevacion, onClose }: Pr
           )}
 
           {estado === 'listo' && (
-            <ScrollView>
+            <ScrollView ref={refDesplazable}>
               <Pressable
                 style={[styles.fila, !elegida && styles.filaElegida]}
                 onPress={() => void elegir(undefined)}

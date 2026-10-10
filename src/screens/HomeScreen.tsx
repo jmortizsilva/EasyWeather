@@ -15,6 +15,7 @@ import DayDetailModal from '../components/DayDetailModal';
 import EstacionModal from '../components/EstacionModal';
 import { crearEstilos, PaginaLugar } from '../components/PrevisionLugar';
 import { CURRENT_LOCATION_ID, PrevisionGuardada, usePlaces } from '../state/PlacesContext';
+import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
 import { claveDeLugares, paginaQueTocaMostrar } from '../utils/paginasLugar';
@@ -183,6 +184,26 @@ export default function HomeScreen() {
   const cargando = loadingForecast || loadingLocation;
   // Título: el lugar de la página que se está viendo.
   const lugarVisible = hayPaginas ? seleccionables[indicePagina] : activePlace;
+
+  // Para las tandas de capturas del puente: las ventanas que se abren desde «Hoy», del lugar que
+  // está delante. Mañana y no hoy en `abrirDia`, para ver la ficha con el resumen del día.
+  useAccionesDeDesarrollo({
+    abrirDia: () => {
+      const dia = lugarVisible && previsionDe(lugarVisible)?.forecast?.days[1];
+      if (dia) abrirDia(dia, true);
+    },
+    abrirHoraAHora: () => {
+      const dia = lugarVisible && previsionDe(lugarVisible)?.forecast?.days[0];
+      if (dia) abrirDia(dia, false);
+    },
+    abrirEstacion: () => setEstacionDe(lugarVisible),
+    abrirAvisosDelLugar: () => setAvisosDe(lugarVisible),
+    cerrarVentana: () => {
+      setDetail(undefined);
+      setEstacionDe(undefined);
+      setAvisosDe(undefined);
+    },
+  });
 
   return (
     <View style={styles.screen}>

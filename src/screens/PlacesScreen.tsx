@@ -14,8 +14,10 @@ import { TempGuardada, textoTempActual } from '../utils/tempActual';
 import { MarcaElegida } from '../components/MarcaElegida';
 import { useAccionesDeDesarrollo } from '../desarrollo/automatizacion';
 import SearchScreen from './SearchScreen';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 export default function PlacesScreen() {
+  const refDesplazable = useDesplazableDePuente('lugares');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -106,6 +108,7 @@ export default function PlacesScreen() {
 
   return (
     <ScrollView
+      ref={refDesplazable}
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Mis lugares">

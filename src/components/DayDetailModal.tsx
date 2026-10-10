@@ -15,6 +15,7 @@ import { DayForecast, HourlyForecast, Place } from '../types';
 import { buildDayDetails, formatFullDate } from '../utils/dayDetails';
 import { filaHora } from '../utils/horaTexto';
 import { describeWeatherCode } from '../utils/weatherCodes';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 interface Props {
   visible: boolean;
@@ -32,6 +33,7 @@ export default function DayDetailModal({
   onClose,
   showSummary = true,
 }: Props) {
+  const refDesplazable = useDesplazableDePuente('dia');
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const [hours, setHours] = useState<HourlyForecast[]>([]);
@@ -85,7 +87,7 @@ export default function DayDetailModal({
             </Pressable>
           </View>
 
-          <ScrollView>
+          <ScrollView ref={refDesplazable}>
             {showSummary && (
               <>
                 <Text style={styles.sectionHeader} accessibilityRole="header">

@@ -17,6 +17,7 @@ import { DEFAULT_THRESHOLD } from '../../utils/ajustesAvisos';
 import Cabecera from './Cabecera';
 import { crearEstilos } from './estilos';
 import SwitchRow from './SwitchRow';
+import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
 // Id de la barra "Listo" que se ancla sobre el teclado numerico (solo iOS): sin ella, el teclado
 // tapa el boton "Guardar aviso" y no habia forma clara de cerrarlo. Los teclados numericos no traen
@@ -24,6 +25,7 @@ import SwitchRow from './SwitchRow';
 const TECLADO_GRADOS_ID = 'avisoTemperaturaTeclado';
 
 export default function AvisoTemperatura({ onCerrar }: { onCerrar: () => void }) {
+  const refDesplazable = useDesplazableDePuente('aviso-temperatura');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -64,6 +66,7 @@ export default function AvisoTemperatura({ onCerrar }: { onCerrar: () => void })
 
   return (
     <ScrollView
+      ref={refDesplazable}
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Aviso de temperatura">

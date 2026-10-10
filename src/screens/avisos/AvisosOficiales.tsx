@@ -8,6 +8,7 @@ import Cabecera from './Cabecera';
 import { crearEstilos } from './estilos';
 import Fenomenos from './Fenomenos';
 import SwitchRow from './SwitchRow';
+import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
 // Los tres niveles de AEMET, de menos a mas grave. Cada uno lleva escrito de que avisa, y no por
 // adorno: el nivel es una palabra de color, y quien no vea colores necesita saber que significa
@@ -23,6 +24,7 @@ const NIVELES: { valor: NivelAviso; etiqueta: string; pista: string }[] = [
 ];
 
 export default function AvisosOficiales({ onCerrar }: { onCerrar: () => void }) {
+  const refDesplazable = useDesplazableDePuente('avisos-oficiales');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -42,6 +44,7 @@ export default function AvisosOficiales({ onCerrar }: { onCerrar: () => void }) 
   return (
     <View style={styles.hoja}>
       <ScrollView
+        ref={refDesplazable}
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel="Avisos oficiales de AEMET"

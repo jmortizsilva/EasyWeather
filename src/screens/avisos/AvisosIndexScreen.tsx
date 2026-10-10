@@ -10,6 +10,7 @@ import AvisoTemperatura from './AvisoTemperatura';
 import AvisosOficiales from './AvisosOficiales';
 import AvisosResumen from './AvisosResumen';
 import { crearEstilos } from './estilos';
+import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
 // La pestaña Avisos es un indice, no un formulario. Antes era una sola pantalla con las tres cosas
 // seguidas —temperatura, resumenes y avisos oficiales—, y con VoiceOver llegar a la ultima eran
@@ -26,6 +27,7 @@ const TITULOS: Record<Seccion, string> = {
 };
 
 export default function AvisosIndexScreen() {
+  const refDesplazable = useDesplazableDePuente('avisos');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -81,6 +83,7 @@ export default function AvisosIndexScreen() {
   return (
     <>
       <ScrollView
+        ref={refDesplazable}
         style={styles.screen}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel="Pantalla Avisos"

@@ -22,6 +22,7 @@ import {
 } from 'react-native';
 
 import { ejecutarAccion, listarAcciones } from './automatizacion';
+import { leerDesplazable, listarDesplazables } from './desplazables';
 import { navegarPorPuente } from './navegacion';
 import { registrarServicio } from './puente';
 import { leerMedidas } from './medidas';
@@ -50,6 +51,54 @@ export function registrarServiciosDeDesarrollo(): void {
     return {
       formato: 'png',
       base64: await vs.captureScreen({ format: 'png', result: 'base64' }),
+    };
+  });
+
+  /*
+   * Una zona desplazable entera, de arriba abajo: `{"nombre":"lugares"}`. Lo que
+   * la captura normal no ve porque queda por debajo. Los nombres los apunta cada
+   * pantalla con `useDesplazableDePuente`; `desplazables` dice cuáles hay ahora.
+   * La librería se carga igual que en `pantalla`, y por lo mismo.
+   */
+  registrarServicio('desplazables', () => listarDesplazables());
+
+  /*
+   * Llevar una zona a una altura: `{"nombre":"hoy","y":1200}`. Para comprobar con
+   * una captura normal lo que `paginaCompleta` enseña, porque su forma de dibujar
+   * (renderInContext) puede dejarse cosas. Ojo: React Native no frena al final
+   * del contenido, así que una `y` de más enseña un hueco en blanco.
+   */
+  registrarServicio('desplazar', (parametros) => {
+    const { nombre = '', y = 0 } = (parametros ?? {}) as { nombre?: string; y?: number };
+    const vista = leerDesplazable(nombre);
+    if (!vista) {
+      throw new Error(
+        `No hay ninguna zona "${nombre}". Hay: ${listarDesplazables().join(', ') || 'ninguna'}`,
+      );
+    }
+    vista.scrollTo({ y, animated: false });
+    return { nombre, y };
+  });
+  registrarServicio('paginaCompleta', async (parametros) => {
+    const nombre = (parametros as { nombre?: string } | undefined)?.nombre ?? '';
+    const vista = leerDesplazable(nombre);
+    if (!vista) {
+      throw new Error(
+        `No hay ninguna zona "${nombre}". Hay: ${listarDesplazables().join(', ') || 'ninguna'}`,
+      );
+    }
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const vs = require('react-native-view-shot') as typeof import('react-native-view-shot');
+    return {
+      formato: 'png',
+      base64: await vs.captureRef(vista, {
+        format: 'png',
+        result: 'base64',
+        snapshotContentContainer: true,
+        // El método normal (drawViewHierarchyInRect) falla con zonas altas: medido el 2026-10-10
+        // con «Hoy» y la letra al máximo. Este es el que la librería da para vistas grandes.
+        useRenderInContext: true,
+      }),
     };
   });
 

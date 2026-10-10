@@ -19,6 +19,7 @@ import { avisoSinDato, ofrecerEstacionSinMedicion } from '../utils/estaciones';
 import { describirObservacion } from '../utils/observacionTexto';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 // La previsión de UN lugar. La usan la pantalla Hoy (una por página del carrusel) y la vista
 // previa de un lugar buscado, para que las dos muestren y lean exactamente lo mismo.
@@ -82,6 +83,7 @@ export function PaginaLugar({
   onAbrirAvisos,
   ocultarActualizar = false,
 }: PaginaProps) {
+  const refDesplazable = useDesplazableDePuente('hoy', esActiva);
   const forecast = prevision?.forecast;
   const currentInfo = describeWeatherCode(forecast?.current?.weatherCode);
   const today = forecast?.days[0];
@@ -122,6 +124,7 @@ export function PaginaLugar({
 
   return (
     <ScrollView
+      ref={refDesplazable}
       style={styles.pagina}
       contentContainerStyle={styles.content}
       accessibilityLabel={`Previsión de ${place.name}`}>

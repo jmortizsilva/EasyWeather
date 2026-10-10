@@ -7,6 +7,7 @@ import { FenomenoAviso } from '../../types';
 import Cabecera from './Cabecera';
 import { crearEstilos } from './estilos';
 import SwitchRow from './SwitchRow';
+import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
 // De que fenomenos quiero que me llegue una notificacion.
 //
@@ -23,6 +24,7 @@ export default function Fenomenos({
   onCambiar: (silenciados: string[]) => void;
   onCerrar: () => void;
 }) {
+  const refDesplazable = useDesplazableDePuente('fenomenos');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -51,6 +53,7 @@ export default function Fenomenos({
   return (
     <View style={styles.capa} accessibilityViewIsModal onAccessibilityEscape={onCerrar}>
       <ScrollView
+        ref={refDesplazable}
         style={styles.hoja}
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
         accessibilityLabel="Fenómenos de los que avisar">

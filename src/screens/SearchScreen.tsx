@@ -19,6 +19,7 @@ import { vibrarConfirmacion } from '../utils/haptica';
 import { mezclarMunicipios } from '../utils/municipios';
 import { ordenarPorCercania } from '../utils/ordenarResultados';
 import { describirResultados } from '../utils/resultadosBusqueda';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 const SEARCH_DEBOUNCE_MS = 400;
 
@@ -30,6 +31,7 @@ interface Props {
 }
 
 export default function SearchScreen({ onClose, onVerPrevision }: Props) {
+  const refDesplazable = useDesplazableDePuente('buscar');
   const insets = useSafeAreaInsets();
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
@@ -95,6 +97,7 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
 
   return (
     <ScrollView
+      ref={refDesplazable}
       style={styles.screen}
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
       accessibilityLabel="Pantalla Buscar lugar"

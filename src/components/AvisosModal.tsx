@@ -3,6 +3,7 @@ import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
 import { AvisoOficial } from '../types';
+import { useDesplazableDePuente } from '../desarrollo/desplazables';
 
 // El detalle de los avisos OFICIALES de AEMET de un lugar. Se abre desde el anuncio de arriba.
 //
@@ -18,6 +19,7 @@ interface Props {
 }
 
 export default function AvisosModal({ visible, avisos, lugar, onClose }: Props) {
+  const refDesplazable = useDesplazableDePuente('avisos-del-lugar');
   const colores = useColores();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
 
@@ -43,7 +45,7 @@ export default function AvisosModal({ visible, avisos, lugar, onClose }: Props) 
             </Pressable>
           </View>
 
-          <ScrollView>
+          <ScrollView ref={refDesplazable}>
             {avisos.map((aviso) => {
               const color = colores.aviso[aviso.level];
               return (
