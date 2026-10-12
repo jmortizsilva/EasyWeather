@@ -14,6 +14,7 @@
 hoy         hoy
 lugares     lugares
 lugares     lugares-busqueda        abrirBusqueda
+lugares     lugares-previa          abrirPrevision
 lugares     lugares-tras-cerrar     cerrarBusqueda
 avisos      avisos
 avisos      avisos-temperatura      abrirTemperatura
@@ -25,7 +26,6 @@ avisos      avisos-tras-cerrar      cerrarSeccion
 #
 # - "Hoy" sin ubicacion todavia, cargando o con error de red: dependen de permisos y de la red, no
 #   de un estado que se pueda pedir. La captura de "hoy" sale con lo que haya.
-# - La vista previa de un lugar (dentro de la busqueda) necesita un resultado concreto elegido.
 # - Las capas de un nivel mas hondo: el editor de un resumen y la lista de fenomenos, dentro de sus
 #   hojas. Harian falta acciones nuevas en AvisosResumen y Fenomenos.
 # - Los dialogos nativos del sistema (permiso de ubicacion, de notificaciones) pueden no salir en la

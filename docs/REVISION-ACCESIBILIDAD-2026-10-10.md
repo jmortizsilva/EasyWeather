@@ -91,6 +91,11 @@ saliendo pequeño** con la letra grande (unos 14 puntos al máximo, contra 61 de
 apenas crece en alto. React Native no lo encoge a propósito (no hay `adjustsFontSizeToFitWidth` en
 su fuente, buscado); la causa está sin encontrar.
 
+**La ficha de un lugar sin guardar** (`VistaPreviaLugar`), que no se miró en esta tanda, tenía el
+mismo fallo que «Buscar»: con el título de 28 puntos al lado de «Atrás», «Madrid» salía como
+«Ma / dri / d» (beta 22). Mismo arreglo: columna con la letra grande y `TOPE_TITULO`. Se llega a
+ella con la acción `abrirPrevision` del puente.
+
 **Los títulos** (punto 5): tope de ×1,75 en los títulos de pantalla de 34 puntos («Hoy», «Mis
 lugares», «Buscar», «Avisos» y las secciones de avisos), con la constante `TOPE_TITULO` de
 `src/theme/letraGrande.ts`. «Hoy» ya tenía ×2, y con ×2 se partía «Carabanch / el». Se probaron

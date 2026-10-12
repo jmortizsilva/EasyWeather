@@ -26,6 +26,9 @@ export function useLetraGrande(): boolean {
 // 61): más bajo, el título quedaría más pequeño que lo que encabeza. Solo los títulos: el resto
 // del texto escala sin tope, también las filas que parten palabra («Desactivado / s»).
 //
+// También lo lleva el título de la ficha de un lugar sin guardar (28 puntos, unos 49 al máximo):
+// sin tope partía en «Ma / dri / d» (beta 22, 2026-10-12).
+//
 // Es lo que hace Apple con sus títulos grandes. El precio está asumido: a quien pide el tamaño
 // máximo, el título le queda por debajo de lo que pidió.
 export const TOPE_TITULO = 1.75;

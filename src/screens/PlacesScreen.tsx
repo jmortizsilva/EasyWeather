@@ -9,6 +9,7 @@ import { useColores } from '../theme/ThemeContext';
 import VistaPreviaLugar from '../components/VistaPreviaLugar';
 import { Place } from '../types';
 import { lugarDesdeUbicacion, yaGuardado } from '../utils/guardarUbicacion';
+import { aPlace, buscarMunicipios } from '../utils/municipios';
 import { vibrarConfirmacion } from '../utils/haptica';
 import { TempGuardada, textoTempActual } from '../utils/tempActual';
 import { MarcaElegida } from '../components/MarcaElegida';
@@ -95,6 +96,12 @@ export default function PlacesScreen() {
   // Ver docs/pantallas.txt. En una build publicada no registra nada.
   useAccionesDeDesarrollo({
     abrirBusqueda: () => setBuscando(true),
+    // La ficha de un lugar sin guardar: el puente no escribe en el buscador, así que se abre
+    // directamente con un municipio de la lista del INE.
+    abrirPrevision: () => {
+      setBuscando(true);
+      setPrevisualizando(aPlace(buscarMunicipios('Madrid')[0]));
+    },
     cerrarBusqueda,
   });
 

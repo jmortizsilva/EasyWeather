@@ -4,6 +4,7 @@ import { moverFoco } from '../accesibilidad/foco';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
+import { TOPE_TITULO, useLetraGrande } from '../theme/letraGrande';
 import { useColores } from '../theme/ThemeContext';
 import { DayForecast, Place } from '../types';
 import { vibrarConfirmacion } from '../utils/haptica';
@@ -30,6 +31,7 @@ interface Props {
 export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props) {
   const insets = useSafeAreaInsets();
   const colores = useColores();
+  const letraGrande = useLetraGrande();
   const styles = useMemo(() => crearEstilos(colores), [colores]);
   const estilosPrevision = useMemo(() => crearEstilosPrevision(colores), [colores]);
   const { places, forecastByPlace, observacionByPlace, avisosByPlace, cargarPrevision, addPlace } =
@@ -99,11 +101,12 @@ export default function VistaPreviaLugar({ place, onCerrar, onGuardado }: Props)
       // Gesto de escape de VoiceOver (frotar con dos dedos), además del botón visible.
       onAccessibilityEscape={onCerrar}>
       <View style={[styles.cabecera, { paddingTop: insets.top + 12 }]}>
-        <View style={styles.filaCabecera}>
+        <View style={[styles.filaCabecera, letraGrande && styles.enColumna]}>
           <Text
             ref={tituloRef}
             style={styles.titulo}
             accessibilityRole="header"
+            maxFontSizeMultiplier={TOPE_TITULO}
             onLayout={moverFocoAlTitulo}>
             {place.name}
           </Text>
@@ -184,6 +187,12 @@ const crearEstilos = (c: Paleta) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 12,
+    },
+    // Con la letra grande, título y «Atrás» pasan a columna, en el mismo orden (el de VoiceOver):
+    // al lado del botón, el título partía en «Ma / dri / d» (beta 22, 2026-10-12).
+    enColumna: {
+      flexDirection: 'column',
+      alignItems: 'flex-start',
     },
     titulo: {
       color: c.texto,

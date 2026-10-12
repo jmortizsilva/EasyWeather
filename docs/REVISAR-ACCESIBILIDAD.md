@@ -51,6 +51,7 @@ con estado local, no navegando. Por eso hay acciones registradas:
 | Acción | Qué abre | Dónde está registrada |
 |---|---|---|
 | `abrirBusqueda` / `cerrarBusqueda` | La hoja de búsqueda | `src/screens/PlacesScreen.tsx` |
+| `abrirPrevision` | La ficha de Madrid sin guardar, dentro de la búsqueda | idem |
 | `abrirTemperatura` | Aviso de temperatura | `src/screens/avisos/AvisosIndexScreen.tsx` |
 | `abrirResumenes` | Resúmenes | idem |
 | `abrirOficiales` | Avisos oficiales de AEMET | idem |
