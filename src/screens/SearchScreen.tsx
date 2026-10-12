@@ -141,7 +141,11 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
           ref={campo}
           defaultValue=""
           onChangeText={setCitySearch}
-          placeholder="Busca una ciudad o pueblo"
+          // Con la letra grande, uno corto: dentro del campo iOS encoge el texto de ejemplo hasta que
+          // cabe en una línea, y el largo salía más pequeño que con la letra de serie (beta 22,
+          // 2026-10-12). Sacarlo encima del campo se probó y se descartó: partido en tres líneas,
+          // empujaba el campo por debajo del teclado.
+          placeholder={letraGrande ? 'Ciudad o pueblo' : 'Busca una ciudad o pueblo'}
           placeholderTextColor={colores.textoTenue}
           style={[styles.input, letraGrande && styles.inputAnchoEntero]}
           accessibilityLabel="Buscar lugar"

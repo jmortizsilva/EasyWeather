@@ -91,7 +91,16 @@ saliendo pequeño** con la letra grande (unos 14 puntos al máximo, contra 61 de
 apenas crece en alto. React Native no lo encoge a propósito (no hay `adjustsFontSizeToFitWidth` en
 su fuente, buscado); la causa está sin encontrar.
 
-**La ficha de un lugar sin guardar** (`VistaPreviaLugar`), que no se miró en esta tanda, tenía el
+**Encontrada el 2026-10-12**, con los comentarios de la beta 22: lo pequeño es el **texto de
+ejemplo**, no lo que se escribe. Con «Madrid» de valor inicial, el texto sale del tamaño del resto;
+con el campo vacío, «Busca una ciudad o pueblo» sale justo del ancho del campo. React Native le da
+la misma letra que al texto escrito (`_placeholderTextAttributes` en `RCTUITextField.mm`); lo encoge
+iOS para que quepa en una línea. Lo de los 14 puntos de arriba era el texto de ejemplo. Arreglo: con
+la letra grande, el texto de ejemplo es «Ciudad o pueblo», que cabe casi al tamaño del resto. Se
+probó sacarlo encima del campo y se descartó: partido en tres líneas, empujaba el campo por debajo
+del teclado. Lo tecleado de verdad no se ha probado: el simulador no recibe teclas desde la terminal.
+
+**Y la ficha de un lugar sin guardar** (`VistaPreviaLugar`), que no se miró en esta tanda, tenía el
 mismo fallo que «Buscar»: con el título de 28 puntos al lado de «Atrás», «Madrid» salía como
 «Ma / dri / d» (beta 22). Mismo arreglo: columna con la letra grande y `TOPE_TITULO`. Se llega a
 ella con la acción `abrirPrevision` del puente.
