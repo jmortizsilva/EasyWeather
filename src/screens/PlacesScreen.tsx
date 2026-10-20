@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CURRENT_LOCATION_ID, usePlaces } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
 import { useColores } from '../theme/ThemeContext';
+import TapaBarraDeEstado from '../components/TapaBarraDeEstado';
 import VistaPreviaLugar from '../components/VistaPreviaLugar';
 import { Place } from '../types';
 import { lugarDesdeUbicacion, yaGuardado } from '../utils/guardarUbicacion';
@@ -115,173 +116,179 @@ export default function PlacesScreen() {
   };
 
   return (
-    <ScrollView
-      ref={refDesplazable}
-      style={styles.screen}
-      contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
-      accessibilityLabel="Pantalla Mis lugares">
-      <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
-        Mis lugares
-      </Text>
+    <>
+      <ScrollView
+        ref={refDesplazable}
+        style={styles.screen}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12 }]}
+        accessibilityLabel="Pantalla Mis lugares">
+        <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={TOPE_TITULO}>
+          Mis lugares
+        </Text>
 
-      <View style={styles.card}>
-        {(() => {
-          const nombre = currentLocationPlace?.name ?? 'Mi ubicación';
-          const { hablado, tempVisible } = etiquetaLugar(
-            nombre,
-            currentByPlace[CURRENT_LOCATION_ID],
-          );
-          const meta = [currentLocationPlace?.admin1, tempVisible].filter(Boolean).join(' · ');
-          return (
-            <Pressable
-              style={[
-                styles.row,
-                sePuedeGuardar && styles.rowDivider,
-                activeId === CURRENT_LOCATION_ID && styles.rowSelected,
-              ]}
-              onPress={() => selectAndGoHome(CURRENT_LOCATION_ID)}
-              accessibilityRole="button"
-              accessibilityLabel={hablado}
-              accessibilityState={{ selected: activeId === CURRENT_LOCATION_ID }}>
-              <Text style={styles.rowTitle}>
-                <MarcaElegida elegida={activeId === CURRENT_LOCATION_ID} />
-                📍 {nombre}
-              </Text>
-              {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
-            </Pressable>
-          );
-        })()}
+        <View style={styles.card}>
+          {(() => {
+            const nombre = currentLocationPlace?.name ?? 'Mi ubicación';
+            const { hablado, tempVisible } = etiquetaLugar(
+              nombre,
+              currentByPlace[CURRENT_LOCATION_ID],
+            );
+            const meta = [currentLocationPlace?.admin1, tempVisible].filter(Boolean).join(' · ');
+            return (
+              <Pressable
+                style={[
+                  styles.row,
+                  sePuedeGuardar && styles.rowDivider,
+                  activeId === CURRENT_LOCATION_ID && styles.rowSelected,
+                ]}
+                onPress={() => selectAndGoHome(CURRENT_LOCATION_ID)}
+                accessibilityRole="button"
+                accessibilityLabel={hablado}
+                accessibilityState={{ selected: activeId === CURRENT_LOCATION_ID }}>
+                <Text style={styles.rowTitle}>
+                  <MarcaElegida elegida={activeId === CURRENT_LOCATION_ID} />
+                  📍 {nombre}
+                </Text>
+                {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
+              </Pressable>
+            );
+          })()}
 
-        {/* Guardar el sitio donde estás, dentro de la misma tarjeta que la ubicación y justo
+          {/* Guardar el sitio donde estás, dentro de la misma tarjeta que la ubicación y justo
             debajo: es lo que el botón hace, y así VoiceOver lo encuentra al salir de esa fila.
             Desaparece en cuanto el sitio ya está guardado —abajo se ve la fila nueva— para no
             dejar un botón permanente que la mitad de las veces no hace nada. */}
-        {sePuedeGuardar && (
-          <Pressable
-            style={styles.row}
-            onPress={() => void guardarDondeEstoy()}
-            accessibilityRole="button"
-            accessibilityLabel="Guardar este sitio en Mis lugares"
-            accessibilityHint={`Guarda ${puntoActual?.name} como lugar fijo, para seguir viéndolo cuando te vayas`}>
-            <Text style={styles.rowTitle}>Guardar este sitio</Text>
-            <Text style={styles.rowMeta}>{puntoActual?.name} se queda aunque te vayas</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {places.length === 0 && (
-        <Text style={styles.note}>
-          Aún no has añadido ningún lugar. Usa el botón Añadir lugar para buscar uno.
-        </Text>
-      )}
-
-      {places.length > 0 && (
-        <View style={styles.card}>
-          {places.map((place, index) => {
-            const { hablado, tempVisible } = etiquetaLugar(place.name, currentByPlace[place.id]);
-            const meta = [place.admin1, tempVisible].filter(Boolean).join(' · ');
-            return (
-              <Swipeable
-                key={place.id}
-                renderRightActions={() => (
-                  // Se revela al deslizar; queda FUERA del árbol de accesibilidad a propósito,
-                  // porque para VoiceOver la misma acción ya está en el rotor (más rápida que
-                  // tener que deslizar).
-                  <Pressable
-                    style={styles.removeButton}
-                    onPress={() => void removePlace(place.id)}
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants">
-                    <Text style={styles.removeText}>Quitar</Text>
-                  </Pressable>
-                )}
-                // Se permite deslizar en los dos sentidos: se pidió "flick a la derecha o a la
-                // izquierda", y la acción revelada es la misma.
-                renderLeftActions={() => (
-                  <Pressable
-                    style={styles.removeButton}
-                    onPress={() => void removePlace(place.id)}
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants">
-                    <Text style={styles.removeText}>Quitar</Text>
-                  </Pressable>
-                )}>
-                <Pressable
-                  style={[
-                    styles.favoriteSelect,
-                    index < places.length - 1 && styles.rowDivider,
-                    activeId === place.id && styles.rowSelected,
-                  ]}
-                  onPress={() => selectAndGoHome(place.id)}
-                  accessibilityRole="button"
-                  accessibilityLabel={hablado}
-                  accessibilityHint="En el rotor de acciones tienes la opción de quitar este lugar"
-                  accessibilityState={{ selected: activeId === place.id }}
-                  accessibilityActions={[{ name: 'quitar', label: 'Quitar de mis lugares' }]}
-                  onAccessibilityAction={(event) => {
-                    if (event.nativeEvent.actionName === 'quitar') {
-                      void removePlace(place.id);
-                    }
-                  }}>
-                  <Text style={styles.rowTitle}>
-                    <MarcaElegida elegida={activeId === place.id} />
-                    {place.name}
-                  </Text>
-                  {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
-                </Pressable>
-              </Swipeable>
-            );
-          })}
+          {sePuedeGuardar && (
+            <Pressable
+              style={styles.row}
+              onPress={() => void guardarDondeEstoy()}
+              accessibilityRole="button"
+              accessibilityLabel="Guardar este sitio en Mis lugares"
+              accessibilityHint={`Guarda ${puntoActual?.name} como lugar fijo, para seguir viéndolo cuando te vayas`}>
+              <Text style={styles.rowTitle}>Guardar este sitio</Text>
+              <Text style={styles.rowMeta}>{puntoActual?.name} se queda aunque te vayas</Text>
+            </Pressable>
+          )}
         </View>
-      )}
 
-      <Pressable
-        style={styles.buttonPrimary}
-        onPress={() => setBuscando(true)}
-        accessibilityRole="button"
-        accessibilityLabel="Añadir lugar"
-        accessibilityHint="Abre la búsqueda para encontrar una ciudad o pueblo">
-        <Text style={styles.buttonText}>Añadir lugar</Text>
-      </Pressable>
+        {places.length === 0 && (
+          <Text style={styles.note}>
+            Aún no has añadido ningún lugar. Usa el botón Añadir lugar para buscar uno.
+          </Text>
+        )}
 
-      {/* La búsqueda ya no es una pestaña: su contenido es "añadir un lugar", así que vive aquí
+        {places.length > 0 && (
+          <View style={styles.card}>
+            {places.map((place, index) => {
+              const { hablado, tempVisible } = etiquetaLugar(place.name, currentByPlace[place.id]);
+              const meta = [place.admin1, tempVisible].filter(Boolean).join(' · ');
+              return (
+                <Swipeable
+                  key={place.id}
+                  renderRightActions={() => (
+                    // Se revela al deslizar; queda FUERA del árbol de accesibilidad a propósito,
+                    // porque para VoiceOver la misma acción ya está en el rotor (más rápida que
+                    // tener que deslizar).
+                    <Pressable
+                      style={styles.removeButton}
+                      onPress={() => void removePlace(place.id)}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants">
+                      <Text style={styles.removeText}>Quitar</Text>
+                    </Pressable>
+                  )}
+                  // Se permite deslizar en los dos sentidos: se pidió "flick a la derecha o a la
+                  // izquierda", y la acción revelada es la misma.
+                  renderLeftActions={() => (
+                    <Pressable
+                      style={styles.removeButton}
+                      onPress={() => void removePlace(place.id)}
+                      accessibilityElementsHidden
+                      importantForAccessibility="no-hide-descendants">
+                      <Text style={styles.removeText}>Quitar</Text>
+                    </Pressable>
+                  )}>
+                  <Pressable
+                    style={[
+                      styles.favoriteSelect,
+                      index < places.length - 1 && styles.rowDivider,
+                      activeId === place.id && styles.rowSelected,
+                    ]}
+                    onPress={() => selectAndGoHome(place.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={hablado}
+                    accessibilityHint="En el rotor de acciones tienes la opción de quitar este lugar"
+                    accessibilityState={{ selected: activeId === place.id }}
+                    accessibilityActions={[{ name: 'quitar', label: 'Quitar de mis lugares' }]}
+                    onAccessibilityAction={(event) => {
+                      if (event.nativeEvent.actionName === 'quitar') {
+                        void removePlace(place.id);
+                      }
+                    }}>
+                    <Text style={styles.rowTitle}>
+                      <MarcaElegida elegida={activeId === place.id} />
+                      {place.name}
+                    </Text>
+                    {meta ? <Text style={styles.rowMeta}>{meta}</Text> : null}
+                  </Pressable>
+                </Swipeable>
+              );
+            })}
+          </View>
+        )}
+
+        <Pressable
+          style={styles.buttonPrimary}
+          onPress={() => setBuscando(true)}
+          accessibilityRole="button"
+          accessibilityLabel="Añadir lugar"
+          accessibilityHint="Abre la búsqueda para encontrar una ciudad o pueblo">
+          <Text style={styles.buttonText}>Añadir lugar</Text>
+        </Pressable>
+
+        {/* La búsqueda ya no es una pestaña: su contenido es "añadir un lugar", así que vive aquí
           como hoja. accessibilityViewIsModal deja fuera del recorrido de VoiceOver lo que queda
           detrás, y onAccessibilityEscape permite cerrarla con el gesto de la Z. */}
-      <Modal
-        visible={buscando}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={cerrarLoDeArriba}>
-        <View style={styles.hoja} accessibilityViewIsModal onAccessibilityEscape={cerrarLoDeArriba}>
-          {/* Se queda montada debajo de la previsión: así "Atrás" devuelve a la búsqueda con su
-              texto y sus resultados, y se puede mirar un lugar tras otro sin volver a escribir. */}
+        <Modal
+          visible={buscando}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={cerrarLoDeArriba}>
           <View
             style={styles.hoja}
-            accessibilityElementsHidden={previsualizando !== undefined}
-            importantForAccessibility={
-              previsualizando !== undefined ? 'no-hide-descendants' : 'auto'
-            }>
-            <SearchScreen
-              onClose={cerrarBusqueda}
-              onVerPrevision={(lugar) => setPrevisualizando(lugar)}
-            />
-          </View>
+            accessibilityViewIsModal
+            onAccessibilityEscape={cerrarLoDeArriba}>
+            {/* Se queda montada debajo de la previsión: así "Atrás" devuelve a la búsqueda con su
+              texto y sus resultados, y se puede mirar un lugar tras otro sin volver a escribir. */}
+            <View
+              style={styles.hoja}
+              accessibilityElementsHidden={previsualizando !== undefined}
+              importantForAccessibility={
+                previsualizando !== undefined ? 'no-hide-descendants' : 'auto'
+              }>
+              <SearchScreen
+                onClose={cerrarBusqueda}
+                onVerPrevision={(lugar) => setPrevisualizando(lugar)}
+              />
+            </View>
 
-          {/* La previsión es una CAPA dentro de esta hoja, no una segunda hoja modal. iOS no
+            {/* La previsión es una CAPA dentro de esta hoja, no una segunda hoja modal. iOS no
               presenta dos a la vez desde el mismo sitio: descarta la segunda en silencio pero
               React Native se queda creyendo que está puesta (RCTModalHostViewComponentView.mm
               marca _isPresented antes de presentar, sin comprobar nada), y la pantalla se quedaba
               muerta hasta cerrar la app. */}
-          {previsualizando && (
-            <VistaPreviaLugar
-              place={previsualizando}
-              onCerrar={() => setPrevisualizando(undefined)}
-              onGuardado={cerrarBusqueda}
-            />
-          )}
-        </View>
-      </Modal>
-    </ScrollView>
+            {previsualizando && (
+              <VistaPreviaLugar
+                place={previsualizando}
+                onCerrar={() => setPrevisualizando(undefined)}
+                onGuardado={cerrarBusqueda}
+              />
+            )}
+          </View>
+        </Modal>
+      </ScrollView>
+      <TapaBarraDeEstado />
+    </>
   );
 }
 

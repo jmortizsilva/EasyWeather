@@ -12,6 +12,7 @@ import AvisosResumen from './AvisosResumen';
 import { crearEstilos } from './estilos';
 import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 import { TOPE_TITULO } from '../../theme/letraGrande';
+import TapaBarraDeEstado from '../../components/TapaBarraDeEstado';
 
 // La pestaña Avisos es un indice, no un formulario. Antes era una sola pantalla con las tres cosas
 // seguidas —temperatura, resumenes y avisos oficiales—, y con VoiceOver llegar a la ultima eran
@@ -135,6 +136,7 @@ export default function AvisosIndexScreen() {
           política de privacidad.
         </Text>
       </ScrollView>
+      <TapaBarraDeEstado />
 
       {/* UN solo Modal para las tres secciones. Lo que va un nivel mas hondo (el editor de un
           resumen, la lista de fenomenos) es una capa DENTRO de esta hoja y no otro Modal: iOS no
