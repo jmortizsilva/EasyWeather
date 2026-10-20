@@ -202,9 +202,13 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
             return (
               <View
                 key={place.id}
-                style={[styles.resultRow, index < lista.length - 1 && styles.rowDivider]}>
+                style={[
+                  styles.resultRow,
+                  letraGrande && styles.resultadoEnColumna,
+                  index < lista.length - 1 && styles.rowDivider,
+                ]}>
                 <Pressable
-                  style={styles.resultSelect}
+                  style={[styles.resultSelect, letraGrande && styles.seleccionEnColumna]}
                   onPress={() => handleView(place)}
                   accessibilityRole="button"
                   accessibilityLabel={`Ver previsión de ${place.name}${where}${saved ? ', guardado en mis lugares' : ''}`}
@@ -234,7 +238,11 @@ export default function SearchScreen({ onClose, onVerPrevision }: Props) {
                     rotor, y los usuarios no la encontraban: guardar un lugar es la razón de ser de
                     esta pantalla, así que tiene que ser un botón que salga al hacer flick. */}
                 <Pressable
-                  style={[styles.saveButton, saved && styles.savedButton]}
+                  style={[
+                    styles.saveButton,
+                    letraGrande && styles.guardarEnColumna,
+                    saved && styles.savedButton,
+                  ]}
                   onPress={() => (saved ? void removePlace(place.id) : void guardarYCerrar(place))}
                   accessibilityRole="button"
                   accessibilityLabel={
@@ -368,6 +376,19 @@ const crearEstilos = (c: Paleta) =>
     resultRow: {
       flexDirection: 'row',
       alignItems: 'stretch',
+    },
+    // Con la letra grande, el nombre arriba y el botón debajo, a todo el ancho, en el mismo orden
+    // de VoiceOver: al lado, «Guardar» se quedaba con dos tercios de la fila y el nombre salía
+    // como «Ma / dri / d» (captura de un probador de la beta 22, 2026-10-20).
+    resultadoEnColumna: {
+      flexDirection: 'column',
+    },
+    seleccionEnColumna: {
+      flex: 0,
+    },
+    guardarEnColumna: {
+      minHeight: 44,
+      paddingVertical: 12,
     },
     rowDivider: {
       borderBottomWidth: StyleSheet.hairlineWidth,
