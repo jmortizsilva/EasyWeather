@@ -120,19 +120,22 @@ struct VistaLugar: View {
     let datos = claves.compactMap { lugar.datos[$0] }
     let hora = textoHora(fecha, ahora: ahora)
     let pequeño = familia == .systemSmall
-    // En el pequeño, el aviso ocupa el sitio de un dato.
-    let cuantos = (pequeño ? 3 : 5) - (pequeño && lugar.aviso != nil ? 1 : 0)
     VStack(alignment: .leading, spacing: 2) {
       Text(lugar.nombre).font(.caption.bold()).lineLimit(2).minimumScaleFactor(0.8)
       if let aviso = lugar.aviso {
         // Antes que el nombre: si no cabe todo, que se recorte el nombre y no el aviso.
         VistaAviso(aviso: aviso, corto: pequeño).layoutPriority(1)
       }
-      ForEach(Array(datos.prefix(cuantos).enumerated()), id: \.offset) { indice, dato in
-        Text(dato.visible)
-          .font(indice == 0 ? .largeTitle.weight(.semibold) : .caption)
-          .lineLimit(1)
-          .minimumScaleFactor(0.6)
+      if pequeño {
+        // El aviso ocupa el sitio de un dato.
+        columna(Array(datos.prefix(lugar.aviso == nil ? 3 : 2)), conGrande: true)
+      } else {
+        // Dos columnas: con una sola, la mitad derecha se quedaba vacía y cabían cinco datos.
+        HStack(alignment: .top, spacing: 12) {
+          columna(Array(datos.prefix(2)), conGrande: true)
+          columna(Array(datos.dropFirst(2).prefix(lugar.aviso == nil ? 5 : 4)), conGrande: false)
+            .padding(.top, 6)
+        }
       }
       Spacer(minLength: 0)
       // La hora no se cae nunca: un dato sin su hora podría pasar por actual.
@@ -141,6 +144,18 @@ struct VistaLugar: View {
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
     .accessibilityLabel(etiquetaAccesible(lugar, datos: datos, hora: hora))
+  }
+}
+
+/// Datos uno debajo de otro; con `conGrande`, el primero en grande (suele ser la temperatura).
+private func columna(_ datos: [TextoDato], conGrande: Bool) -> some View {
+  VStack(alignment: .leading, spacing: 2) {
+    ForEach(Array(datos.enumerated()), id: \.offset) { indice, dato in
+      Text(dato.visible)
+        .font(conGrande && indice == 0 ? .largeTitle.weight(.semibold) : .caption)
+        .lineLimit(1)
+        .minimumScaleFactor(0.6)
+    }
   }
 }
 
