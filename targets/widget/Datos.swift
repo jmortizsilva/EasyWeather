@@ -3,7 +3,7 @@ import Foundation
 // Lo que la app deja en el App Group. Es el contrato con src/widget/datosWidget.ts: los textos
 // llegan ya escritos y aquí no se decide ninguno. Si cambia el formato, cambian los dos.
 
-let versionDatos = 1
+let versionDatos = 2
 let claveDatos = "datosWidget"
 
 struct TextoDato: Codable {
@@ -22,12 +22,12 @@ struct Aviso: Codable {
 struct LugarWidget: Codable {
   let id: String
   let nombre: String
-  /// Milisegundos, como Date.now() en JavaScript.
-  let actualizadoEn: Double
+  /// Milisegundos, como Date.now() en JavaScript. Falta si la app aún no ha cargado el lugar.
+  let actualizadoEn: Double?
   let aviso: Aviso?
   let datos: [String: TextoDato]
 
-  var fecha: Date { Date(timeIntervalSince1970: actualizadoEn / 1000) }
+  var fecha: Date? { actualizadoEn.map { Date(timeIntervalSince1970: $0 / 1000) } }
 }
 
 struct DatosWidget: Codable {

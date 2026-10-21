@@ -25,18 +25,13 @@ export default function PublicadorWidget() {
 
     const temporizador = setTimeout(() => {
       const lugares = currentLocationPlace ? [currentLocationPlace, ...places] : places;
-      const fuentes: FuenteLugar[] = [];
-      for (const place of lugares) {
-        const prevision = forecastByPlace[place.id];
-        if (!prevision?.updatedAt) continue;
-        fuentes.push({
-          place,
-          forecast: prevision.forecast,
-          updatedAt: prevision.updatedAt,
-          observacion: observacionByPlace[place.id],
-          avisos: avisosByPlace[place.id],
-        });
-      }
+      const fuentes: FuenteLugar[] = lugares.map((place) => ({
+        place,
+        forecast: forecastByPlace[place.id]?.forecast,
+        updatedAt: forecastByPlace[place.id]?.updatedAt,
+        observacion: observacionByPlace[place.id],
+        avisos: avisosByPlace[place.id],
+      }));
       new ExtensionStorage(`group.${id}`).set(CLAVE, JSON.stringify(datosWidget(fuentes)));
       ExtensionStorage.reloadWidget();
     }, ESPERA_MS);

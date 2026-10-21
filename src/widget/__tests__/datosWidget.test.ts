@@ -103,6 +103,13 @@ describe('lugarWidget', () => {
   });
 });
 
+describe('un lugar sin cargar', () => {
+  it('va en la lista con su nombre, sin hora ni datos', () => {
+    const lugar = lugarWidget({ place: MADRID });
+    expect(lugar).toEqual({ id: 'madrid', nombre: 'Madrid', datos: {} });
+  });
+});
+
 describe('datosWidget', () => {
   it('pone la ubicación actual la primera y lleva la versión', () => {
     const actual: Place = { ...MADRID, id: CURRENT_LOCATION_ID, name: 'Puente de Vallecas' };

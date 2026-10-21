@@ -11,7 +11,7 @@ import { describeUvIndex, describeWindDirection } from '../utils/meteo';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
-export const VERSION_DATOS_WIDGET = 1;
+export const VERSION_DATOS_WIDGET = 2;
 
 /** Los datos que se pueden elegir, en el orden en que se pintan. */
 export const CLAVES_DATO = [
@@ -39,8 +39,11 @@ export interface TextoDato {
 export interface LugarWidget {
   id: string;
   nombre: string;
-  /** Cuándo se obtuvo la previsión, en milisegundos. El widget la enseña siempre. */
-  actualizadoEn: number;
+  /**
+   * Cuándo se obtuvo la previsión, en milisegundos. El widget la enseña siempre. Falta si la app
+   * todavía no ha cargado este lugar: aun así va en la lista, para poder elegirlo en el widget.
+   */
+  actualizadoEn?: number;
   /** Solo naranja o rojo: el amarillo no cabe en un widget sin quitar sitio a todo lo demás. */
   aviso?: TextoDato & {
     nivel: 'naranja' | 'rojo';
@@ -57,8 +60,9 @@ export interface DatosWidget {
 
 export interface FuenteLugar {
   place: Place;
-  forecast: Forecast;
-  updatedAt: number;
+  /** Sin previsión todavía, el lugar va solo con su nombre. */
+  forecast?: Forecast;
+  updatedAt?: number;
   observacion?: CurrentObservation;
   avisos?: AvisosLugar;
 }
@@ -71,8 +75,8 @@ const grados = (valor: number) => ({
 /** Los textos de un lugar. Lo que no tenga dato no sale: el widget no pinta guiones. */
 export function lugarWidget(fuente: FuenteLugar): LugarWidget {
   const { place, forecast, observacion, avisos } = fuente;
-  const actual = forecast.current;
-  const hoy = forecast.days[0];
+  const actual = forecast?.current;
+  const hoy = forecast?.days[0];
   const datos: LugarWidget['datos'] = {};
 
   if (actual?.temperature !== undefined) {
@@ -149,13 +153,13 @@ export function lugarWidget(fuente: FuenteLugar): LugarWidget {
   return {
     id: place.id,
     nombre: place.name,
-    actualizadoEn: fuente.updatedAt,
+    ...(forecast && fuente.updatedAt ? { actualizadoEn: fuente.updatedAt } : {}),
     ...(aviso ? { aviso } : {}),
     datos,
   };
 }
 
-/** Todos los lugares con previsión, la ubicación actual primero. */
+/** Todos los lugares, la ubicación actual primero y luego en el orden de Mis lugares. */
 export function datosWidget(fuentes: FuenteLugar[]): DatosWidget {
   const orden = (f: FuenteLugar) => (f.place.id === CURRENT_LOCATION_ID ? 0 : 1);
   return {

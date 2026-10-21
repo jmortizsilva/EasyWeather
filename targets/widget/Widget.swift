@@ -1,27 +1,35 @@
 import SwiftUI
 import WidgetKit
 
-// Fase 1 del widget (docs/PROPUESTA-WIDGET.md): enseña el primer lugar que dejó la app (la
-// ubicación actual si la hay) con los datos de fábrica. Elegir lugar y datos llega en la fase 2.
+// El widget (docs/PROPUESTA-WIDGET.md). Cada uno enseña el lugar y los datos elegidos en «Editar
+// widget» (Configuracion.swift) con lo que la app dejó en el App Group (Datos.swift).
 
-struct Proveedor: TimelineProvider {
-  func placeholder(in context: Context) -> Entrada { Entrada(date: .now, lugar: nil) }
-
-  func getSnapshot(in context: Context, completion: @escaping (Entrada) -> Void) {
-    completion(Entrada(date: .now, lugar: leerDatos()?.lugares.first))
+struct Proveedor: AppIntentTimelineProvider {
+  func placeholder(in context: Context) -> Entrada {
+    Entrada(date: .now, contenido: .sinDatos, claves: datosDeFabrica)
   }
 
-  func getTimeline(in context: Context, completion: @escaping (Timeline<Entrada>) -> Void) {
-    let lugar = leerDatos()?.lugares.first
+  func snapshot(for configuracion: ConfiguracionWidget, in context: Context) async -> Entrada {
+    entrada(configuracion, en: .now)
+  }
+
+  func timeline(for configuracion: ConfiguracionWidget, in context: Context) async -> Timeline<Entrada> {
+    let ahora = Date.now
+    var fechas = [ahora]
     // Una entrada más cuando el texto de la hora tiene que cambiar («A las» pasa a «Datos de las»,
     // y a medianoche, a «ayer»). Los datos nuevos los trae la app al recargar el widget.
-    var fechas: [Date] = [.now]
-    if let lugar {
-      let mañana = Calendar.current.startOfDay(for: .now.addingTimeInterval(24 * 60 * 60))
-      fechas += [lugar.fecha.addingTimeInterval(margenFresco), mañana].filter { $0 > .now }
+    if case .lugar(_, let fecha) = entrada(configuracion, en: ahora).contenido {
+      let mañana = Calendar.current.startOfDay(for: ahora.addingTimeInterval(24 * 60 * 60))
+      fechas += [fecha.addingTimeInterval(margenFresco), mañana].filter { $0 > ahora }
     }
-    let entradas = fechas.sorted().map { Entrada(date: $0, lugar: lugar) }
-    completion(Timeline(entries: entradas, policy: .never))
+    return Timeline(entries: fechas.sorted().map { entrada(configuracion, en: $0) }, policy: .never)
+  }
+
+  private func entrada(_ configuracion: ConfiguracionWidget, en fecha: Date) -> Entrada {
+    Entrada(
+      date: fecha,
+      contenido: resolver(leerDatos(), id: configuracion.lugar?.id),
+      claves: configuracion.claves)
   }
 }
 
@@ -38,7 +46,8 @@ struct VistaEnWidget: View {
 @main
 struct WidgetTiempo: Widget {
   var body: some WidgetConfiguration {
-    StaticConfiguration(kind: "tiempo", provider: Proveedor()) { entrada in
+    AppIntentConfiguration(kind: "tiempo", intent: ConfiguracionWidget.self, provider: Proveedor()) {
+      entrada in
       VistaEnWidget(entrada: entrada)
     }
     .configurationDisplayName("El tiempo")
