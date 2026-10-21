@@ -12,6 +12,7 @@ import { ClavePestana, PESTANAS } from './src/navegacion/pestanas';
 import { PestanasProvider, usePestanas } from './src/navegacion/PestanasContext';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
+import PublicadorWidget from './src/widget/PublicadorWidget';
 import { ThemeProvider, useTema } from './src/theme/ThemeContext';
 import { useActualizaciones } from './src/utils/actualizaciones';
 
@@ -84,6 +85,7 @@ export default function App() {
       <SafeAreaProvider>
         <ThemeProvider>
           <PlacesProvider>
+            <PublicadorWidget />
             <NotificationsProvider>
               {/* Envuelve a Navegacion, no al reves: las pantallas de dentro preguntan por la
                   pestaña activa (useAlEntrarEnPestana) y "Mis lugares" pide saltar a Hoy. */}

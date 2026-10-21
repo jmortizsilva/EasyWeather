@@ -13,11 +13,20 @@
 // identificador de producción, así que instalarlas te dejaba SIN la app de la Store.
 const ES_PRUEBAS = Boolean(process.env.APP_VARIANT);
 
-export default ({ config }) => ({
-  ...config,
-  name: ES_PRUEBAS ? 'EasyWeather Dev' : config.name,
-  ios: {
-    ...config.ios,
-    bundleIdentifier: ES_PRUEBAS ? 'com.jmortizsilva.tiempo.dev' : config.ios.bundleIdentifier,
-  },
-});
+export default ({ config }) => {
+  const bundleIdentifier = ES_PRUEBAS ? 'com.jmortizsilva.tiempo.dev' : config.ios.bundleIdentifier;
+  return {
+    ...config,
+    name: ES_PRUEBAS ? 'EasyWeather Dev' : config.name,
+    ios: {
+      ...config.ios,
+      bundleIdentifier,
+      entitlements: {
+        ...config.ios.entitlements,
+        // Donde la app deja los datos para el widget. Sale del identificador para que la app de
+        // pruebas y la publicada no se lean la una a la otra. El widget lo hereda (targets/widget).
+        'com.apple.security.application-groups': [`group.${bundleIdentifier}`],
+      },
+    },
+  };
+};

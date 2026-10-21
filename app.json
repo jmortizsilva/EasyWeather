@@ -51,7 +51,8 @@
           "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta."
         }
       ],
-      "./plugins/ciclo-de-vida-por-escenas"
+      "./plugins/ciclo-de-vida-por-escenas",
+      "@bacons/apple-targets"
     ],
     "extra": {
       "eas": {

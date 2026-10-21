@@ -241,8 +241,36 @@ puente.
   `package-lock.json` volvía a dictar lo mismo. Se arregló borrando del lockfile las entradas de
   `node_modules/jest-expo` y `node_modules/@react-native/jest-preset` y reinstalando.
 
-- **Los runtimes de simulador instalados son de iOS 18.2** aunque Xcode sea 27.0. Sirven, pero para
-  probar algo propio de iOS 27 hay que descargar ese runtime.
+- **El simulador es un iPhone 17 con iOS 27** (UDID `ECE0E6A0-0A3B-4CFA-9F03-9EA2D014631A`). Los
+  runtimes de iOS 18.2 de antes ya no están. Usar siempre el UDID y no `booted`: con dos simuladores
+  arrancados, `booted` manda las órdenes al que no es.
+
+## 7. El widget (desde el 2026-10-21, rama `widget`)
+
+La extensión vive en `targets/widget/` y la añade `@bacons/apple-targets` en cada `prebuild`. El
+diseño y las fases, en [PROPUESTA-WIDGET.md](PROPUESTA-WIDGET.md). Tres cosas que costaron:
+
+- **`pod install` se queda colgado descargando de Maven** el núcleo precompilado de React Native y
+  luego Hermes, en un `curl` sin tiempo límite que no acaba nunca (atascado en 3-5 MB de 99, o a
+  1,6 KB/s). El mismo fichero, pedido a mano, baja en cinco segundos. La diferencia es que el guion
+  se identifica como `react-native-<versión>`. Como `prebuild --clean` borra `ios/` y con él la
+  descarga, pasa en cada prebuild limpio. El arreglo: los guiones no descargan lo que ya está en su
+  sitio (`rncore.rb` y `hermes-utils.rb`, «already exists in Pods. Skipping download»), así que se
+  hace el prebuild sin pods, se reponen los cuatro ficheros y se instala:
+  ```bash
+  APP_VARIANT=development npx expo prebuild -p ios --clean --no-install
+  # ios/Pods/ReactNativeCore-artifacts/reactnative-core-<rn>-{debug,release}.tar.gz
+  # ios/Pods/hermes-engine-artifacts/hermes-ios-<hermes>-{debug,release}.tar.gz
+  cd ios && pod install
+  ```
+  Las URL son las que enseña el `curl` colgado (`ps -eo command | grep curl`), sin el `-A`.
+- **El widget salió sin App Group** aunque el plugin dice copiar el de la app. Se declara a mano en
+  `targets/widget/expo-target.config.js`. Se comprueba en `ios/.targets/widget/generated.entitlements`.
+- **No se puede poner el widget en la pantalla de inicio desde aquí**: `simctl` no sabe añadir
+  widgets y sin sesión gráfica no hay forma de tocar el simulador (`osascript` con System Events se
+  queda colgado esperando un permiso). Para verlo, `herramientas/captura-widget.sh <UDID>` dibuja
+  las mismas vistas en PNG, en los dos tamaños, claro y oscuro, letra normal y al máximo, e imprime
+  lo que leería VoiceOver. Necesita que la app se haya abierto una vez para dejar los datos.
 
 ## Datos del Mac, para no volver a averiguarlos
 
