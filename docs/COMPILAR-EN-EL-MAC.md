@@ -264,6 +264,15 @@ diseño y las fases, en [PROPUESTA-WIDGET.md](PROPUESTA-WIDGET.md). Tres cosas q
   cd ios && pod install
   ```
   Las URL son las que enseña el `curl` colgado (`ps -eo command | grep curl`), sin el `-A`.
+- **El npm del Mac no es el de EAS.** El Mac va con Node 26 y npm 11; EAS, con Node 22 y npm 10.
+  Un `package-lock.json` escrito con npm 11 puede no valerle a npm 10: la build 23 cayó en `npm ci`
+  con «Missing: typescript@5.9.3 from lock file», una dependencia opcional que npm 11 deja fuera.
+  Antes de una build en la nube, después de instalar algo, se regenera y se prueba con el de EAS
+  (la versión sale al principio del registro de cualquier build):
+  ```bash
+  npx -y npm@10.9.8 install --package-lock-only
+  D=$(mktemp -d); cp package.json package-lock.json "$D"; (cd "$D" && npx -y npm@10.9.8 ci --include=dev --ignore-scripts)
+  ```
 - **El widget salió sin App Group** aunque el plugin dice copiar el de la app. Se declara a mano en
   `targets/widget/expo-target.config.js`. Se comprueba en `ios/.targets/widget/generated.entitlements`.
 - **No se puede poner el widget en la pantalla de inicio desde aquí**: `simctl` no sabe añadir
