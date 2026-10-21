@@ -27,3 +27,12 @@ export function cabeceras(): Record<string, string> {
 export function destinoDeUbicacion(): { url: string; appKey: string } {
   return { url: endpoint('ubicacion'), appKey: APP_KEY };
 }
+
+/**
+ * Lo que necesita el widget para pedir al servidor los lugares al día con la app cerrada. Igual que
+ * `destinoDeUbicacion`: la URL y la clave siguen viviendo solo aquí. Sin clave no se da nada, y el
+ * widget se queda con lo que dejó la app.
+ */
+export function destinoDeWidget(): { url: string; clave: string } | undefined {
+  return APP_KEY ? { url: endpoint('widget'), clave: APP_KEY } : undefined;
+}

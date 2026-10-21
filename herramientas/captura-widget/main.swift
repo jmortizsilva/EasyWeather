@@ -24,7 +24,8 @@ let todos = [
   "sol",
 ]
 let conAviso = LugarWidget(
-  id: primero.id, nombre: primero.nombre, actualizadoEn: primero.actualizadoEn,
+  id: primero.id, nombre: primero.nombre, lat: primero.lat, lon: primero.lon,
+  estacion: primero.estacion, actualizadoEn: primero.actualizadoEn,
   aviso: Aviso(
     nivel: "naranja", corto: "Aviso naranja", visible: "Aviso naranja por lluvias",
     hablado: "Aviso naranja por lluvias"),
@@ -76,4 +77,21 @@ MainActor.assumeIsolated {
     }
   }
   print("Dibujados \(casos.count * tamaños.count * letras.count * modos.count) en \(salida.path)")
+}
+
+// El camino de red del widget, con su mismo código (pedirAlServidor), desde dentro del simulador.
+if let servidor = datos.servidor {
+  let espera = DispatchSemaphore(value: 0)
+  Task {
+    if let fresco = await pedirAlServidor(primero, servidor: servidor), let fecha = fresco.fecha {
+      print("Servidor: \(fresco.nombre), \(fresco.datos.count) datos, de \(fecha)")
+      print("  \(fresco.datos["temperatura"]?.hablado ?? "sin temperatura")")
+    } else {
+      print("Servidor: no contestó con un lugar válido")
+    }
+    espera.signal()
+  }
+  espera.wait()
+} else {
+  print("Servidor: los datos no lo traen (¿app sin EXPO_PUBLIC_APP_KEY?)")
 }

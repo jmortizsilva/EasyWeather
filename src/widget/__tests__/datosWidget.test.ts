@@ -48,9 +48,12 @@ describe('lugarWidget', () => {
     });
     expect(datos.humedad?.hablado).toBe('Humedad media 70 por ciento');
     expect(datos.uv).toEqual({ visible: 'UV 6, alto', hablado: 'Índice UV máximo 6, alto' });
-    // La hora sale con o sin cero delante según la configuración regional (en el simulador,
-    // «8:31»; en Node, «08:31»): es formatTime, la misma de la pantalla del lugar.
-    expect(datos.sol?.hablado).toMatch(/^Amanece a las 0?8:21, anochece a las 19:02$/);
+    // Sin cero delante, como en la pantalla del iPhone, y lo mismo en Node: lo escriben la app y
+    // el servidor, y antes salía «8:21» en uno y «08:21» en el otro.
+    expect(datos.sol).toEqual({
+      visible: 'Sol 8:21 – 19:02',
+      hablado: 'Amanece a las 8:21, anochece a las 19:02',
+    });
   });
 
   it('lo que se oye nunca lleva símbolos que VoiceOver lea mal', () => {
@@ -106,7 +109,7 @@ describe('lugarWidget', () => {
 describe('un lugar sin cargar', () => {
   it('va en la lista con su nombre, sin hora ni datos', () => {
     const lugar = lugarWidget({ place: MADRID });
-    expect(lugar).toEqual({ id: 'madrid', nombre: 'Madrid', datos: {} });
+    expect(lugar).toEqual({ id: 'madrid', nombre: 'Madrid', lat: 40.4, lon: -3.7, datos: {} });
   });
 });
 
@@ -117,5 +120,14 @@ describe('datosWidget', () => {
     expect(datos.version).toBe(VERSION_DATOS_WIDGET);
     expect(datos.lugares.map((l) => l.nombre)).toEqual(['Puente de Vallecas', 'Madrid']);
     expect(datos.lugares[0].actualizadoEn).toBe(AHORA);
+    expect(datos.servidor).toBeUndefined();
+  });
+
+  it('lleva el servidor y la estación elegida cuando los hay', () => {
+    const servidor = { url: 'https://api.jmortiz.es/apps/easyweather/widget', clave: 'x' };
+    const datos = datosWidget([fuente({ estacion: '3195' })], servidor);
+    expect(datos.servidor).toEqual(servidor);
+    expect(datos.lugares[0].estacion).toBe('3195');
+    expect(lugarWidget(fuente()).estacion).toBeUndefined();
   });
 });

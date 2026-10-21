@@ -3,7 +3,7 @@ import Foundation
 // Lo que la app deja en el App Group. Es el contrato con src/widget/datosWidget.ts: los textos
 // llegan ya escritos y aquí no se decide ninguno. Si cambia el formato, cambian los dos.
 
-let versionDatos = 2
+let versionDatos = 3
 let claveDatos = "datosWidget"
 
 struct TextoDato: Codable {
@@ -22,6 +22,10 @@ struct Aviso: Codable {
 struct LugarWidget: Codable {
   let id: String
   let nombre: String
+  let lat: Double
+  let lon: Double
+  /// La estación de AEMET elegida a mano, si la hay.
+  let estacion: String?
   /// Milisegundos, como Date.now() en JavaScript. Falta si la app aún no ha cargado el lugar.
   let actualizadoEn: Double?
   let aviso: Aviso?
@@ -33,6 +37,35 @@ struct LugarWidget: Codable {
 struct DatosWidget: Codable {
   let version: Int
   let lugares: [LugarWidget]
+  /// Dónde pedir el lugar al día: la ruta /widget del servidor propio, con la clave de la app.
+  let servidor: Servidor?
+}
+
+struct Servidor: Codable {
+  let url: String
+  let clave: String
+}
+
+/// El lugar al día desde el servidor, o nil si no contesta a tiempo o contesta otra cosa. Nunca
+/// lanza: sin servidor, el widget se queda con lo que dejó la app.
+func pedirAlServidor(_ lugar: LugarWidget, servidor: Servidor) async -> LugarWidget? {
+  guard var partes = URLComponents(string: servidor.url) else { return nil }
+  partes.queryItems = [
+    URLQueryItem(name: "lat", value: String(lugar.lat)),
+    URLQueryItem(name: "lon", value: String(lugar.lon)),
+    URLQueryItem(name: "id", value: lugar.id),
+    URLQueryItem(name: "nombre", value: lugar.nombre),
+  ] + (lugar.estacion.map { [URLQueryItem(name: "estacion", value: $0)] } ?? [])
+  guard let url = partes.url else { return nil }
+  var peticion = URLRequest(url: url, timeoutInterval: 15)
+  peticion.setValue(servidor.clave, forHTTPHeaderField: "x-app-key")
+  guard
+    let (cuerpo, respuesta) = try? await URLSession.shared.data(for: peticion),
+    (respuesta as? HTTPURLResponse)?.statusCode == 200,
+    let fresco = try? JSONDecoder().decode(LugarWidget.self, from: cuerpo),
+    fresco.actualizadoEn != nil
+  else { return nil }
+  return fresco
 }
 
 /// El identificador de la app: el del widget sin el «.widget» del final. De él salen el App Group

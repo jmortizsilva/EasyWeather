@@ -2,7 +2,8 @@ import SwiftUI
 import WidgetKit
 
 // El widget (docs/PROPUESTA-WIDGET.md). Cada uno enseña el lugar y los datos elegidos en «Editar
-// widget» (Configuracion.swift) con lo que la app dejó en el App Group (Datos.swift).
+// widget» (Configuracion.swift) con lo que la app dejó en el App Group o, si es más reciente, con
+// lo que contesta el servidor (Datos.swift).
 
 struct Proveedor: AppIntentTimelineProvider {
   func placeholder(in context: Context) -> Entrada {
@@ -15,14 +16,28 @@ struct Proveedor: AppIntentTimelineProvider {
 
   func timeline(for configuracion: ConfiguracionWidget, in context: Context) async -> Timeline<Entrada> {
     let ahora = Date.now
+    var actual = entrada(configuracion, en: ahora)
+    // Lo que dejó la app puede ser de ayer si no se ha abierto: se pide el lugar al servidor y se
+    // usa si es más reciente. Si no contesta, se queda lo de la app, con su hora.
+    if let datos = leerDatos(), let servidor = datos.servidor, let lugar = actual.contenido.lugar,
+      let fresco = await pedirAlServidor(lugar, servidor: servidor),
+      let fechaFresca = fresco.fecha, fechaFresca > (lugar.fecha ?? .distantPast)
+    {
+      actual = Entrada(
+        date: ahora, contenido: .lugar(fresco, fecha: fechaFresca), claves: configuracion.claves)
+    }
     var fechas = [ahora]
     // Una entrada más cuando el texto de la hora tiene que cambiar («A las» pasa a «Datos de las»,
-    // y a medianoche, a «ayer»). Los datos nuevos los trae la app al recargar el widget.
-    if case .lugar(_, let fecha) = entrada(configuracion, en: ahora).contenido {
+    // y a medianoche, a «ayer»).
+    if case .lugar(_, let fecha) = actual.contenido {
       let mañana = Calendar.current.startOfDay(for: ahora.addingTimeInterval(24 * 60 * 60))
       fechas += [fecha.addingTimeInterval(margenFresco), mañana].filter { $0 > ahora }
     }
-    return Timeline(entries: fechas.sorted().map { entrada(configuracion, en: $0) }, policy: .never)
+    let entradas = fechas.sorted().map {
+      Entrada(date: $0, contenido: actual.contenido, claves: actual.claves)
+    }
+    // Pedir otra vez en media hora. iOS decide cuándo de verdad, según su presupuesto del día.
+    return Timeline(entries: entradas, policy: .after(ahora.addingTimeInterval(30 * 60)))
   }
 
   private func entrada(_ configuracion: ConfiguracionWidget, en fecha: Date) -> Entrada {

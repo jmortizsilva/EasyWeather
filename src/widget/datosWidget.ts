@@ -6,12 +6,11 @@
 // VERSION_DATOS_WIDGET.
 
 import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
-import { formatTime } from '../utils/dayDetails';
 import { describeUvIndex, describeWindDirection } from '../utils/meteo';
 import { numeroEs } from '../utils/text';
 import { describeWeatherCode } from '../utils/weatherCodes';
 
-export const VERSION_DATOS_WIDGET = 2;
+export const VERSION_DATOS_WIDGET = 3;
 
 /** Los datos que se pueden elegir, en el orden en que se pintan. */
 export const CLAVES_DATO = [
@@ -39,6 +38,11 @@ export interface TextoDato {
 export interface LugarWidget {
   id: string;
   nombre: string;
+  /** Con esto el widget le pide al servidor el lugar al día, sin abrir la app. */
+  lat: number;
+  lon: number;
+  /** La estación de AEMET elegida a mano, si la hay y vale donde está el lugar. */
+  estacion?: string;
   /**
    * Cuándo se obtuvo la previsión, en milisegundos. El widget la enseña siempre. Falta si la app
    * todavía no ha cargado este lugar: aun así va en la lista, para poder elegirlo en el widget.
@@ -56,6 +60,8 @@ export interface LugarWidget {
 export interface DatosWidget {
   version: number;
   lugares: LugarWidget[];
+  /** Dónde pedir los lugares al día (la ruta /widget del servidor propio) y con qué clave. */
+  servidor?: { url: string; clave: string };
 }
 
 export interface FuenteLugar {
@@ -65,6 +71,17 @@ export interface FuenteLugar {
   updatedAt?: number;
   observacion?: CurrentObservation;
   avisos?: AvisosLugar;
+  estacion?: string;
+}
+
+/**
+ * «8:31» de «2026-10-21T08:31», la hora local del sitio tal como la da Open-Meteo. No usa
+ * formatTime (dayDetails), que formatea según la configuración regional del sistema: en el iPhone
+ * sale «8:31» y en Node «08:31», y este texto lo escriben las dos, la app y el servidor.
+ */
+function horaDeIso(iso: string | undefined): string | undefined {
+  const partes = iso?.match(/T(\d{2}):(\d{2})/);
+  return partes ? `${Number(partes[1])}:${partes[2]}` : undefined;
 }
 
 const grados = (valor: number) => ({
@@ -130,8 +147,8 @@ export function lugarWidget(fuente: FuenteLugar): LugarWidget {
       hablado: `Temperatura medida ${t} grados, estación ${estacion}`,
     };
   }
-  const amanece = formatTime(hoy?.sunrise);
-  const anochece = formatTime(hoy?.sunset);
+  const amanece = horaDeIso(hoy?.sunrise);
+  const anochece = horaDeIso(hoy?.sunset);
   if (amanece && anochece) {
     datos.sol = {
       visible: `Sol ${amanece} – ${anochece}`,
@@ -153,6 +170,9 @@ export function lugarWidget(fuente: FuenteLugar): LugarWidget {
   return {
     id: place.id,
     nombre: place.name,
+    lat: place.lat,
+    lon: place.lon,
+    ...(fuente.estacion ? { estacion: fuente.estacion } : {}),
     ...(forecast && fuente.updatedAt ? { actualizadoEn: fuente.updatedAt } : {}),
     ...(aviso ? { aviso } : {}),
     datos,
@@ -160,10 +180,14 @@ export function lugarWidget(fuente: FuenteLugar): LugarWidget {
 }
 
 /** Todos los lugares, la ubicación actual primero y luego en el orden de Mis lugares. */
-export function datosWidget(fuentes: FuenteLugar[]): DatosWidget {
+export function datosWidget(
+  fuentes: FuenteLugar[],
+  servidor?: DatosWidget['servidor'],
+): DatosWidget {
   const orden = (f: FuenteLugar) => (f.place.id === CURRENT_LOCATION_ID ? 0 : 1);
   return {
     version: VERSION_DATOS_WIDGET,
     lugares: [...fuentes].sort((a, b) => orden(a) - orden(b)).map(lugarWidget),
+    ...(servidor ? { servidor } : {}),
   };
 }

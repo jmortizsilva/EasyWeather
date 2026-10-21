@@ -6,6 +6,8 @@ import * as Application from 'expo-application';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { usePlaces } from '../state/PlacesContext';
+import { eleccionAplicable } from '../utils/estaciones';
+import { destinoDeWidget } from '../utils/servidorPropio';
 import { FuenteLugar, datosWidget } from './datosWidget';
 
 /** Clave en el almacén compartido; el widget la lee con el mismo nombre (Datos.swift). */
@@ -14,8 +16,14 @@ const CLAVE = 'datosWidget';
 const ESPERA_MS = 1000;
 
 export default function PublicadorWidget() {
-  const { places, currentLocationPlace, forecastByPlace, observacionByPlace, avisosByPlace } =
-    usePlaces();
+  const {
+    places,
+    currentLocationPlace,
+    forecastByPlace,
+    observacionByPlace,
+    avisosByPlace,
+    estacionPorLugar,
+  } = usePlaces();
 
   useEffect(() => {
     // El grupo sale del identificador REAL de la app, no del de app.json: con Metro, la
@@ -31,12 +39,23 @@ export default function PublicadorWidget() {
         updatedAt: forecastByPlace[place.id]?.updatedAt,
         observacion: observacionByPlace[place.id],
         avisos: avisosByPlace[place.id],
+        estacion: eleccionAplicable(estacionPorLugar[place.id], place)
+          ? estacionPorLugar[place.id]?.id
+          : undefined,
       }));
-      new ExtensionStorage(`group.${id}`).set(CLAVE, JSON.stringify(datosWidget(fuentes)));
+      const datos = datosWidget(fuentes, destinoDeWidget());
+      new ExtensionStorage(`group.${id}`).set(CLAVE, JSON.stringify(datos));
       ExtensionStorage.reloadWidget();
     }, ESPERA_MS);
     return () => clearTimeout(temporizador);
-  }, [places, currentLocationPlace, forecastByPlace, observacionByPlace, avisosByPlace]);
+  }, [
+    places,
+    currentLocationPlace,
+    forecastByPlace,
+    observacionByPlace,
+    avisosByPlace,
+    estacionPorLugar,
+  ]);
 
   return null;
 }
