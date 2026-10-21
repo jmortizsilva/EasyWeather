@@ -35,15 +35,28 @@ struct DatosWidget: Codable {
   let lugares: [LugarWidget]
 }
 
+/// El identificador de la app: el del widget sin el «.widget» del final. De él salen el App Group
+/// y el esquema del enlace, así que el widget de pruebas habla con la app de pruebas.
+func identificadorApp() -> String? {
+  guard let propio = Bundle.main.bundleIdentifier, propio.hasSuffix(".widget") else { return nil }
+  return String(propio.dropLast(".widget".count))
+}
+
 /// Los datos que la app dejó, o nil si todavía no dejó nada o son de otra versión.
 func leerDatos() -> DatosWidget? {
-  // El grupo sale del identificador del widget, que es el de la app con «.widget» al final.
   guard
-    let propio = Bundle.main.bundleIdentifier, propio.hasSuffix(".widget"),
-    case let id = String(propio.dropLast(".widget".count)),
+    let id = identificadorApp(),
     let texto = UserDefaults(suiteName: "group.\(id)")?.string(forKey: claveDatos),
     let datos = try? JSONDecoder().decode(DatosWidget.self, from: Data(texto.utf8)),
     datos.version == versionDatos
   else { return nil }
   return datos
+}
+
+/// Lo que abre la app en ese lugar al tocar el widget (src/widget/enlaceWidget.ts lo lee).
+func enlace(lugar id: String) -> URL? {
+  guard let app = identificadorApp(),
+    let codificado = id.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed.subtracting(CharacterSet(charactersIn: "/")))
+  else { return nil }
+  return URL(string: "\(app)://lugar/\(codificado)")
 }

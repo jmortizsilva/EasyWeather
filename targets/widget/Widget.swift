@@ -40,6 +40,8 @@ struct VistaEnWidget: View {
   var body: some View {
     VistaWidget(entrada: entrada, familia: familia)
       .containerBackground(for: .widget) { Color("$widgetBackground") }
+      // Tocarlo abre ese lugar en la app. Sin lugar (sin datos o borrado), abre la app sin más.
+      .widgetURL(entrada.contenido.lugar.flatMap { enlace(lugar: $0.id) })
   }
 }
 

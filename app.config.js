@@ -18,6 +18,9 @@ export default ({ config }) => {
   return {
     ...config,
     name: ES_PRUEBAS ? 'EasyWeather Dev' : config.name,
+    // Para que el widget abra SU app: con el mismo esquema en las dos, el widget de pruebas podría
+    // abrir la publicada. Expo ya lo ponía solo; se declara para no depender de eso.
+    scheme: bundleIdentifier,
     ios: {
       ...config.ios,
       bundleIdentifier,

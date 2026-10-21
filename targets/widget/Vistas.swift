@@ -13,6 +13,14 @@ enum Contenido {
   /// Está en la lista pero la app aún no lo ha cargado.
   case sinCargar(LugarWidget)
   case lugar(LugarWidget, fecha: Date)
+
+  /// El lugar del que se habla, si lo hay.
+  var lugar: LugarWidget? {
+    switch self {
+    case .sinDatos, .borrado: nil
+    case .sinCargar(let lugar), .lugar(let lugar, _): lugar
+    }
+  }
 }
 
 /// Sin lugar elegido, el primero: la ubicación actual si la hay.

@@ -12,6 +12,7 @@ import { ClavePestana, PESTANAS } from './src/navegacion/pestanas';
 import { PestanasProvider, usePestanas } from './src/navegacion/PestanasContext';
 import { NotificationsProvider } from './src/state/NotificationsContext';
 import { PlacesProvider } from './src/state/PlacesContext';
+import AbridorEnlaceWidget from './src/widget/AbridorEnlaceWidget';
 import PublicadorWidget from './src/widget/PublicadorWidget';
 import { ThemeProvider, useTema } from './src/theme/ThemeContext';
 import { useActualizaciones } from './src/utils/actualizaciones';
@@ -105,6 +106,7 @@ export default function App() {
                   que la pestaña en la que estabas sobrevive al remontaje. Pasa una vez cada mucho,
                   y quien sube la letra prefiere un parpadeo a una pantalla que no puede leer. */}
               <PestanasProvider>
+                <AbridorEnlaceWidget />
                 <Navegacion key={fontScale} />
               </PestanasProvider>
             </NotificationsProvider>
