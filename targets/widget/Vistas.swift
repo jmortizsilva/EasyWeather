@@ -60,6 +60,14 @@ func textoHora(_ fecha: Date, ahora: Date) -> String {
   return "Datos del \(formato.string(from: fecha))"
 }
 
+/// Un texto marcado en español para VoiceOver. Refuerzo de la región de la extensión
+/// (plugins/region-espanol.js): con ella en inglés, VoiceOver leía el widget con voz inglesa.
+func enEspanol(_ texto: String) -> Text {
+  var marcado = AttributedString(texto)
+  marcado.languageIdentifier = "es"
+  return Text(marcado)
+}
+
 /// Lo que lee VoiceOver: el lugar, el aviso, TODOS los datos elegidos aunque no quepan en
 /// pantalla, y la hora al final.
 func etiquetaAccesible(_ lugar: LugarWidget, datos: [TextoDato], hora: String) -> String {
@@ -105,7 +113,8 @@ struct VistaMensaje: View {
       Spacer(minLength: 0)
     }
     .frame(maxWidth: .infinity, alignment: .leading)
-    .accessibilityElement(children: .combine)
+    .accessibilityElement(children: .ignore)
+    .accessibilityLabel(enEspanol([nombre, mensaje].compactMap { $0 }.joined(separator: ". ")))
   }
 }
 
@@ -143,7 +152,7 @@ struct VistaLugar: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(etiquetaAccesible(lugar, datos: datos, hora: hora))
+    .accessibilityLabel(enEspanol(etiquetaAccesible(lugar, datos: datos, hora: hora)))
   }
 }
 

@@ -52,6 +52,7 @@
         }
       ],
       "./plugins/ciclo-de-vida-por-escenas",
+      "./plugins/region-espanol",
       "@bacons/apple-targets"
     ],
     "extra": {
