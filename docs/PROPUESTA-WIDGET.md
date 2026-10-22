@@ -119,7 +119,8 @@ Lo que se ve y lo que se oye, juntos para revisarlos de una vez.
 **En la galería de widgets:**
 
 - Nombre: «El tiempo»
-- Descripción: «La temperatura y los datos que elijas de un lugar.»
+- Descripción: «La temperatura y los datos que elijas de un lugar. El pequeño ocupa el sitio de
+  cuatro iconos, y el mediano, el de ocho.» (Lo que ocupa, añadido el 2026-10-22 a petición de Jose.)
 
 **En el widget**, además de los datos:
 

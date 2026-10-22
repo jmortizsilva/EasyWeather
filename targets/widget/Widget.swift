@@ -73,7 +73,11 @@ struct WidgetTiempo: Widget {
       VistaEnWidget(entrada: entrada)
     }
     .configurationDisplayName("El tiempo")
-    .description("La temperatura y los datos que elijas de un lugar.")
+    // Lo que ocupa cada tamaño, para quien no ve la vista previa de la galería (pedido por Jose el
+    // 2026-10-22). Es una sola descripción para todos los tamaños: así lo hace WidgetKit.
+    .description(
+      "La temperatura y los datos que elijas de un lugar. El pequeño ocupa el sitio de cuatro iconos, y el mediano, el de ocho."
+    )
     .supportedFamilies([.systemSmall, .systemMedium])
   }
 }
