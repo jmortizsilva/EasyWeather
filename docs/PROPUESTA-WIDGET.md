@@ -91,7 +91,12 @@ Todos existen ya en la app. Marcados con ✓ los que saldrían activados la prim
 | Salida y puesta de sol | Sol de 8:21 a 19:02 |
 
 Cuántos caben depende del tamaño. Si se eligen más de los que caben, salen los primeros de la lista
-en ese orden; **VoiceOver sí los lee todos**, porque la etiqueta no tiene el problema del espacio.
+en ese orden, y **VoiceOver lee lo mismo que se ve**: el pequeño, tres datos; el mediano, siete.
+
+> Cambiado el 2026-10-22. Al principio VoiceOver leía todos los elegidos en los dos tamaños, para no
+> perder nada por falta de sitio. Con VoiceOver el pequeño y el mediano sonaban igual, y Jose pidió
+> el comportamiento de los widgets de Apple: el tamaño cambia también lo que se oye. Lo que se lee
+> se elige igual que lo que se ve, en «Editar widget».
 
 | Tamaño | Lugar | Datos que caben |
 | --- | --- | --- |

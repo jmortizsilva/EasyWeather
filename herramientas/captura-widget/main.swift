@@ -71,9 +71,14 @@ MainActor.assumeIsolated {
       }
     }
     if case .lugar(let lugar, let fecha) = contenido {
-      let elegidos = claves.compactMap { lugar.datos[$0] }
       let hora = textoHora(fecha, ahora: fecha)
-      print("VoiceOver, \(nombreCaso): \(etiquetaAccesible(lugar, datos: elegidos, hora: hora))")
+      for (pequeño, tamaño) in [(true, "pequeño"), (false, "mediano")] {
+        let datos = datosQueCaben(
+          claves.compactMap { lugar.datos[$0] }, pequeño: pequeño, conAviso: lugar.aviso != nil)
+        let aviso = lugar.aviso.map { pequeño ? $0.corto : $0.hablado }
+        let texto = etiquetaAccesible(aviso: aviso, nombre: lugar.nombre, datos: datos, hora: hora)
+        print("VoiceOver, \(nombreCaso), \(tamaño): \(texto)")
+      }
     }
   }
   print("Dibujados \(casos.count * tamaños.count * letras.count * modos.count) en \(salida.path)")

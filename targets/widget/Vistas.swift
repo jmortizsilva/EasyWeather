@@ -68,11 +68,17 @@ func enEspanol(_ texto: String) -> Text {
   return Text(marcado)
 }
 
-/// Lo que lee VoiceOver: el lugar, el aviso, TODOS los datos elegidos aunque no quepan en
-/// pantalla, y la hora al final.
-func etiquetaAccesible(_ lugar: LugarWidget, datos: [TextoDato], hora: String) -> String {
-  let partes = [lugar.nombre, lugar.aviso?.hablado].compactMap { $0 } + datos.map(\.hablado) + [hora]
-  return partes.joined(separator: ". ")
+/// Los datos que caben en cada tamaño, en orden. En el pequeño, el aviso ocupa el sitio de uno.
+func datosQueCaben(_ datos: [TextoDato], pequeño: Bool, conAviso: Bool) -> [TextoDato] {
+  Array(datos.prefix((pequeño ? 3 : 7) - (conAviso ? 1 : 0)))
+}
+
+/// Lo que lee VoiceOver: lo mismo que se ve, en el mismo orden (el lugar, el aviso, los datos que
+/// caben y la hora). Como los widgets de Apple: el tamaño cambia también lo que se oye. Al
+/// principio leía todos los elegidos en los dos tamaños, y con VoiceOver el pequeño y el mediano
+/// sonaban igual; lo pidió Jose el 2026-10-22.
+func etiquetaAccesible(aviso: String?, nombre: String, datos: [TextoDato], hora: String) -> String {
+  ([nombre, aviso].compactMap { $0 } + datos.map(\.hablado) + [hora]).joined(separator: ". ")
 }
 
 struct VistaWidget: View {
@@ -126,9 +132,12 @@ struct VistaLugar: View {
   let familia: WidgetFamily
 
   var body: some View {
-    let datos = claves.compactMap { lugar.datos[$0] }
-    let hora = textoHora(fecha, ahora: ahora)
     let pequeño = familia == .systemSmall
+    let datos = datosQueCaben(
+      claves.compactMap { lugar.datos[$0] }, pequeño: pequeño, conAviso: lugar.aviso != nil)
+    let hora = textoHora(fecha, ahora: ahora)
+    // En el pequeño se ve «Aviso naranja» y no el fenómeno, así que es lo que se lee.
+    let aviso = lugar.aviso.map { pequeño ? $0.corto : $0.hablado }
     VStack(alignment: .leading, spacing: 2) {
       Text(lugar.nombre).font(.caption.bold()).lineLimit(2).minimumScaleFactor(0.8)
       if let aviso = lugar.aviso {
@@ -136,14 +145,12 @@ struct VistaLugar: View {
         VistaAviso(aviso: aviso, corto: pequeño).layoutPriority(1)
       }
       if pequeño {
-        // El aviso ocupa el sitio de un dato.
-        columna(Array(datos.prefix(lugar.aviso == nil ? 3 : 2)), conGrande: true)
+        columna(datos, conGrande: true)
       } else {
         // Dos columnas: con una sola, la mitad derecha se quedaba vacía y cabían cinco datos.
         HStack(alignment: .top, spacing: 12) {
           columna(Array(datos.prefix(2)), conGrande: true)
-          columna(Array(datos.dropFirst(2).prefix(lugar.aviso == nil ? 5 : 4)), conGrande: false)
-            .padding(.top, 6)
+          columna(Array(datos.dropFirst(2)), conGrande: false).padding(.top, 6)
         }
       }
       Spacer(minLength: 0)
@@ -152,7 +159,8 @@ struct VistaLugar: View {
     }
     .frame(maxWidth: .infinity, alignment: .leading)
     .accessibilityElement(children: .ignore)
-    .accessibilityLabel(enEspanol(etiquetaAccesible(lugar, datos: datos, hora: hora)))
+    .accessibilityLabel(
+      enEspanol(etiquetaAccesible(aviso: aviso, nombre: lugar.nombre, datos: datos, hora: hora)))
   }
 }
 
