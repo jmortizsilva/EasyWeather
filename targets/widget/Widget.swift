@@ -18,13 +18,18 @@ struct Proveedor: AppIntentTimelineProvider {
     let ahora = Date.now
     var actual = entrada(configuracion, en: ahora)
     // Lo que dejó la app puede ser de ayer si no se ha abierto: se pide el lugar al servidor y se
-    // usa si es más reciente. Si no contesta, se queda lo de la app, con su hora.
-    if let datos = leerDatos(), let servidor = datos.servidor, let lugar = actual.contenido.lugar,
-      let fresco = await pedirAlServidor(lugar, servidor: servidor),
-      let fechaFresca = fresco.fecha, fechaFresca > (lugar.fecha ?? .distantPast)
-    {
-      actual = Entrada(
-        date: ahora, contenido: .lugar(fresco, fecha: fechaFresca), claves: configuracion.claves)
+    // usa si es más reciente. Si es la ubicación actual y el teléfono se ha movido, se pide el sitio
+    // nuevo, y se usa aunque lo de la app sea más reciente, porque es de otro sitio. Si el servidor
+    // no contesta, se queda lo de la app, con su nombre y su hora: viejo, pero dicho.
+    if let datos = leerDatos(), let servidor = datos.servidor, let lugar = actual.contenido.lugar {
+      let movido = await ubicacionAlDia(lugar)
+      if let fresco = await pedirAlServidor(movido ?? lugar, servidor: servidor),
+        let fechaFresca = fresco.fecha,
+        movido != nil || fechaFresca > (lugar.fecha ?? .distantPast)
+      {
+        actual = Entrada(
+          date: ahora, contenido: .lugar(fresco, fecha: fechaFresca), claves: configuracion.claves)
+      }
     }
     var fechas = [ahora]
     // Una entrada más cuando el texto de la hora tiene que cambiar («A las» pasa a «Datos de las»,

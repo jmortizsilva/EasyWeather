@@ -15,7 +15,7 @@ struct LugarEntidad: AppEntity {
 
   var displayRepresentation: DisplayRepresentation {
     id == idUbicacionActual
-      ? DisplayRepresentation(title: "Ubicación actual", subtitle: "\(nombre)")
+      ? DisplayRepresentation(title: "Mi ubicación", subtitle: "\(nombre)")
       : DisplayRepresentation(title: "\(nombre)")
   }
 }

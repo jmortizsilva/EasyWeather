@@ -10,6 +10,9 @@
     <array>
       <string>es</string>
     </array>
+    <!-- La ubicación actual al día con el permiso de la app, sin pedir otro (Ubicacion.swift). -->
+    <key>NSWidgetWantsLocation</key>
+    <true/>
     <key>NSExtension</key>
     <dict>
       <key>NSExtensionPointIdentifier</key>
