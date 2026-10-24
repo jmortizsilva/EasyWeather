@@ -4,10 +4,11 @@
 import { ExtensionStorage } from '@bacons/apple-targets';
 import * as Application from 'expo-application';
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { usePlaces } from '../state/PlacesContext';
 import { eleccionAplicable } from '../utils/estaciones';
 import { destinoDeWidget } from '../utils/servidorPropio';
+import { sincronizarSeguimientoWidget } from '../utils/ubicacionFondo';
 import { FuenteLugar, datosWidget } from './datosWidget';
 
 /** Clave en el almacén compartido; el widget la lee con el mismo nombre (Datos.swift). */
@@ -24,6 +25,17 @@ export default function PublicadorWidget() {
     avisosByPlace,
     estacionPorLugar,
   } = usePlaces();
+
+  // El seguimiento que avisa al widget al moverte: al abrir y al volver a la app, por si el
+  // permiso de ubicación ha cambiado mientras tanto.
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    void sincronizarSeguimientoWidget();
+    const suscripcion = AppState.addEventListener('change', (estado) => {
+      if (estado === 'active') void sincronizarSeguimientoWidget();
+    });
+    return () => suscripcion.remove();
+  }, []);
 
   useEffect(() => {
     // El grupo sale del identificador REAL de la app, no del de app.json: con Metro, la

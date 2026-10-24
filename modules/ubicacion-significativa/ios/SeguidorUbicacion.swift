@@ -1,5 +1,6 @@
 import CoreLocation
 import UIKit
+import WidgetKit
 
 /**
  Sigue la ubicacion del usuario con el SERVICIO DE CAMBIOS SIGNIFICATIVOS de iOS, para que los
@@ -19,6 +20,13 @@ import UIKit
  EL REPORTE SE HACE AQUI, EN SWIFT, no en JavaScript. iOS da una ventana corta al despertar a la
  app, y esperar a que arranque el motor de JS para entonces enviar era justo lo que se agotaba.
  Por eso la URL, la clave y el token se guardan en `UserDefaults` cuando la app esta abierta.
+
+ TAMBIEN AVISA AL WIDGET (desde el 2026-10-22). El widget de «Mi ubicacion» solo se enteraba de que
+ te habias movido en su siguiente refresco, que decide iOS y puede tardar mucho; un probador lo vio
+ dar Usera estando en Vallecas. Ahora, al moverte mas de 500 m, se deja la posicion y el nombre en
+ el App Group y se le pide a iOS que lo redibuje. Por eso hay dos interruptores: `activo` (hay
+ avisos: se reporta al servidor, como siempre) y `paraWidget` (permiso «Siempre»: solo el widget,
+ la posicion no sale del telefono). El servicio esta encendido si lo esta cualquiera de los dos.
  */
 final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
   static let compartido = SeguidorUbicacion()
@@ -36,6 +44,17 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
     static let token = "tiempo.seguimiento.token"
     static let ultimaLat = "tiempo.seguimiento.ultimaLat"
     static let ultimaLon = "tiempo.seguimiento.ultimaLon"
+    static let paraWidget = "tiempo.seguimiento.paraWidget"
+    /// En el App Group, no en estos ajustes: es lo que lee el widget (targets/widget/Datos.swift).
+    static let ubicacionWidget = "ubicacionWidget"
+  }
+
+  /// Menos que esto no cambia ni el tiempo ni el barrio que enseña el widget.
+  private static let METROS_WIDGET: CLLocationDistance = 500
+
+  /// El almacen que comparte la app con el widget: `group.` + el identificador de la app.
+  private var compartidoConWidget: UserDefaults? {
+    Bundle.main.bundleIdentifier.flatMap { UserDefaults(suiteName: "group.\($0)") }
   }
 
   /**
@@ -68,13 +87,32 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
     gestor.startMonitoringSignificantLocationChanges()
   }
 
+  /// Deja de reportar al servidor. El servicio sigue si el widget lo necesita.
   func parar() {
     ajustes.set(false, forKey: Clave.activo)
-    gestor.stopMonitoringSignificantLocationChanges()
     ajustes.removeObject(forKey: Clave.ultimaLat)
     ajustes.removeObject(forKey: Clave.ultimaLon)
+    apagarSiNadieLoUsa()
   }
 
+  /// Para el widget, con o sin avisos. Lo enciende la app si hay permiso «Siempre».
+  func paraElWidget(_ encendido: Bool) {
+    ajustes.set(encendido, forKey: Clave.paraWidget)
+    if encendido {
+      gestor.startMonitoringSignificantLocationChanges()
+    } else {
+      compartidoConWidget?.removeObject(forKey: Clave.ubicacionWidget)
+      apagarSiNadieLoUsa()
+    }
+  }
+
+  private func apagarSiNadieLoUsa() {
+    if !estaActivo && !ajustes.bool(forKey: Clave.paraWidget) {
+      gestor.stopMonitoringSignificantLocationChanges()
+    }
+  }
+
+  /// Si se reporta al servidor (hay avisos). Es lo que enseña la app en «Estado de la ubicación».
   var estaActivo: Bool {
     ajustes.bool(forKey: Clave.activo)
   }
@@ -87,7 +125,7 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
    ejecutarse, porque el relanzamiento en segundo plano es precisamente cuando puede no llegar.
    */
   func rearmarSiTocaba() {
-    guard estaActivo else {
+    guard estaActivo || ajustes.bool(forKey: Clave.paraWidget) else {
       return
     }
     gestor.startMonitoringSignificantLocationChanges()
@@ -96,10 +134,15 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
   // MARK: - CLLocationManagerDelegate
 
   func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-    guard let sitio = locations.last, teHasMovido(sitio) else {
+    guard let sitio = locations.last else {
       return
     }
-    reportar(sitio)
+    let alServidor = estaActivo && teHasMovido(sitio)
+    let alWidget = ajustes.bool(forKey: Clave.paraWidget) && seHaMovidoParaElWidget(sitio)
+    guard alServidor || alWidget else {
+      return
+    }
+    reportar(sitio, alServidor: alServidor, alWidget: alWidget)
   }
 
   func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
@@ -116,6 +159,37 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
       return true // Nunca se reporto: hay que hacerlo.
     }
     return sitio.distance(from: CLLocation(latitude: lat, longitude: lon)) >= Self.METROS_MINIMOS
+  }
+
+  private func seHaMovidoParaElWidget(_ sitio: CLLocation) -> Bool {
+    guard
+      let texto = compartidoConWidget?.string(forKey: Clave.ubicacionWidget),
+      let anterior = try? JSONDecoder().decode(UbicacionWidget.self, from: Data(texto.utf8))
+    else {
+      return true
+    }
+    return sitio.distance(from: CLLocation(latitude: anterior.lat, longitude: anterior.lon))
+      >= Self.METROS_WIDGET
+  }
+
+  /// Lo que lee el widget. El mismo formato que `UbicacionGuardada` en targets/widget/Datos.swift.
+  private struct UbicacionWidget: Codable {
+    let lat: Double
+    let lon: Double
+    let nombre: String?
+    /// Milisegundos, como el resto de fechas del App Group.
+    let en: Double
+  }
+
+  private func dejarParaElWidget(_ sitio: CLLocation, nombre: String?) {
+    let ubicacion = UbicacionWidget(
+      lat: sitio.coordinate.latitude, lon: sitio.coordinate.longitude, nombre: nombre,
+      en: sitio.timestamp.timeIntervalSince1970 * 1000)
+    guard let datos = try? JSONEncoder().encode(ubicacion) else {
+      return
+    }
+    compartidoConWidget?.set(String(decoding: datos, as: UTF8.self), forKey: Clave.ubicacionWidget)
+    WidgetCenter.shared.reloadAllTimelines()
   }
 
   private func anotarReportado(_ sitio: CLLocation) {
@@ -149,13 +223,21 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
    pocos segundos y una peticion de red puede no caber. Si algo falla no se anota nada, asi que el
    proximo cambio volvera a intentarlo con la ubicacion de entonces, que es la que importa.
    */
-  private func reportar(_ sitio: CLLocation) {
-    guard
-      let texto = ajustes.string(forKey: Clave.url), let url = URL(string: texto),
-      let appKey = ajustes.string(forKey: Clave.appKey),
-      let token = ajustes.string(forKey: Clave.token)
-    else {
-      return // Todavia no se ha abierto la app para configurarlo.
+  private func reportar(_ sitio: CLLocation, alServidor: Bool, alWidget: Bool) {
+    // Al servidor solo con lo necesario guardado; sin ello, sigue el widget si le toca.
+    let destino: (URL, String, String)? = {
+      guard
+        alServidor,
+        let texto = ajustes.string(forKey: Clave.url), let url = URL(string: texto),
+        let appKey = ajustes.string(forKey: Clave.appKey),
+        let token = ajustes.string(forKey: Clave.token)
+      else {
+        return nil // Todavia no se ha abierto la app para configurarlo.
+      }
+      return (url, appKey, token)
+    }()
+    guard destino != nil || alWidget else {
+      return
     }
 
     var tarea = UIBackgroundTaskIdentifier.invalid
@@ -181,9 +263,18 @@ final class SeguidorUbicacion: NSObject, CLLocationManagerDelegate {
         return
       }
       // Sin nombre se envia igual: el servidor titula entonces "en tu ubicacion", que es impreciso
-      // pero cierto. Peor seria arrastrar el nombre de la ciudad anterior.
-      self.enviar(sitio, nombre: Self.nombreDe(sitios?.first), url: url, appKey: appKey,
-                  token: token, alTerminar: terminar)
+      // pero cierto. Peor seria arrastrar el nombre de la ciudad anterior. Y el widget dice
+      // entonces «Mi ubicacion».
+      let nombre = Self.nombreDe(sitios?.first)
+      if alWidget {
+        self.dejarParaElWidget(sitio, nombre: nombre)
+      }
+      guard let (url, appKey, token) = destino else {
+        terminar()
+        return
+      }
+      self.enviar(sitio, nombre: nombre, url: url, appKey: appKey, token: token,
+                  alTerminar: terminar)
     }
   }
 

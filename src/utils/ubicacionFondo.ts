@@ -3,6 +3,7 @@ import {
   empezarSeguimiento,
   hayModuloDeUbicacion,
   pararSeguimiento,
+  seguimientoParaWidget,
 } from '../../modules/ubicacion-significativa';
 import { nombreUbicacion } from './geocode';
 import { getPushToken } from './push';
@@ -139,6 +140,23 @@ export async function iniciarSeguimientoUbicacion(): Promise<void> {
     // El modulo nativo no puede tumbar la sincronizacion de avisos: quedarse sin seguimiento
     // degrada la ubicacion a la del ultimo arranque, pero un fallo aqui sin capturar dejaria una
     // promesa rechazada en medio de guardar los avisos. Se reintenta en la proxima sincronizacion.
+  }
+}
+
+/**
+ * El seguimiento para el widget: encendido si hay permiso «Siempre», aunque no haya avisos (sin
+ * ese permiso iOS no despierta a la app al moverte). Se llama al abrir la app y al volver a ella,
+ * así que si se quita el permiso, se apaga en la siguiente apertura.
+ */
+export async function sincronizarSeguimientoWidget(): Promise<void> {
+  if (!hayModuloDeUbicacion) {
+    return;
+  }
+  try {
+    const fondo = await Location.getBackgroundPermissionsAsync();
+    await seguimientoParaWidget(fondo.status === 'granted');
+  } catch {
+    // Sin esto el widget sigue funcionando, solo que se entera más tarde de que te has movido.
   }
 }
 

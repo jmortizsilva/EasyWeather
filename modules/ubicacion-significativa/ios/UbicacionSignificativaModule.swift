@@ -19,6 +19,12 @@ public class UbicacionSignificativaModule: Module {
       SeguidorUbicacion.compartido.parar()
     }.runOnQueue(.main)
 
+    // Para el widget de «Mi ubicacion»: con permiso «Siempre», aunque no haya avisos. La posicion
+    // se queda en el telefono; solo se reporta al servidor con `empezar`.
+    AsyncFunction("paraElWidget") { (encendido: Bool) in
+      SeguidorUbicacion.compartido.paraElWidget(encendido)
+    }.runOnQueue(.main)
+
     // Para poder comprobar desde la app si el seguimiento esta encendido de verdad, en vez de
     // suponerlo: lo que no se puede ver, no se puede arreglar.
     AsyncFunction("estaActivo") { () -> Bool in

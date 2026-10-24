@@ -12,6 +12,7 @@ interface ModuloNativo {
   configurar(url: string, appKey: string, token: string): Promise<void>;
   empezar(): Promise<void>;
   parar(): Promise<void>;
+  paraElWidget(encendido: boolean): Promise<void>;
   estaActivo(): Promise<boolean>;
 }
 
@@ -41,6 +42,15 @@ export async function empezarSeguimiento(
 
 export async function pararSeguimiento(): Promise<void> {
   await nativo?.parar();
+}
+
+/**
+ * Enciende o apaga el seguimiento para el widget de «Mi ubicación», con o sin avisos. Con él, el
+ * widget cambia de sitio al moverte en vez de esperar a su refresco. La posición no sale del
+ * teléfono: al servidor solo se reporta con `empezarSeguimiento`.
+ */
+export async function seguimientoParaWidget(encendido: boolean): Promise<void> {
+  await nativo?.paraElWidget(encendido);
 }
 
 /** Si el seguimiento esta encendido de verdad, para poder enseñarlo en vez de suponerlo. */
