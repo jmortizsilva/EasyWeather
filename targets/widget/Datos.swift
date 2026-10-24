@@ -57,7 +57,8 @@ func pedirAlServidor(_ lugar: LugarWidget, servidor: Servidor) async -> LugarWid
     URLQueryItem(name: "nombre", value: lugar.nombre),
   ] + (lugar.estacion.map { [URLQueryItem(name: "estacion", value: $0)] } ?? [])
   guard let url = partes.url else { return nil }
-  var peticion = URLRequest(url: url, timeoutInterval: 15)
+  // Corto: iOS da poco tiempo a cada refresco del widget, y si lo corta no cambia nada.
+  var peticion = URLRequest(url: url, timeoutInterval: 8)
   peticion.setValue(servidor.clave, forHTTPHeaderField: "x-app-key")
   guard
     let (cuerpo, respuesta) = try? await URLSession.shared.data(for: peticion),
@@ -66,6 +67,26 @@ func pedirAlServidor(_ lugar: LugarWidget, servidor: Servidor) async -> LugarWid
     fresco.actualizadoEn != nil
   else { return nil }
   return fresco
+}
+
+/// La última posición que dejó el seguidor de ubicación de la app (SeguidorUbicacion.swift, en
+/// modules/ubicacion-significativa) al moverte, con la app cerrada. Mismo formato que allí.
+struct UbicacionGuardada: Codable {
+  let lat: Double
+  let lon: Double
+  let nombre: String?
+  /// Milisegundos.
+  let en: Double
+
+  var fecha: Date { Date(timeIntervalSince1970: en / 1000) }
+}
+
+func leerUbicacionGuardada() -> UbicacionGuardada? {
+  guard
+    let id = identificadorApp(),
+    let texto = UserDefaults(suiteName: "group.\(id)")?.string(forKey: "ubicacionWidget")
+  else { return nil }
+  return try? JSONDecoder().decode(UbicacionGuardada.self, from: Data(texto.utf8))
 }
 
 /// El identificador de la app: el del widget sin el «.widget» del final. De él salen el App Group

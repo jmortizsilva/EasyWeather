@@ -73,6 +73,29 @@ la hora del dato**. Un dato viejo no se presenta como actual.
 
 Esto toca el servidor y es una ruta nueva: la propongo aquí, pero es su propia decisión.
 
+### Cómo se actualiza, tal como quedó (2026-10-24)
+
+El widget se redibuja por cuatro caminos:
+
+1. **Al abrir la app**: deja sus datos en el App Group y pide a iOS que redibuje el widget en el
+   momento. Tocar el widget abre la app, así que también lo actualiza: eso es lo que parecía «se
+   actualiza al tocarlo» en la build 24.
+2. **Al moverte**, solo «Mi ubicación»: el seguidor de la app (`modules/ubicacion-significativa`)
+   recibe de iOS los cambios significativos de ubicación, también con la app cerrada (iOS la relanza
+   en segundo plano). Si te has movido más de 500 m, deja la posición y el nombre del sitio en el
+   App Group y pide a iOS que redibuje el widget. Necesita el permiso «Siempre»; con él se enciende
+   aunque no haya avisos, y entonces la posición no sale del teléfono (al servidor de avisos solo
+   se reporta si hay avisos activos, como antes). Comprobado en el simulador con la app delante,
+   detrás y cerrada.
+3. **Cuando iOS lo refresca**, cada media hora como mucho y según su presupuesto. En cada refresco,
+   «Mi ubicación» toma la posición del seguidor si es reciente; si no, la pide el propio widget, y
+   solo si iOS se lo permite (`isAuthorizedForWidgetUpdates`). Con la posición, pide al servidor
+   los datos de ese sitio.
+4. **Cuando cambia el texto de la hora** («A las» pasa a «Datos de las»), sin datos nuevos.
+
+En la build 24 solo existían el 1 y el 3, y el 3 pedía la posición sin comprobar si iOS se la
+daba al widget, con esperas de hasta 25 segundos que iOS podía cortar. Por eso tardaba.
+
 ## 4. Los datos que se pueden elegir
 
 Todos existen ya en la app. Marcados con ✓ los que saldrían activados la primera vez.
