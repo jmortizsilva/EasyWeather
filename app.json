@@ -47,8 +47,8 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Tiempo usa tu ubicación para mostrarte la previsión meteorológica de tu zona.",
-          "locationAlwaysAndWhenInUsePermission": "Tiempo usa tu ubicación en segundo plano para que los avisos y el resumen te lleguen del sitio donde estás, aunque no tengas la app abierta."
+          "locationWhenInUsePermission": "EasyWeather usa tu ubicación para mostrarte la previsión meteorológica de tu zona.",
+          "locationAlwaysAndWhenInUsePermission": "EasyWeather usa tu ubicación en segundo plano para que los avisos, el resumen y el widget te den el tiempo del sitio donde estás, aunque no tengas la app abierta."
         }
       ],
       "./plugins/ciclo-de-vida-por-escenas",

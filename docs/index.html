@@ -35,7 +35,7 @@
 <body>
   <main>
     <h1>EasyWeather: ayuda y privacidad</h1>
-    <p class="updated">Última actualización: 21 de septiembre de 2026</p>
+    <p class="updated">Última actualización: 25 de octubre de 2026</p>
 
     <nav aria-label="Secciones de esta página">
       <p>
@@ -58,7 +58,8 @@
       guardan</strong>: se usan para responder y se descartan. Solo si activas algún
       <strong>aviso</strong> —funciones opcionales y desactivadas de fábrica— se registran
       datos en ese servidor, para poder avisarte del tiempo del sitio donde estés aunque no
-      tengas la app abierta (se explica más abajo).
+      tengas la app abierta (se explica más abajo). El widget de la pantalla de inicio hace
+      las mismas consultas, también con la app cerrada.
     </p>
 
     <h2>Datos que usa la app</h2>
@@ -75,9 +76,20 @@
         registrada en nuestro servidor, como se describe en el apartado siguiente.
       </li>
       <li>
+        <strong>Widget de la pantalla de inicio.</strong> Si añades el widget, este pide a
+        nuestro servidor el tiempo del lugar que muestra, también con la app cerrada. En esa
+        consulta viajan las coordenadas y el nombre del lugar, que tampoco se guardan. Si has
+        concedido el permiso de ubicación <strong>«Siempre»</strong>, la app sigue en segundo
+        plano tus cambios de zona, con el servicio de iOS de cambios significativos, que no usa
+        el GPS, para que el widget de «Mi ubicación» diga el tiempo del sitio donde estás. Si
+        no tienes ningún aviso activo, esa ubicación se queda en tu dispositivo: solo la usa el
+        widget.
+      </li>
+      <li>
         <strong>Lugares guardados y preferencias.</strong> Los lugares que añades y la
         previsión reciente se guardan <strong>solo en tu dispositivo</strong>
-        (almacenamiento local de la app) y se borran si desinstalas la app. La configuración
+        (almacenamiento local de la app, y un espacio que la app comparte con su widget,
+        también dentro del dispositivo) y se borran si desinstalas la app. La configuración
         de los avisos que actives se guarda además en nuestro servidor, porque es él quien
         te los envía (ver más abajo).
       </li>

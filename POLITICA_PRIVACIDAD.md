@@ -1,6 +1,6 @@
 # Política de privacidad de EasyWeather
 
-_Última actualización: 9 de septiembre de 2026_
+_Última actualización: 25 de octubre de 2026_
 
 EasyWeather es una aplicación de previsión meteorológica. Esta política explica qué datos usa
 la app y cómo los trata. En resumen: **EasyWeather no crea cuentas, no muestra publicidad y no
@@ -11,7 +11,8 @@ pide la medición de la estación más cercana y los avisos oficiales de AEMET. 
 viajan las coordenadas del lugar que estás mirando, pero **no se guardan**: se usan para
 responder y se descartan. Solo si activas algún **aviso** —funciones opcionales y desactivadas
 de fábrica— se registran datos en ese servidor, para poder avisarte del tiempo del sitio donde
-estés aunque no tengas la app abierta (se explica más abajo).
+estés aunque no tengas la app abierta (se explica más abajo). El widget de la pantalla de inicio
+hace las mismas consultas, también con la app cerrada.
 
 ## Datos que usa la app
 
@@ -24,9 +25,16 @@ estés aunque no tengas la app abierta (se explica más abajo).
   conceder el permiso de ubicación, buscando lugares por su nombre. **Si activas algún
   aviso**, la ubicación además queda registrada en nuestro servidor, como se describe en el
   apartado siguiente.
+- **Widget de la pantalla de inicio.** Si añades el widget, este pide a nuestro servidor el
+  tiempo del lugar que muestra, también con la app cerrada. En esa consulta viajan las
+  coordenadas y el nombre del lugar, que tampoco se guardan. Si has concedido el permiso de
+  ubicación **"Siempre"**, la app sigue en segundo plano tus cambios de zona, con el servicio de
+  iOS de cambios significativos, que no usa el GPS, para que el widget de «Mi ubicación» diga el
+  tiempo del sitio donde estás. Si no tienes ningún aviso activo, esa ubicación se queda en tu
+  dispositivo: solo la usa el widget.
 - **Lugares guardados y preferencias.** Los lugares que añades y la previsión reciente se
-  guardan **solo en tu dispositivo** (almacenamiento local de la app) y se borran si
-  desinstalas la app. La configuración de los avisos que actives se guarda además en nuestro
+  guardan **solo en tu dispositivo** (almacenamiento local de la app, y un espacio que la app
+  comparte con su widget, también dentro del dispositivo) y se borran si desinstalas la app. La configuración de los avisos que actives se guarda además en nuestro
   servidor, porque es él quien te los envía (ver más abajo).
 
 ## Avisos (opcional)
