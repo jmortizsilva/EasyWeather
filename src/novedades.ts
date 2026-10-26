@@ -9,7 +9,9 @@
 // Se VACIA al lanzar una build: lo que va dentro del binario ya lo cuentan las notas de
 // TestFlight, y esta pantalla solo aparece tras un update por aire. Si no se vaciara, el
 // primer update sobre la build repetiria cosas que el usuario ya tiene instaladas.
-// Ultima vez que se vacio: build 19 de produccion del 2026-09-09 (la que lleva AEMET).
+// Ultima vez que se vacio: build de produccion de la 1.2.0, el 2026-10-26 (la del widget). Lo que
+// habia (elegir estacion, «Guardar este sitio», arreglos de VoiceOver) lo cuentan ya las novedades
+// de la Store de la 1.2.0.
 //
 // EXCEPCION del 2026-09-28, con la build de BETA (canal `beta`): esta vez NO se vacia. Esa regla se
 // escribio cuando habia un solo canal, y ahora hay dos: los probadores reciben la beta con esto ya
@@ -27,10 +29,4 @@
 // quien no llegase a aplicar aquel update no se enterará de esas seis.
 // Las dos primeras ya se publicaron el 2026-09-27; se quedan porque este fichero solo se vacía al
 // lanzar una build, y quien no llegara a aplicar aquel update tiene que enterarse igual.
-export const NOVEDADES: string[] = [
-  'Arreglado: con VoiceOver, al recorrer la previsión de un lugar buscado había una parada en blanco que no decía nada, entre el último día y el enlace a Open-Meteo.',
-  'Con VoiceOver, al caer en la fila de un día ya se dice «Temperatura» antes de los números. Antes empezaba por «mínima 12 grados» y no había forma de saber de qué era ese número.',
-  'Nuevo: en «Mis lugares», debajo de tu ubicación, el botón «Guardar este sitio» deja fijo el sitio donde estás, con su nombre, para seguir viéndolo cuando te vayas. Sirve además para los pueblos y barrios que no aparecen al buscarlos.',
-  'Nuevo: ahora puedes elegir la estación de AEMET de cada lugar, incluida tu ubicación. Y si no hay ninguna medición cerca, también puedes entrar a buscar una más lejana. Toca la línea «Medido» de la pantalla del tiempo y verás las que hay cerca, con su distancia, su altitud y la hora de su último dato. Si la que elijas deja de publicar, se te dirá: nunca se pondrá en su sitio el dato de otra. En «Mi ubicación», como ese lugar te sigue, tu elección se queda dormida si te alejas más de 25 kilómetros y vuelve sola al regresar.',
-  'Los avisos por notificación ya miden donde dice la pantalla: si has elegido estación para un lugar, el resumen y el aviso de temperatura usan esa misma. Si ese día no publica, se usa la más cercana y el texto lo dice, para que nunca se atribuya una medición a quien no la tomó.',
-];
+export const NOVEDADES: string[] = [];
