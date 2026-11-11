@@ -281,6 +281,17 @@ diseño y las fases, en [PROPUESTA-WIDGET.md](PROPUESTA-WIDGET.md). Tres cosas q
   las mismas vistas en PNG, en los dos tamaños, claro y oscuro, letra normal y al máximo, e imprime
   lo que leería VoiceOver. Necesita que la app se haya abierto una vez para dejar los datos.
 
+## 8. Después de publicar una versión, TestFlight ya no la acepta
+
+Cuando Apple aprueba una versión para la Store, **cierra ese número también para TestFlight**. La
+build 27 (beta, del 2026-11-11) se compiló con la 1.2.0 ya publicada, y Apple la rechazó al subirla
+con ITMS-90186 («The train version '1.2.0' is closed») e ITMS-90062. EAS no avisa: la build termina
+bien y el rechazo llega después, por correo.
+
+Así que **la primera build después de una versión publicada sube `version` en `app.json`**, sea para
+la Store o solo para los probadores. Con `runtimeVersion` fijo a mano no cambia nada más: las
+actualizaciones por aire siguen llegando igual a la build nueva y a la de la Store.
+
 ## Datos del Mac, para no volver a averiguarlos
 
 | Qué | Valor |
