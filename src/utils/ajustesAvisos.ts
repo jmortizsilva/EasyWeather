@@ -4,7 +4,13 @@
 // habla con expo-notifications y con Open-Meteo, y basta con importarlo para que expo-notifications
 // suelte avisos por consola. Separandolo, esta parte se prueba sin arrastrar nada de eso.
 
-import { AvisosOficialesAlert, NotificationSettings, SummaryAlert, ThresholdAlert } from '../types';
+import {
+  AvisoLluviaAlert,
+  AvisosOficialesAlert,
+  NotificationSettings,
+  SummaryAlert,
+  ThresholdAlert,
+} from '../types';
 
 // Títulos tal y como los genera buildDayDetails; el usuario elige cuáles quiere en el resumen.
 export const DAILY_FIELD_OPTIONS = [
@@ -37,10 +43,21 @@ export const DEFAULT_AVISOS_OFICIALES: AvisosOficialesAlert = {
   fenomenosSilenciados: [],
 };
 
+// Lo aprobado el 2026-11-11 (docs/PROPUESTA-AVISO-LLUVIA.md): 35 km, cualquier lluvia, sin segundo
+// aviso y con la franja de noche desactivada, que propone de 23:00 a 8:00 al activarla.
+export const DEFAULT_AVISO_LLUVIA: AvisoLluviaAlert = {
+  enabled: false,
+  radioKm: 35,
+  intensidad: 'cualquiera',
+  segundoAviso: false,
+  noche: { activada: false, desde: 23 * 60, hasta: 8 * 60 },
+};
+
 export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
   summaries: [],
   threshold: DEFAULT_THRESHOLD,
   avisosOficiales: DEFAULT_AVISOS_OFICIALES,
+  avisoLluvia: DEFAULT_AVISO_LLUVIA,
 };
 
 export function createSummaryAlert(placeId: string): SummaryAlert {
@@ -66,9 +83,9 @@ export function isValidSettings(value: unknown): value is NotificationSettings {
 }
 
 /**
- * Completa lo leido del disco con lo que falte. Hace falta porque `avisosOficiales` se anadio
- * despues: quien ya tenia la app guardo sus ajustes sin ese campo, y sin esto la pantalla se
- * quedaria leyendo `undefined.enabled`. No se sube la version de la clave de almacenamiento a
+ * Completa lo leido del disco con lo que falte. Hace falta porque `avisosOficiales` y `avisoLluvia`
+ * se anadieron despues: quien ya tenia la app guardo sus ajustes sin esos campos, y sin esto la
+ * pantalla se quedaria leyendo `undefined.enabled`. No se sube la version de la clave de almacenamiento a
  * proposito: eso borraria los avisos que la gente ya tiene configurados.
  */
 export function completarAjustes(settings: NotificationSettings): NotificationSettings {
@@ -81,5 +98,7 @@ export function completarAjustes(settings: NotificationSettings): NotificationSe
       // ella. Lista vacia = no hay nada silenciado, que es lo que esa gente tenia hasta ahora.
       fenomenosSilenciados: oficiales.fenomenosSilenciados ?? [],
     },
+    // Tambien llego despues: quien lo tenia guardado de antes no tiene el campo.
+    avisoLluvia: settings.avisoLluvia ?? DEFAULT_AVISO_LLUVIA,
   };
 }

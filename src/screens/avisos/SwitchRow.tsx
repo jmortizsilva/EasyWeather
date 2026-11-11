@@ -12,8 +12,11 @@ export default function SwitchRow({
   onValueChange,
   divider,
   hint,
+  etiquetaHablada,
 }: {
   label: string;
+  /** Si VoiceOver debe decirlo distinto de como se ve: «5 kilómetros» donde pone «5 km». */
+  etiquetaHablada?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
   divider?: boolean;
@@ -26,7 +29,7 @@ export default function SwitchRow({
       style={[styles.switchRow, divider && styles.rowDivider]}
       accessibilityRole="switch"
       accessibilityState={{ checked: value }}
-      accessibilityLabel={label}
+      accessibilityLabel={etiquetaHablada ?? label}
       accessibilityHint={hint}
       onPress={() => onValueChange(!value)}>
       <Text style={styles.rowTitle}>{label}</Text>

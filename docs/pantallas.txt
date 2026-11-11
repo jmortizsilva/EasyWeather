@@ -20,6 +20,8 @@ avisos      avisos
 avisos      avisos-temperatura      abrirTemperatura
 avisos      avisos-resumenes        cerrarSeccion abrirResumenes
 avisos      avisos-oficiales        cerrarSeccion abrirOficiales
+avisos      avisos-lluvia           cerrarSeccion abrirLluvia
+avisos      avisos-lluvia-controles verControlesLluvia
 avisos      avisos-tras-cerrar      cerrarSeccion
 
 # Lo que la tanda NO alcanza, y hay que mirar con el movil en la mano:

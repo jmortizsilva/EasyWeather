@@ -243,6 +243,24 @@ export interface AvisosOficialesAlert {
   fenomenosSilenciados: string[];
 }
 
+// Tipo 4: aviso de lluvia por radar, siempre de la ubicacion actual. Lo decide y lo envia el
+// servidor con el radar de AEMET; ver docs/PROPUESTA-AVISO-LLUVIA.md.
+export type RadioLluviaKm = 10 | 20 | 35 | 50;
+export type IntensidadLluvia = 'cualquiera' | 'moderada' | 'fuerte';
+
+export interface AvisoLluviaAlert {
+  enabled: boolean;
+  radioKm: RadioLluviaKm;
+  intensidad: IntensidadLluvia;
+  /** Otro aviso cuando la lluvia esta a menos de 5 km. */
+  segundoAviso: boolean;
+  /**
+   * Franja sin avisos, en minutos del dia. Las horas se guardan aunque este desactivada, para que
+   * al volver a activarla salgan las que se eligieron.
+   */
+  noche: { activada: boolean; desde: number; hasta: number };
+}
+
 /** Un fenomeno del catalogo que sirve el servidor, para poder elegir cuales se silencian. */
 export interface FenomenoAviso {
   /** Codigo de AEMET: `PR`, `TO`, `CO`… Es lo que se guarda al silenciar. */
@@ -255,6 +273,7 @@ export interface NotificationSettings {
   summaries: SummaryAlert[];
   threshold: ThresholdAlert;
   avisosOficiales: AvisosOficialesAlert;
+  avisoLluvia: AvisoLluviaAlert;
 }
 
 export interface HourlyForecast {

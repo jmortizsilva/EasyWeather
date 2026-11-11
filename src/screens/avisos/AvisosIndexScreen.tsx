@@ -5,8 +5,10 @@ import EstadoUbicacion from '../../components/EstadoUbicacion';
 import { useNotifications } from '../../state/NotificationsContext';
 import { useColores } from '../../theme/ThemeContext';
 import { formatTime } from '../../utils/ajustesAvisos';
+import { estadoAvisoLluvia } from '../../utils/avisoLluvia';
 import { useAccionesDeDesarrollo } from '../../desarrollo/automatizacion';
 import AvisoTemperatura from './AvisoTemperatura';
+import AvisoLluvia from './AvisoLluvia';
 import AvisosOficiales from './AvisosOficiales';
 import AvisosResumen from './AvisosResumen';
 import { crearEstilos } from './estilos';
@@ -15,17 +17,18 @@ import { TOPE_TITULO } from '../../theme/letraGrande';
 import TapaBarraDeEstado from '../../components/TapaBarraDeEstado';
 
 // La pestaña Avisos es un indice, no un formulario. Antes era una sola pantalla con las tres cosas
-// seguidas —temperatura, resumenes y avisos oficiales—, y con VoiceOver llegar a la ultima eran
+// seguidas —temperatura, resumenes y avisos oficiales; despues llego el de lluvia—, y con VoiceOver llegar a la ultima eran
 // muchos deslizamientos por delante de cosas que no buscabas. Dos niveles, como las apps de Apple.
 //
 // Cada fila lleva su estado escrito debajo para no tener que entrar solo a mirarlo.
 
-type Seccion = 'temperatura' | 'resumenes' | 'oficiales';
+type Seccion = 'temperatura' | 'resumenes' | 'oficiales' | 'lluvia';
 
 const TITULOS: Record<Seccion, string> = {
   temperatura: 'Aviso de temperatura',
   resumenes: 'Avisos de resumen',
   oficiales: 'Avisos oficiales de AEMET',
+  lluvia: 'Aviso de lluvia',
 };
 
 export default function AvisosIndexScreen() {
@@ -62,6 +65,7 @@ export default function AvisosIndexScreen() {
     oficiales: settings.avisosOficiales.enabled
       ? `Desde el ${settings.avisosOficiales.nivelMinimo}`
       : 'Desactivados',
+    lluvia: estadoAvisoLluvia(settings.avisoLluvia),
   };
 
   const cerrar = () => setAbierta(undefined);
@@ -73,6 +77,7 @@ export default function AvisosIndexScreen() {
     abrirTemperatura: () => setAbierta('temperatura'),
     abrirResumenes: () => setAbierta('resumenes'),
     abrirOficiales: () => setAbierta('oficiales'),
+    abrirLluvia: () => setAbierta('lluvia'),
     cerrarSeccion: cerrar,
   });
 
@@ -80,7 +85,8 @@ export default function AvisosIndexScreen() {
   const algunAvisoActivo =
     settings.threshold.enabled ||
     settings.summaries.some((s) => s.enabled) ||
-    settings.avisosOficiales.enabled;
+    settings.avisosOficiales.enabled ||
+    settings.avisoLluvia.enabled;
 
   return (
     <>
@@ -99,7 +105,10 @@ export default function AvisosIndexScreen() {
           {(Object.keys(TITULOS) as Seccion[]).map((seccion, index) => (
             <Pressable
               key={seccion}
-              style={[styles.filaNavegacion, index < 2 && styles.rowDivider]}
+              style={[
+                styles.filaNavegacion,
+                index < Object.keys(TITULOS).length - 1 && styles.rowDivider,
+              ]}
               onPress={() => setAbierta(seccion)}
               accessibilityRole="button"
               accessibilityLabel={`${TITULOS[seccion]}. ${estados[seccion]}`}
@@ -138,7 +147,7 @@ export default function AvisosIndexScreen() {
       </ScrollView>
       <TapaBarraDeEstado />
 
-      {/* UN solo Modal para las tres secciones. Lo que va un nivel mas hondo (el editor de un
+      {/* UN solo Modal para todas las secciones. Lo que va un nivel mas hondo (el editor de un
           resumen, la lista de fenomenos) es una capa DENTRO de esta hoja y no otro Modal: iOS no
           presenta dos a la vez desde el mismo sitio y la pantalla se queda muerta (ver
           PlacesScreen, donde ya costo un rato averiguarlo). */}
@@ -151,6 +160,7 @@ export default function AvisosIndexScreen() {
           {abierta === 'temperatura' && <AvisoTemperatura onCerrar={cerrar} />}
           {abierta === 'resumenes' && <AvisosResumen onCerrar={cerrar} />}
           {abierta === 'oficiales' && <AvisosOficiales onCerrar={cerrar} />}
+          {abierta === 'lluvia' && <AvisoLluvia onCerrar={cerrar} />}
 
           {banner ? <Toast texto={banner} abajo={insets.bottom + 24} /> : null}
         </View>

@@ -31,4 +31,5 @@
 // lanzar una build, y quien no llegara a aplicar aquel update tiene que enterarse igual.
 export const NOVEDADES: string[] = [
   'Nuevo: debajo de la medición de la estación, una línea con lo que ve el radar de AEMET alrededor del lugar: si llueve ahí, o a cuántos kilómetros está la lluvia más cercana y hacia dónde, con la hora de la imagen. Solo en España.',
+  'Nuevo aviso de lluvia, en la pestaña Avisos: te avisa cuando el radar de AEMET ve lluvia acercándose a donde estés. Eliges la distancia y la intensidad.',
 ];

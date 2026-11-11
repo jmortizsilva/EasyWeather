@@ -43,6 +43,13 @@ export interface SincronizacionAvisos {
    * que nunca se mezclen en la misma notificacion.
    */
   avisosOficiales: { nivelMinimo: string; fenomenosSilenciados: string[] } | null;
+  /** Aviso de lluvia por radar. `null` = apagado. `noche` en minutos del dia; `null` = sin franja. */
+  avisoLluvia: {
+    radioKm: number;
+    intensidad: string;
+    segundoAviso: boolean;
+    noche: { desde: number; hasta: number } | null;
+  } | null;
   /**
    * Estacion elegida para la UBICACION VIVA del telefono, con el punto donde se eligio. La usan el
    * aviso de umbral y los resumenes que te siguen. Sin el punto el servidor no puede dormirla, asi

@@ -12,6 +12,7 @@ import {
 import { Alert, AppState } from 'react-native';
 import { anunciar } from '../accesibilidad/anuncios';
 import {
+  AvisoLluviaAlert,
   AvisosOficialesAlert,
   NotificationSettings,
   Place,
@@ -44,6 +45,7 @@ import {
   leerUbicacionActual,
   pedirPermisoUbicacionSiempre,
 } from '../utils/ubicacionFondo';
+import { avisoLluviaParaServidor } from '../utils/avisoLluvia';
 import { ubicacionParaEnviar, UbicacionConNombre } from '../utils/ubicacionAvisos';
 import { vibrarConfirmacion, vibrarError } from '../utils/haptica';
 import { CURRENT_LOCATION_ID, usePlaces } from './PlacesContext';
@@ -105,6 +107,7 @@ function construirPayload(
           fenomenosSilenciados: next.avisosOficiales.fenomenosSilenciados ?? [],
         }
       : null,
+    avisoLluvia: avisoLluviaParaServidor(next.avisoLluvia),
     estacion: estacionDeLaUbicacion(estacionPorLugar[CURRENT_LOCATION_ID]),
   };
 }
@@ -127,6 +130,11 @@ interface NotificationsContextValue {
   deleteSummary: (id: string) => Promise<void>;
   saveThreshold: (threshold: ThresholdAlert) => Promise<void>;
   saveAvisosOficiales: (avisos: AvisosOficialesAlert) => Promise<void>;
+  /**
+   * `'soloSiFalla'` para los cambios de distancia, intensidad y horas: VoiceOver ya dice
+   * el valor nuevo, y un «Avisos guardados» encima pisaría el siguiente deslizamiento.
+   */
+  saveAvisoLluvia: (aviso: AvisoLluviaAlert, modoAnuncio?: true | 'soloSiFalla') => Promise<void>;
   testNotification: () => Promise<void>;
   // Ultima confirmacion para mostrar tambien en pantalla (no solo VoiceOver). El `id` cambia en
   // cada aviso para que la pantalla lo detecte aunque el texto se repita.
@@ -217,13 +225,14 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   // servidor por push; ya no se programan localmente. `announce` es true solo cuando lo dispara una
   // accion del usuario (guardar), para confirmarlo por voz.
   const sincronizarServidor = useCallback(
-    async (next: NotificationSettings, announce = false) => {
+    async (next: NotificationSettings, announce: boolean | 'soloSiFalla' = false) => {
       // Los avisos oficiales CUENTAN para esto: el servidor necesita saber donde estas para saber
       // que zona te toca, asi que si estan encendidos hay que seguir la ubicacion igual.
       const anyEnabled =
         next.summaries.some((s) => s.enabled) ||
         next.threshold.enabled ||
-        next.avisosOficiales.enabled;
+        next.avisosOficiales.enabled ||
+        next.avisoLluvia.enabled;
       // La ubicacion se lee AHORA, no se coge la cacheada de la pantalla Hoy. Esa se congela
       // mientras estas viendo un lugar guardado (PlacesContext no re-detecta si el lugar activo no
       // es "mi ubicacion"), y al subirla se pisaba en el servidor la ubicacion buena que habia
@@ -261,7 +270,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
       // que el seguimiento no funcionaba.
       setSincronizaciones((n) => n + 1);
 
-      if (announce) {
+      if (announce === 'soloSiFalla') {
+        if (!ok) {
+          notify('No se han podido guardar los avisos.', 'error');
+        }
+      } else if (announce) {
         if (!anyEnabled) {
           notify('No tienes ningún aviso activo.');
         } else {
@@ -354,11 +367,11 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   );
 
   const persist = useCallback(
-    async (next: NotificationSettings) => {
+    async (next: NotificationSettings, modoAnuncio: true | 'soloSiFalla' = true) => {
       setSettings(next);
       settingsRef.current = next;
       await AsyncStorage.setItem(STORAGE_NOTIFICATIONS, JSON.stringify(next));
-      await sincronizarServidor(next, true);
+      await sincronizarServidor(next, modoAnuncio);
     },
     [sincronizarServidor],
   );
@@ -405,6 +418,15 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
     [ensurePermissionForActivation, persist],
   );
 
+  const saveAvisoLluvia = useCallback(
+    async (aviso: AvisoLluviaAlert, modoAnuncio: true | 'soloSiFalla' = true) => {
+      const enabled = aviso.enabled && (await ensurePermissionForActivation(aviso.enabled));
+      const current = settingsRef.current;
+      await persist({ ...current, avisoLluvia: { ...aviso, enabled } }, modoAnuncio);
+    },
+    [ensurePermissionForActivation, persist],
+  );
+
   const testNotification = useCallback(async () => {
     const ok = await sendTestNotification();
     if (ok) {
@@ -423,6 +445,7 @@ export function NotificationsProvider({ children }: { children: ReactNode }) {
   const value: NotificationsContextValue = {
     settings,
     saveAvisosOficiales,
+    saveAvisoLluvia,
     saveSummary,
     deleteSummary,
     saveThreshold,
