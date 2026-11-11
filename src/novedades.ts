@@ -29,4 +29,6 @@
 // quien no llegase a aplicar aquel update no se enterará de esas seis.
 // Las dos primeras ya se publicaron el 2026-09-27; se quedan porque este fichero solo se vacía al
 // lanzar una build, y quien no llegara a aplicar aquel update tiene que enterarse igual.
-export const NOVEDADES: string[] = [];
+export const NOVEDADES: string[] = [
+  'Nuevo: debajo de la medición de la estación, una línea con lo que ve el radar de AEMET alrededor del lugar: si llueve ahí, o a cuántos kilómetros está la lluvia más cercana y hacia dónde, con la hora de la imagen. Solo en España.',
+];
