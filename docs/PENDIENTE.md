@@ -9,10 +9,11 @@ Que esté aquí no significa que se vaya a hacer, ni en este orden. Significa qu
 ---
 
 
-## Los sitios que no son municipios, y guardar donde estás
+## Los sitios que no son municipios
 
-**Estado: causa localizada y comprobada el 2026-09-28. Sin arreglar.** Son dos peticiones del mismo
-usuario, y la segunda resuelve la primera por otro camino.
+**Estado: causa localizada y comprobada el 2026-09-28. La búsqueda sigue sin encontrarlos; la otra
+mitad, guardar el sitio donde estás, está hecha y en la Store desde la 1.2.0.** Son dos peticiones
+del mismo usuario, y la segunda resuelve la primera por otro camino.
 
 **El síntoma.** Alguien de **Els Reguers** (Tortosa, Baix Ebre) cuenta que buscando su pueblo no
 sale nada para poder añadirlo, pero que la app **sí lo llama «Els Reguers»** cuando es su ubicación.
@@ -43,54 +44,39 @@ puede añadir cualquiera con cuenta. Añadir «Els Reguers» como alternativo de
 para Open-Meteo y para todo el que use esos datos. Es una acción distinta del informe de los 405
 municipios: aquello es un filtro de Open-Meteo, esto es un dato de GeoNames.
 
-### Guardar en Mis lugares el sitio donde estás
+### Guardar en Mis lugares el sitio donde estás: hecho
 
-Es la otra mitad de lo que pide el usuario y, de paso, **la salida para cualquier sitio que ninguna
-fuente sepa nombrar**: si estás allí, el teléfono ya sabe dónde estás y cómo se llama. Hoy «Mi
-ubicación» te sigue, así que en cuanto te vas, ese sitio se pierde.
-
-- `addPlace` ya acepta cualquier `Place`, así que el trabajo es de pantalla, no de estado.
-- **El id**: puede seguir el patrón que Open-Meteo ya usa cuando no tiene el suyo (`lat,lon`), algo
-  como `punto:40.8387,0.4489`. No puede ser `CURRENT_LOCATION_ID`, que es el que se mueve.
-- **El nombre** lo pone Apple, que es justo el que el usuario reconoce.
-- A decidir: si se deja renombrar, qué hacer si guardas dos veces el mismo sitio con 200 m de
-  diferencia, y cómo se dice que ese punto **se queda quieto** y no te sigue.
-- Es JavaScript puro: **entra por aire**.
+Hecho el 2026-09-28 (commit `896ef98`) y publicado en la 1.2.0: en «Mis lugares», el botón «Guardar
+este sitio», debajo de tu ubicación, deja fijo el sitio donde estás con el nombre que le da Apple.
+Es la salida para Els Reguers y para cualquier sitio que ninguna fuente sepa nombrar, pero solo si
+estás allí: buscarlo desde otro sitio sigue sin dar nada.
 
 ---
 
-## Widget de pantalla de inicio
+## Lo que le falta al widget
 
-**Estado: pendiente, sin empezar.**
+**Estado: el widget está hecho y en la Store desde la 1.2.0** (pequeño y mediano, lugar y datos en
+«Editar widget», «Mi ubicación» que te sigue). El diseño, cómo se actualiza y lo que se descartó,
+en [PROPUESTA-WIDGET.md](PROPUESTA-WIDGET.md). Lo que la propuesta incluía y no se hizo:
 
-Ver la temperatura y el aviso oficial sin abrir la app. Es lo que más se usa de una app del tiempo,
-y hoy obliga a entrar.
+- **El tamaño grande**, con los próximos tres días.
+- **Los de la pantalla bloqueada**: en línea (temperatura y cielo) y rectangular (lugar, temperatura
+  y un dato).
+- **Ofrecer el permiso «Siempre» al añadir el widget.** Hoy solo se pide al activar un aviso, así
+  que quien no tenga avisos no ve moverse «Mi ubicación» hasta que iOS refresca el widget, salvo que
+  lo active a mano en Ajustes. Toca un permiso: se decide antes.
 
-**Va en su propia rama y necesita una build nueva**, de perfil `preview`. Esto no es un detalle de
-proceso: un widget de iOS es una **extensión nativa** (WidgetKit, un target aparte en Xcode), así
-que **no puede entregarse por aire**. Todo lo que hemos publicado hasta hoy con `eas update` iba
-dentro del bundle de JavaScript; esto no. Cada prueba cuesta una compilación en la nube.
-
-Lo que hay que decidir **antes** de empezar, porque cambia la configuración nativa:
-
-- **Cómo se declara la extensión.** En un proyecto de Expo hace falta un config plugin, y eso es una
-  dependencia nueva: se propone, se aprueba y entonces se instala.
-- **Cómo llega el dato al widget.** Un widget no ejecuta la app: lee lo que la app le haya dejado
-  escrito, en un **App Group** compartido. Hay que decidir qué se guarda ahí y cuándo, y aceptar que
-  el widget puede enseñar un dato de hace un rato. Con la regla de la casa —un dato viejo nunca se
-  presenta como actual— eso obliga a que el widget **diga la hora del dato**, no solo el número.
-- **Cada cuánto se refresca.** No lo decide la app: iOS reparte un presupuesto de refrescos al día y
-  puede recortarlo. Prometer "siempre al minuto" sería mentira.
-- **Qué cabe.** Hay varios tamaños y en el pequeño no entra todo. Si hay un aviso naranja o rojo,
-  **manda el aviso**, igual que en la pantalla del lugar.
-- **Accesibilidad.** VoiceOver lee los widgets en la pantalla de inicio. Un widget que sea una
-  imagen bonita sin texto es un widget que aquí no vale.
+Los tres son nativos: van en una build, no por aire.
 
 ---
 
 ## Avisar de que empieza a llover, o de una tormenta cerca
 
-**Estado: por investigar. No hay decisión tomada ni fuente elegida.**
+**Estado (2026-11-11): fuente elegida y mecanismo decidido, sin nada en la app todavía.** La fuente
+es el radar regional de AEMET, y se hace lo mismo que Rain Alarm (abajo, «DECIDIDO»). En el
+servidor ya están la recogida de barridos, los quince radares situados y la máscara. El siguiente
+paso es enseñar el radar en la ficha del lugar, antes de ningún aviso (abajo, «Lo que se propone
+empezar»); lo que falta decidir para eso, en «Lo que sigue sin decidir».
 
 La idea: que el teléfono avise **"empieza a llover en 15 minutos"** o **"hay una tormenta acercándose
 por el oeste"**, como hacen Tiempo Radar y las apps de ese estilo. Es el aviso más útil que existe,
@@ -461,6 +447,9 @@ si el radar no contestó; y algo para la noche.
 
 ### Lo que esto convierte en bloqueante
 
+- ~~**La máscara**~~ Resuelto el 2026-10-21: una por radar, aprendida de dos semanas de barridos,
+  que tapa lo encendido en más del 25 % de ellos. Lo medido y lo descartado, en el README del
+  servidor («La máscara: lo medido y lo decidido»). Lo que sigue es de antes de tenerla:
 - **La máscara deja de ser un detalle y pasa a ser crítica.** La condición es «hay un píxel de al
   menos N dentro del círculo», y la costa está pintada del amarillo de 48-54 dBZ. Un solo píxel de
   costa dentro del radio de alguien es **un aviso permanente, todos los días, para todos los pueblos
@@ -522,32 +511,6 @@ devolverle el hallazgo a quien nos da los datos gratis. No hay ninguna incidenci
 Queda por decidir si se publica tal cual o adjuntando la lista completa de los 405 en un gist.
 
 ---
-
-## El puente de desarrollo, a medio instalar
-
-Instalado el 2026-10-06 (ver [REVISAR-ACCESIBILIDAD.md](REVISAR-ACCESIBILIDAD.md)): servicios,
-navegación por pestañas, acciones en las dos pantallas con capas y `docs/pantallas.txt`. Funciona ya
-con la build que haya puesta.
-
-**Falta una build de desarrollo para que haya capturas**, que es lo que de verdad hace falta para
-revisar la accesibilidad. En esa build entran tres cosas que ya están declaradas y no hacen nada
-hasta entonces:
-
-- `react-native-view-shot`, que es nativo. Hasta que entre, el servicio `pantalla` contesta
-  `{"ok":false}` y todo lo demás sigue.
-- `NSLocalNetworkUsageDescription` en `app.json`, para que el permiso de red local diga algo con
-  sentido en vez del texto genérico de Expo.
-- `expo-constants`, que el puente importaba sin estar declarado. Al declararlo con `npx expo install`
-  subió de 57.0.13 a 57.0.21 (parche dentro del SDK 57). Es JS contra un nativo que ya está en el
-  binario, pero conviene mirarlo la primera vez que se abra la app con esa build.
-
-Conviene juntar esa build con el módulo nativo de cambios significativos de ubicación, que también
-está esperando: una build cuesta y hay pocas.
-
-**Y el rastro de accesibilidad sigue vacío.** El servicio existe, pero no hay nadie llamando a
-`anotarSuceso`: esta app no tiene un `src/accesibilidad/` propio con las funciones de anuncio y foco
-centralizadas (paso 5 del README del puente). Mientras no lo tenga, el rastro devuelve una lista
-vacía, y eso no es un fallo del puente.
 
 ## Y una deuda de higiene
 
