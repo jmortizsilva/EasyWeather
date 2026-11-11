@@ -13,9 +13,17 @@ import { Alert, AppState } from 'react-native';
 import { anunciar } from '../accesibilidad/anuncios';
 import { getAvisos } from '../services/avisos';
 import { getObservacion } from '../services/observacion';
+import { getRadar } from '../services/radar';
 import { eleccionAplicable, EstacionElegida, MotivoSinDato } from '../utils/estaciones';
 import { getCurrentByPlaces, getForecast } from '../services/openMeteo';
-import { AvisosLugar, CURRENT_LOCATION_ID, CurrentObservation, Forecast, Place } from '../types';
+import {
+  AvisosLugar,
+  CURRENT_LOCATION_ID,
+  CurrentObservation,
+  Forecast,
+  Place,
+  RadarLugar,
+} from '../types';
 import { distanciaMetros, MISMO_SITIO_METROS } from '../utils/distancia';
 import { nombreUbicacion } from '../utils/geocode';
 import { ConsultaHecha, veredictoRefresco } from '../utils/refrescoPorLugar';
@@ -49,6 +57,9 @@ const OBSERVACION_RECHECK_MS = 10 * 60 * 1000;
 // lote un par de veces al dia y lo actualiza cuando la situacion cambia; el servidor ya lo cachea
 // media hora, asi que pedirlo mas a menudo desde aqui solo gastaria bateria y datos.
 const AVISOS_RECHECK_MS = 10 * 60 * 1000;
+// El radar se renueva cada 10 minutos y el servidor tarda unos 6 en tenerlo: mirarlo cada 5 coge
+// cada barrido sin pedir nada de más.
+const RADAR_RECHECK_MS = 5 * 60 * 1000;
 
 // Definido en types.ts para que pueda usarlo la logica pura; se reexporta para no tocar los imports
 // de media app, que lo piden aqui desde siempre.
@@ -97,6 +108,11 @@ interface PlacesContextValue {
    * se guardan en disco: un aviso caducado en pantalla seria peor que no enseñar nada.
    */
   avisosByPlace: Record<string, AvisosLugar>;
+  /**
+   * Lo que dice el radar de AEMET alrededor de cada lugar (por id). `null` es que ningún radar lo
+   * cubre (fuera de España); que falte, que aún no se ha preguntado. Tampoco va a disco.
+   */
+  radarByPlace: Record<string, RadarLugar | null>;
   /** Estacion de AEMET elegida a mano para cada lugar. Sin entrada = la elige la app. */
   estacionPorLugar: Record<string, EstacionElegida>;
   /**
@@ -146,6 +162,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     {},
   );
   const [avisosByPlace, setAvisosByPlace] = useState<Record<string, AvisosLugar>>({});
+  const [radarByPlace, setRadarByPlace] = useState<Record<string, RadarLugar | null>>({});
   const [estacionPorLugar, setEstacionPorLugar] = useState<Record<string, EstacionElegida>>({});
   // Por que la estacion elegida no contesta hoy. Ocupa el sitio de la medicion en la tarjeta: o una
   // cosa o la otra, nunca las dos.
@@ -157,6 +174,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
   // throttle se comia la consulta del sitio nuevo (ver utils/refrescoPorLugar).
   const ultimaObservacionRef = useRef<Record<string, ConsultaHecha>>({});
   const ultimosAvisosRef = useRef<Record<string, ConsultaHecha>>({});
+  const ultimoRadarRef = useRef<Record<string, ConsultaHecha>>({});
   const forceReloadRef = useRef(false);
   // Una recarga "silenciosa" (al abrir la app, volver de segundo plano o entrar en
   // la pestaña Hoy) refresca los datos sin indicador ni anuncios de VoiceOver, salvo
@@ -418,6 +436,39 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     setAvisosByPlace((previo) => ({ ...previo, [id]: avisos }));
   }, []);
 
+  // Pide la línea del radar de un lugar, con el mismo trato que los avisos. Si no se ha podido
+  // preguntar, se queda la que hubiera: lleva su hora, así que no pasa por actual.
+  const cargarRadar = useCallback(async (id: string, lat: number, lon: number) => {
+    const veredicto = veredictoRefresco(
+      ultimoRadarRef.current[id],
+      { lat, lon },
+      Date.now(),
+      RADAR_RECHECK_MS,
+    );
+    if (veredicto === 'esperar') {
+      return;
+    }
+    if (veredicto === 'olvidar-y-consultar') {
+      // La lluvia de alrededor del sitio que acabas de dejar es la de otro sitio.
+      setRadarByPlace((previo) => {
+        if (previo[id] === undefined) {
+          return previo;
+        }
+        const siguiente = { ...previo };
+        delete siguiente[id];
+        return siguiente;
+      });
+    }
+    ultimoRadarRef.current[id] = { cuando: Date.now(), lat, lon };
+
+    const radar = await getRadar(lat, lon);
+    if (radar === undefined) {
+      ultimoRadarRef.current[id] = { cuando: 0, lat, lon };
+      return;
+    }
+    setRadarByPlace((previo) => ({ ...previo, [id]: radar }));
+  }, []);
+
   useEffect(() => {
     const loadStored = async () => {
       const [storedPlaces, storedLocation, storedTemps, storedEstaciones] = await Promise.all([
@@ -547,6 +598,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       // (incluida la guardada), y sirve para descartar estaciones a otra cota.
       void cargarObservacion(activeId, place.lat, place.lon, data.elevation);
       void cargarAvisos(activeId, place.lat, place.lon);
+      void cargarRadar(activeId, place.lat, place.lon);
     };
 
     const loadForecast = async (force: boolean, silent: boolean) => {
@@ -628,7 +680,15 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     // sí mostramos indicador aunque la recarga venga de un evento automático.
     const silent = silentRequested && forecastRef.current !== undefined;
     void loadForecast(force, silent);
-  }, [activeId, currentLocationPlace, places, forecastReloadTick, cargarObservacion, cargarAvisos]);
+  }, [
+    activeId,
+    currentLocationPlace,
+    places,
+    forecastReloadTick,
+    cargarObservacion,
+    cargarAvisos,
+    cargarRadar,
+  ]);
 
   const refreshCurrentLocation = async () => {
     setLoadingLocation(true);
@@ -704,6 +764,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
             }));
             void cargarObservacion(place.id, place.lat, place.lon, guardada.elevation);
             void cargarAvisos(place.id, place.lat, place.lon);
+            void cargarRadar(place.id, place.lat, place.lon);
             return;
           }
         } catch {
@@ -719,13 +780,14 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
       }));
       void cargarObservacion(place.id, place.lat, place.lon, data.elevation);
       void cargarAvisos(place.id, place.lat, place.lon);
+      void cargarRadar(place.id, place.lat, place.lon);
       // Se guarda en disco igual que la del lugar activo: si luego se guarda el lugar, ya está lista.
       await Promise.all([
         AsyncStorage.setItem(`${STORAGE_FORECAST_PREFIX}${place.id}`, JSON.stringify(data)),
         AsyncStorage.setItem(`${STORAGE_FORECAST_TS_PREFIX}${place.id}`, String(ahora)),
       ]);
     },
-    [cargarObservacion, cargarAvisos],
+    [cargarObservacion, cargarAvisos, cargarRadar],
   );
 
   // Al volver la app a primer plano se comprueba si el usuario se ha movido de ciudad
@@ -862,6 +924,7 @@ export function PlacesProvider({ children }: { children: ReactNode }) {
     sinDatoPorLugar,
     elegirEstacion,
     avisosByPlace,
+    radarByPlace,
     refreshCurrentTemps,
     setActiveId,
     refreshCurrentLocation,

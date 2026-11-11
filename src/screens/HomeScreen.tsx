@@ -46,6 +46,7 @@ export default function HomeScreen() {
     observacionByPlace,
     sinDatoPorLugar,
     avisosByPlace,
+    radarByPlace,
     detectCurrentLocation,
     refreshCurrentLocation,
     refreshCurrentTemps,
@@ -254,6 +255,7 @@ export default function HomeScreen() {
                 sinDatoEstacion={sinDatoPorLugar[place.id]}
                 onElegirEstacion={() => setEstacionDe(place)}
                 avisos={avisosByPlace[place.id]}
+                radar={radarByPlace[place.id]}
                 esActiva={place.id === activeId}
                 cargando={cargando}
                 message={message}
@@ -275,6 +277,7 @@ export default function HomeScreen() {
             sinDatoEstacion={sinDatoPorLugar[activePlace.id]}
             onElegirEstacion={() => setEstacionDe(activePlace)}
             avisos={avisosByPlace[activePlace.id]}
+            radar={radarByPlace[activePlace.id]}
             esActiva
             cargando={cargando}
             message={message}

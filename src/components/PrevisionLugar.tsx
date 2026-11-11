@@ -12,7 +12,7 @@ import AnuncioAvisos from './AnuncioAvisos';
 import DayRow from './DayRow';
 import { AvisoEstacion, CURRENT_LOCATION_ID, PrevisionGuardada } from '../state/PlacesContext';
 import { Paleta } from '../theme/colores';
-import { AvisosLugar, CurrentObservation, DayForecast, Place } from '../types';
+import { AvisosLugar, CurrentObservation, DayForecast, Place, RadarLugar } from '../types';
 import { textoParaCompartir } from '../utils/compartir';
 import { buildDayDetails, formatUpdatedAt } from '../utils/dayDetails';
 import { avisoSinDato, ofrecerEstacionSinMedicion } from '../utils/estaciones';
@@ -52,6 +52,11 @@ interface PaginaProps {
    * venga con la lista vacia, que no hay ninguno: en los dos casos no se pinta nada.
    */
   avisos?: AvisosLugar;
+  /**
+   * Lo que dice el radar de AEMET alrededor. `null` (fuera de España) y que falte (aún no se ha
+   * preguntado) no pintan nada.
+   */
+  radar?: RadarLugar | null;
   esActiva: boolean;
   cargando: boolean;
   message: string;
@@ -74,6 +79,7 @@ export function PaginaLugar({
   sinDatoEstacion,
   onElegirEstacion,
   avisos,
+  radar,
   esActiva,
   cargando,
   message,
@@ -207,6 +213,15 @@ export function PaginaLugar({
               accessibilityHint="Elige otra estación de AEMET o vuelve a la automática">
               <Text style={styles.medicionEstacion}>{avisoEstacion.visible}</Text>
             </Pressable>
+          )}
+
+          {/* El radar, debajo de lo medido: es otro dato observado, con su hora y su fuente, y el
+              primer paso del aviso de lluvia (docs/PROPUESTA-RADAR.md). Un solo elemento para
+              VoiceOver, con el texto largo: «kilómetros» y no «km». */}
+          {radar && (
+            <View style={styles.medicionBloque} accessible accessibilityLabel={radar.hablado}>
+              <Text style={styles.radarLinea}>{radar.visible}</Text>
+            </View>
           )}
 
           {updatedAt && (
@@ -419,6 +434,12 @@ export const crearEstilos = (c: Paleta) =>
     medicionEstacion: {
       color: c.textoTenue,
       fontSize: 15,
+      textAlign: 'center',
+    },
+    // Color de texto y no el tenue: es un dato, no un rótulo, y tiene que leerse con contraste AAA.
+    radarLinea: {
+      color: c.texto,
+      fontSize: 16,
       textAlign: 'center',
     },
     updatedLine: {

@@ -170,6 +170,20 @@ export interface ResumenAvisos {
   nivel: NivelAviso;
 }
 
+/**
+ * Lo que dice el radar de AEMET alrededor de un lugar, para la línea de la ficha. Los textos vienen
+ * escritos del servidor (radar/lluvia.ts allí), como los de los avisos. El diseño, en
+ * docs/PROPUESTA-RADAR.md.
+ */
+export interface RadarLugar {
+  /** «Radar 11:20: lluvia moderada a 9 km al oeste». */
+  visible: string;
+  /** «Radar de AEMET de las 11:20: lluvia moderada a 9 kilómetros al oeste». */
+  hablado: string;
+  /** Ninguno de los radares que cubren el sitio tiene imagen reciente: el texto dice desde cuándo. */
+  sinImagen?: boolean;
+}
+
 /** Lo que devuelve el servidor para un punto. Sin avisos, la lista va vacia y el resumen nulo. */
 export interface AvisosLugar {
   avisos: AvisoOficial[];
