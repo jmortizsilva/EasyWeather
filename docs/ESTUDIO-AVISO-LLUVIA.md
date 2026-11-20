@@ -48,6 +48,34 @@ lluvia a 30 km no dice nada de si llegará: casi nunca llega.
 avisa de una de cada tres lluvias. Las demás no se pueden prever moviendo lo que ya hay: son
 chubascos que nacen o crecen encima o cerca del sitio en esa misma hora.
 
+## Con menos margen (20 de noviembre)
+
+Jose vio excesiva la hora. Misma extrapolación confirmada, avisando solo si la lluvia llegará en 30 o
+40 minutos (variable `MARGEN` del guion, en pasos de 10 minutos):
+
+| Margen | Avisos por sitio y semana | Llovió dentro del margen | Llovió en la hora siguiente | Minutos hasta la lluvia (mediana) | Lluvias avisadas antes |
+| --- | --- | --- | --- | --- | --- |
+| 30 min | 5,2 | 53 % | 64 % | 20 | 31 % |
+| 40 min | 5,9 | 50 % | 58 % | 30 | 33 % |
+| 60 min | 6,8 | 46 % | 46 % | 40 | 35 % |
+
+Con «desde moderada» las proporciones son casi iguales, con menos de la mitad de avisos (2,1, 2,5 y
+3,0 por semana). Menos margen da menos avisos y más aciertos, a cambio de avisar más tarde.
+
+## Un aviso «Empieza a llover»
+
+Se midió también avisar cuando llueve encima tras una hora seca, como sustituto del segundo aviso:
+
+- Saltaría **8,6 veces por sitio y semana** con cualquier lluvia, y 3,5 desde moderada.
+- **La mitad no sigue**: solo en el 50 % de las veces sigue lloviendo diez minutos después (40 %
+  desde moderada). El resto son ecos que aparecen y se van.
+- Una de cada tres ya estaba avisada por la extrapolación.
+- Y llegaría tarde: la imagen del radar tarda entre 5 y 11 minutos en publicarse, y la recogida va
+  cada 5. Cuando sonase, llevaría lloviendo diez minutos o más. Esperar a una segunda imagen para
+  quitar los ecos sueltos lo retrasaría otros diez.
+
+No compensa.
+
 ## Lo que hay que tener en cuenta
 
 - **La verdad es el propio radar**, no un pluviómetro. Un eco débil de 12 dBZ puede no llegar al
