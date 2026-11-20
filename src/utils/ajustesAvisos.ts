@@ -43,13 +43,11 @@ export const DEFAULT_AVISOS_OFICIALES: AvisosOficialesAlert = {
   fenomenosSilenciados: [],
 };
 
-// Lo aprobado el 2026-11-11 (docs/PROPUESTA-AVISO-LLUVIA.md): 35 km, cualquier lluvia, sin segundo
-// aviso y con la franja de noche desactivada, que propone de 23:00 a 8:00 al activarla.
+// Lo aprobado el 2026-11-11 (docs/PROPUESTA-AVISO-LLUVIA.md): cualquier lluvia y la franja de noche
+// desactivada, que propone de 23:00 a 8:00 al activarla.
 export const DEFAULT_AVISO_LLUVIA: AvisoLluviaAlert = {
   enabled: false,
-  radioKm: 35,
   intensidad: 'cualquiera',
-  segundoAviso: false,
   noche: { activada: false, desde: 23 * 60, hasta: 8 * 60 },
 };
 

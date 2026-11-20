@@ -3,19 +3,16 @@ import {
   estadoAvisoLluvia,
   horaDeMinutos,
   OPCIONES_INTENSIDAD,
-  OPCIONES_RADIO,
   valoresAjustable,
 } from '../avisoLluvia';
 import { completarAjustes, DEFAULT_AVISO_LLUVIA } from '../ajustesAvisos';
 import { NotificationSettings } from '../../types';
 
 describe('el aviso de lluvia en la app', () => {
-  it('nace como se aprobó: apagado, 35 km, cualquier lluvia y sin franja de noche', () => {
+  it('nace como se aprobó: apagado, cualquier lluvia y sin franja de noche', () => {
     expect(DEFAULT_AVISO_LLUVIA).toEqual({
       enabled: false,
-      radioKm: 35,
       intensidad: 'cualquiera',
-      segundoAviso: false,
       noche: { activada: false, desde: 23 * 60, hasta: 8 * 60 },
     });
   });
@@ -30,22 +27,20 @@ describe('el aviso de lluvia en la app', () => {
     );
   });
 
-  it('la distancia se dice entera y se ve abreviada', () => {
-    const v = valoresAjustable(OPCIONES_RADIO, 35);
-    expect(v).toMatchObject({
-      value: '35 kilómetros',
-      valueOnIncrement: '50 kilómetros',
-      valueOnDecrement: '20 kilómetros',
-      siguiente: 50,
-      anterior: 20,
+  it('la intensidad, con lo que dice VoiceOver antes y después de cada deslizamiento', () => {
+    expect(valoresAjustable(OPCIONES_INTENSIDAD, 'moderada')).toMatchObject({
+      value: 'Desde moderada',
+      valueOnIncrement: 'Solo fuerte',
+      valueOnDecrement: 'Cualquier lluvia',
+      siguiente: 'fuerte',
+      anterior: 'cualquiera',
     });
-    expect(OPCIONES_RADIO.map((o) => o.visible)).toEqual(['10 km', '20 km', '35 km', '50 km']);
   });
 
   it('en los extremos el ajustable se queda donde está', () => {
-    expect(valoresAjustable(OPCIONES_RADIO, 50)).toMatchObject({
-      siguiente: 50,
-      valueOnIncrement: '50 kilómetros',
+    expect(valoresAjustable(OPCIONES_INTENSIDAD, 'fuerte')).toMatchObject({
+      siguiente: 'fuerte',
+      valueOnIncrement: 'Solo fuerte',
     });
     expect(valoresAjustable(OPCIONES_INTENSIDAD, 'cualquiera')).toMatchObject({
       anterior: 'cualquiera',
@@ -57,16 +52,11 @@ describe('el aviso de lluvia en la app', () => {
   it('el estado de la fila en la lista de Avisos', () => {
     expect(estadoAvisoLluvia(DEFAULT_AVISO_LLUVIA)).toBe('Desactivado');
     expect(estadoAvisoLluvia({ ...DEFAULT_AVISO_LLUVIA, enabled: true })).toBe(
-      'Activado · 35 km, cualquier lluvia',
+      'Activado · cualquier lluvia',
     );
     expect(
-      estadoAvisoLluvia({
-        ...DEFAULT_AVISO_LLUVIA,
-        enabled: true,
-        radioKm: 10,
-        intensidad: 'fuerte',
-      }),
-    ).toBe('Activado · 10 km, solo fuerte');
+      estadoAvisoLluvia({ ...DEFAULT_AVISO_LLUVIA, enabled: true, intensidad: 'fuerte' }),
+    ).toBe('Activado · solo fuerte');
   });
 
   it('las horas de la franja', () => {
@@ -75,11 +65,12 @@ describe('el aviso de lluvia en la app', () => {
   });
 
   it('al servidor solo va si está activado, y la franja solo si está activada', () => {
+    // Los ajustes guardados antes del 2026-11-20 traen la distancia y el segundo aviso: no se mandan.
+    const antiguos = { ...DEFAULT_AVISO_LLUVIA, enabled: true, radioKm: 20, segundoAviso: true };
+    expect(avisoLluviaParaServidor(antiguos)).toEqual({ intensidad: 'cualquiera', noche: null });
     expect(avisoLluviaParaServidor(DEFAULT_AVISO_LLUVIA)).toBeNull();
     expect(avisoLluviaParaServidor({ ...DEFAULT_AVISO_LLUVIA, enabled: true })).toEqual({
-      radioKm: 35,
       intensidad: 'cualquiera',
-      segundoAviso: false,
       noche: null,
     });
     const conNoche = {

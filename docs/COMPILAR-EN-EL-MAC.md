@@ -241,6 +241,15 @@ puente.
   `package-lock.json` volvía a dictar lo mismo. Se arregló borrando del lockfile las entradas de
   `node_modules/jest-expo` y `node_modules/@react-native/jest-preset` y reinstalando.
 
+- **Abrir la app de desarrollo contra Metro sin tocar el simulador**: `simctl openurl` con el
+  enlace `…://expo-development-client/?url=…` saca un diálogo «¿Abrir en EasyWeather Dev?» que
+  aquí no se puede pulsar, y se queda ahí aunque se repita la orden. El lanzador de Expo lee la
+  dirección de los argumentos de arranque (`initialUrlFromProcessInfo` en
+  `EXDevLauncherController.m`), así que no hace falta el enlace:
+  ```bash
+  xcrun simctl launch <UDID> com.jmortizsilva.tiempo.dev --initialUrl http://localhost:8081
+  ```
+
 - **El simulador es un iPhone 17 con iOS 27** (UDID `ECE0E6A0-0A3B-4CFA-9F03-9EA2D014631A`). Los
   runtimes de iOS 18.2 de antes ya no están. Usar siempre el UDID y no `booted`: con dos simuladores
   arrancados, `booted` manda las órdenes al que no es.

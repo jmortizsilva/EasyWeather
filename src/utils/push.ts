@@ -45,9 +45,7 @@ export interface SincronizacionAvisos {
   avisosOficiales: { nivelMinimo: string; fenomenosSilenciados: string[] } | null;
   /** Aviso de lluvia por radar. `null` = apagado. `noche` en minutos del dia; `null` = sin franja. */
   avisoLluvia: {
-    radioKm: number;
     intensidad: string;
-    segundoAviso: boolean;
     noche: { desde: number; hasta: number } | null;
   } | null;
   /**

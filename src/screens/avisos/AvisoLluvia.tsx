@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNotifications } from '../../state/NotificationsContext';
 import { useColores } from '../../theme/ThemeContext';
 import { AvisoLluviaAlert } from '../../types';
-import { horaDeMinutos, OPCIONES_INTENSIDAD, OPCIONES_RADIO } from '../../utils/avisoLluvia';
+import { horaDeMinutos, OPCIONES_INTENSIDAD } from '../../utils/avisoLluvia';
 import Cabecera from './Cabecera';
 import { crearEstilos } from './estilos';
 import SelectorAjustable from './SelectorAjustable';
@@ -13,8 +13,9 @@ import SwitchRow from './SwitchRow';
 import { useAccionesDeDesarrollo } from '../../desarrollo/automatizacion';
 import { useDesplazableDePuente } from '../../desarrollo/desplazables';
 
-// Lo que se espera tras el último cambio antes de guardar. Pasar de 10 a 50 km son tres
-// deslizamientos, y cada guardado lee el GPS y llama al servidor: así se guarda una vez y no tres.
+// Lo que se espera tras el último cambio antes de guardar. Pasar de «Cualquier lluvia» a «Solo
+// fuerte» son dos deslizamientos, y cada guardado lee el GPS y llama al servidor: así se guarda una
+// vez y no dos.
 const ESPERA_GUARDAR_MS = 1000;
 
 export default function AvisoLluvia({ onCerrar }: { onCerrar: () => void }) {
@@ -58,7 +59,7 @@ export default function AvisoLluvia({ onCerrar }: { onCerrar: () => void }) {
     return nuevo;
   };
 
-  // Distancia, intensidad, segundo aviso y franja: VoiceOver ya dice el valor nuevo, así que solo
+  // Intensidad y franja de noche: VoiceOver ya dice el valor nuevo, así que solo
   // se anuncia si no se ha podido guardar.
   const cambiar = (cambios: Partial<AvisoLluviaAlert>) => {
     aplicar(cambios);
@@ -106,13 +107,13 @@ export default function AvisoLluvia({ onCerrar }: { onCerrar: () => void }) {
       <Cabecera titulo="Aviso de lluvia" destino="Avisos" onVolver={onCerrar} />
 
       <Text style={styles.note}>
-        Te avisa cuando el radar de AEMET ve lluvia cerca de tu ubicación actual, una vez cada vez
-        que empieza a llover cerca. Solo funciona en España.
+        Te avisa cuando el radar de AEMET prevé que va a llover donde estás en menos de una hora.
+        Solo funciona en España.
       </Text>
 
       <View style={styles.card}>
         <SwitchRow
-          label="Avisarme cuando se acerque la lluvia"
+          label="Avisarme cuando vaya a llover"
           value={borrador.enabled}
           onValueChange={activar}
         />
@@ -121,28 +122,11 @@ export default function AvisoLluvia({ onCerrar }: { onCerrar: () => void }) {
       {borrador.enabled && (
         <>
           <View style={styles.card}>
-            <View style={styles.rowDivider}>
-              <SelectorAjustable
-                etiqueta="Distancia"
-                opciones={OPCIONES_RADIO}
-                valor={borrador.radioKm}
-                onCambiar={(radioKm) => cambiar({ radioKm })}
-              />
-            </View>
             <SelectorAjustable
               etiqueta="Intensidad"
               opciones={OPCIONES_INTENSIDAD}
               valor={borrador.intensidad}
               onCambiar={(intensidad) => cambiar({ intensidad })}
-            />
-          </View>
-
-          <View style={styles.card}>
-            <SwitchRow
-              label="Avisar otra vez cuando esté a menos de 5 km"
-              etiquetaHablada="Avisar otra vez cuando esté a menos de 5 kilómetros"
-              value={borrador.segundoAviso}
-              onValueChange={(segundoAviso) => cambiar({ segundoAviso })}
             />
           </View>
 

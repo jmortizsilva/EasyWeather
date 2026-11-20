@@ -244,16 +244,14 @@ export interface AvisosOficialesAlert {
 }
 
 // Tipo 4: aviso de lluvia por radar, siempre de la ubicacion actual. Lo decide y lo envia el
-// servidor con el radar de AEMET; ver docs/PROPUESTA-AVISO-LLUVIA.md.
-export type RadioLluviaKm = 10 | 20 | 35 | 50;
+// servidor con el radar de AEMET: avisa cuando la lluvia va a llegar, no por distancia. Ver
+// docs/PROPUESTA-AVISO-LLUVIA-CUANDO.md. Los ajustes guardados antes del 2026-11-20 traen ademas
+// `radioKm` y `segundoAviso`, que ya no se usan ni se mandan.
 export type IntensidadLluvia = 'cualquiera' | 'moderada' | 'fuerte';
 
 export interface AvisoLluviaAlert {
   enabled: boolean;
-  radioKm: RadioLluviaKm;
   intensidad: IntensidadLluvia;
-  /** Otro aviso cuando la lluvia esta a menos de 5 km. */
-  segundoAviso: boolean;
   /**
    * Franja sin avisos, en minutos del dia. Las horas se guardan aunque este desactivada, para que
    * al volver a activarla salgan las que se eligieron.

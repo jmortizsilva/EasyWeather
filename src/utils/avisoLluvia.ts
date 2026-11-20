@@ -1,7 +1,7 @@
 // Textos y opciones del aviso de lluvia. Lógica pura: la pantalla (screens/avisos/AvisoLluvia.tsx)
 // solo los pinta. Los aprobó Jose el 2026-11-11 (docs/PROPUESTA-AVISO-LLUVIA.md).
 
-import { AvisoLluviaAlert, IntensidadLluvia, RadioLluviaKm } from '../types';
+import { AvisoLluviaAlert, IntensidadLluvia } from '../types';
 
 export interface OpcionAjustable<T> {
   valor: T;
@@ -10,12 +10,6 @@ export interface OpcionAjustable<T> {
   /** Lo que dice VoiceOver: sin abreviaturas. */
   hablado: string;
 }
-
-export const OPCIONES_RADIO: OpcionAjustable<RadioLluviaKm>[] = [10, 20, 35, 50].map((km) => ({
-  valor: km as RadioLluviaKm,
-  visible: `${km} km`,
-  hablado: `${km} kilómetros`,
-}));
 
 export const OPCIONES_INTENSIDAD: OpcionAjustable<IntensidadLluvia>[] = [
   { valor: 'cualquiera', visible: 'Cualquier lluvia', hablado: 'Cualquier lluvia' },
@@ -51,7 +45,7 @@ export function estadoAvisoLluvia(aviso: AvisoLluviaAlert): string {
     moderada: 'desde moderada',
     fuerte: 'solo fuerte',
   };
-  return `Activado · ${aviso.radioKm} km, ${intensidad[aviso.intensidad]}`;
+  return `Activado · ${intensidad[aviso.intensidad]}`;
 }
 
 /** «23:00» a partir de minutos del día. */
@@ -65,9 +59,7 @@ export function horaDeMinutos(minutos: number): string {
 export function avisoLluviaParaServidor(aviso: AvisoLluviaAlert | undefined) {
   if (!aviso?.enabled) return null;
   return {
-    radioKm: aviso.radioKm,
     intensidad: aviso.intensidad,
-    segundoAviso: aviso.segundoAviso,
     noche: aviso.noche.activada ? { desde: aviso.noche.desde, hasta: aviso.noche.hasta } : null,
   };
 }
